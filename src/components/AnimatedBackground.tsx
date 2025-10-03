@@ -13,8 +13,48 @@ import { useEffect, useRef, useState } from 'react';
 // ASCII character set - classic letters and numbers only
 const ASCII_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
+// Small star characters for background starfield
+const STAR_CHARS = ['*', '.', '+', 'x', '·', '✦', '✧'];
+
 // Pattern types available
 type PatternType = 'star' | 'spiral' | 'wave' | 'grid' | 'circle';
+
+// Background star interface
+interface BackgroundStar {
+  x: number;
+  y: number;
+  char: string;
+  size: number;
+  brightness: number;
+  twinklePhase: number;
+  twinkleSpeed: number;
+}
+
+// Animated bitcoin symbol interface
+interface AnimatedSymbol {
+  x: number;
+  y: number;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  progress: number;
+  speed: number;
+  char: string;
+  size: number;
+  opacity: number;
+}
+
+// Shooting star interface
+interface ShootingStar {
+  x: number;
+  y: number;
+  angle: number;
+  speed: number;
+  length: number;
+  brightness: number;
+  active: boolean;
+}
 
 interface AnimationConfig {
   // Pattern configuration
@@ -34,6 +74,12 @@ interface AnimationConfig {
   // Visual settings
   opacity: number;           // Overall opacity (0-1)
   glowIntensity: number;     // Text glow strength
+  
+  // Background elements
+  backgroundStarCount: number;      // Number of small scattered stars
+  animatedSymbolCount: number;      // Number of flying bitcoin symbols
+  shootingStarFrequency: number;    // How often shooting stars appear (0-1)
+  enableConstellations: boolean;    // Draw constellation lines
 }
 
 // Default configuration - easy to customize
@@ -47,7 +93,11 @@ const DEFAULT_CONFIG: AnimationConfig = {
   mouseInfluence: 0.1,       // Subtle mouse interaction
   scrollInfluence: 0.05,     // Minimal scroll effect
   opacity: 0.9,              // High opacity for clear visibility
-  glowIntensity: 15          // Strong glow for dramatic effect
+  glowIntensity: 15,         // Strong glow for dramatic effect
+  backgroundStarCount: 80,   // Elegant scatter of small stars
+  animatedSymbolCount: 3,    // Few bitcoin symbols floating
+  shootingStarFrequency: 0.02, // Occasional shooting stars
+  enableConstellations: true // Subtle constellation lines
 };
 
 /**
@@ -245,6 +295,113 @@ const generatePattern = (
   return points;
 };
 
+/**
+ * Generate background starfield
+ */
+const generateBackgroundStars = (width: number, height: number, count: number): BackgroundStar[] => {
+  const stars: BackgroundStar[] = [];
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const exclusionRadius = Math.min(width, height) * 0.35; // Keep stars away from center star
+  
+  for (let i = 0; i < count; i++) {
+    let x, y;
+    // Ensure stars don't overlap with center star
+    do {
+      x = Math.random() * width;
+      y = Math.random() * height;
+      const dx = x - centerX;
+      const dy = y - centerY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance > exclusionRadius) break;
+    } while (true);
+    
+    stars.push({
+      x,
+      y,
+      char: STAR_CHARS[Math.floor(Math.random() * STAR_CHARS.length)],
+      size: 8 + Math.random() * 6, // Vary size 8-14
+      brightness: 0.3 + Math.random() * 0.5, // Vary brightness 0.3-0.8
+      twinklePhase: Math.random() * Math.PI * 2,
+      twinkleSpeed: 0.5 + Math.random() * 1.5
+    });
+  }
+  
+  return stars;
+};
+
+/**
+ * Initialize animated symbols (bitcoin)
+ */
+const initAnimatedSymbols = (width: number, height: number, count: number): AnimatedSymbol[] => {
+  const symbols: AnimatedSymbol[] = [];
+  
+  for (let i = 0; i < count; i++) {
+    // Random starting position (from edges)
+    const side = Math.floor(Math.random() * 4);
+    let startX, startY, endX, endY;
+    
+    switch (side) {
+      case 0: // From left
+        startX = -50;
+        startY = Math.random() * height;
+        endX = width + 50;
+        endY = Math.random() * height;
+        break;
+      case 1: // From top
+        startX = Math.random() * width;
+        startY = -50;
+        endX = Math.random() * width;
+        endY = height + 50;
+        break;
+      case 2: // From right
+        startX = width + 50;
+        startY = Math.random() * height;
+        endX = -50;
+        endY = Math.random() * height;
+        break;
+      default: // From bottom
+        startX = Math.random() * width;
+        startY = height + 50;
+        endX = Math.random() * width;
+        endY = -50;
+    }
+    
+    symbols.push({
+      x: startX,
+      y: startY,
+      startX,
+      startY,
+      endX,
+      endY,
+      progress: Math.random(), // Random starting progress
+      speed: 0.0002 + Math.random() * 0.0003, // Very slow movement
+      char: '₿',
+      size: 14 + Math.random() * 8,
+      opacity: 0.2 + Math.random() * 0.3
+    });
+  }
+  
+  return symbols;
+};
+
+/**
+ * Create a new shooting star
+ */
+const createShootingStar = (width: number, height: number): ShootingStar => {
+  const fromEdge = Math.random() < 0.5;
+  
+  return {
+    x: fromEdge ? (Math.random() < 0.5 ? 0 : width) : Math.random() * width,
+    y: fromEdge ? Math.random() * height : (Math.random() < 0.5 ? 0 : height),
+    angle: Math.random() * Math.PI * 2,
+    speed: 3 + Math.random() * 5,
+    length: 30 + Math.random() * 50,
+    brightness: 0.6 + Math.random() * 0.4,
+    active: true
+  };
+};
+
 export const AnimatedBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>();
@@ -254,6 +411,11 @@ export const AnimatedBackground = () => {
   const mouseRef = useRef({ x: 0, y: 0 });
   // Track scroll position for interactivity
   const scrollRef = useRef(0);
+  
+  // Background elements
+  const backgroundStarsRef = useRef<BackgroundStar[]>([]);
+  const animatedSymbolsRef = useRef<AnimatedSymbol[]>([]);
+  const shootingStarsRef = useRef<ShootingStar[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -266,6 +428,9 @@ export const AnimatedBackground = () => {
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      // Regenerate background elements on resize
+      backgroundStarsRef.current = generateBackgroundStars(canvas.width, canvas.height, config.backgroundStarCount);
+      animatedSymbolsRef.current = initAnimatedSymbols(canvas.width, canvas.height, config.animatedSymbolCount);
     };
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -299,6 +464,138 @@ export const AnimatedBackground = () => {
       // Clear canvas with pure black background
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      /**
+       * DRAW BACKGROUND STARS
+       */
+      backgroundStarsRef.current.forEach((star) => {
+        // Twinkle effect
+        const twinkle = Math.sin(time * star.twinkleSpeed + star.twinklePhase) * 0.3 + 0.7;
+        const brightness = star.brightness * twinkle;
+        const gray = Math.floor(brightness * 255);
+        
+        ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+        ctx.font = `${star.size}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = 0.6;
+        ctx.shadowBlur = 0;
+        ctx.fillText(star.char, star.x, star.y);
+      });
+      
+      /**
+       * DRAW CONSTELLATION LINES
+       */
+      if (config.enableConstellations) {
+        ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';
+        ctx.lineWidth = 0.5;
+        ctx.setLineDash([2, 4]);
+        ctx.globalAlpha = 0.3;
+        
+        // Connect nearby stars with dotted lines
+        for (let i = 0; i < backgroundStarsRef.current.length; i++) {
+          const star1 = backgroundStarsRef.current[i];
+          for (let j = i + 1; j < backgroundStarsRef.current.length; j++) {
+            const star2 = backgroundStarsRef.current[j];
+            const dx = star2.x - star1.x;
+            const dy = star2.y - star1.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // Only connect stars within a certain distance
+            if (distance < 150 && Math.random() > 0.95) {
+              ctx.beginPath();
+              ctx.moveTo(star1.x, star1.y);
+              ctx.lineTo(star2.x, star2.y);
+              ctx.stroke();
+            }
+          }
+        }
+        ctx.setLineDash([]);
+      }
+      
+      /**
+       * UPDATE AND DRAW ANIMATED SYMBOLS (Bitcoin)
+       */
+      animatedSymbolsRef.current.forEach((symbol) => {
+        // Update position with bezier curve
+        symbol.progress += symbol.speed;
+        if (symbol.progress >= 1) {
+          symbol.progress = 0;
+        }
+        
+        const t = symbol.progress;
+        // Cubic bezier for smooth curved path
+        const controlX = (symbol.startX + symbol.endX) / 2 + (Math.sin(t * Math.PI * 2) * 200);
+        const controlY = (symbol.startY + symbol.endY) / 2 + (Math.cos(t * Math.PI * 2) * 200);
+        
+        symbol.x = (1 - t) * (1 - t) * symbol.startX + 2 * (1 - t) * t * controlX + t * t * symbol.endX;
+        symbol.y = (1 - t) * (1 - t) * symbol.startY + 2 * (1 - t) * t * controlY + t * t * symbol.endY;
+        
+        // Draw symbol
+        ctx.fillStyle = `rgba(200, 200, 200, ${symbol.opacity})`;
+        ctx.font = `${symbol.size}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = symbol.opacity;
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = 'rgba(200, 200, 200, 0.5)';
+        ctx.fillText(symbol.char, symbol.x, symbol.y);
+      });
+      
+      /**
+       * UPDATE AND DRAW SHOOTING STARS
+       */
+      // Spawn new shooting stars randomly
+      if (Math.random() < config.shootingStarFrequency) {
+        shootingStarsRef.current.push(createShootingStar(canvas.width, canvas.height));
+      }
+      
+      // Update and draw existing shooting stars
+      shootingStarsRef.current = shootingStarsRef.current.filter((star) => {
+        if (!star.active) return false;
+        
+        // Update position
+        star.x += Math.cos(star.angle) * star.speed;
+        star.y += Math.sin(star.angle) * star.speed;
+        
+        // Check if off screen
+        if (star.x < -100 || star.x > canvas.width + 100 || star.y < -100 || star.y > canvas.height + 100) {
+          star.active = false;
+          return false;
+        }
+        
+        // Draw shooting star trail
+        const gradient = ctx.createLinearGradient(
+          star.x,
+          star.y,
+          star.x - Math.cos(star.angle) * star.length,
+          star.y - Math.sin(star.angle) * star.length
+        );
+        
+        const brightness = Math.floor(star.brightness * 255);
+        gradient.addColorStop(0, `rgba(${brightness}, ${brightness}, ${brightness}, 0.8)`);
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.9;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = `rgba(${brightness}, ${brightness}, ${brightness}, 0.8)`;
+        
+        ctx.beginPath();
+        ctx.moveTo(star.x, star.y);
+        ctx.lineTo(
+          star.x - Math.cos(star.angle) * star.length,
+          star.y - Math.sin(star.angle) * star.length
+        );
+        ctx.stroke();
+        
+        return true;
+      });
+      
+      // Reset for main star drawing
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
 
       // Calculate center point
       const centerX = canvas.width / 2;
