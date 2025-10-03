@@ -40,14 +40,14 @@ interface AnimationConfig {
 const DEFAULT_CONFIG: AnimationConfig = {
   pattern: 'star',
   charSize: 12,
-  density: 500,              // Increased for continuous lines
-  rotationSpeed: 0.0005,
-  pulseSpeed: 0.002,
-  pulseAmplitude: 0.15,
-  mouseInfluence: 0.3,
-  scrollInfluence: 0.2,
-  opacity: 0.3,              // Slightly increased for better visibility
-  glowIntensity: 8
+  density: 800,              // Increased for smooth elegant lines
+  rotationSpeed: 0,          // No rotation - static star
+  pulseSpeed: 0.001,         // Very slow gentle pulse
+  pulseAmplitude: 0.08,      // Subtle breathing effect
+  mouseInfluence: 0.15,      // Minimal mouse interaction
+  scrollInfluence: 0.1,      // Minimal scroll effect
+  opacity: 0.35,             // Good visibility
+  glowIntensity: 10
 };
 
 /**
@@ -66,62 +66,88 @@ const generatePattern = (
 
   switch (type) {
     case 'star':
-      // Four-pointed star - elongated vertically (like a cross/diamond)
-      // Top and bottom arms are much longer than left and right
-      const verticalRadius = size * 1.5;   // Long vertical arms
-      const horizontalRadius = size * 0.6; // Short horizontal arms
-      const innerRadius = size * 0.15;     // Inner connection point
+      // Elegant four-pointed star with smooth, flowing curves
+      // Long graceful vertical arms, shorter horizontal arms
+      const verticalRadius = size * 1.8;    // Long, elegant vertical reach
+      const horizontalRadius = size * 0.7;  // Shorter horizontal arms
+      const innerRadius = size * 0.12;      // Tight center for elegance
       
-      // Define 4 outer points and 4 inner points (8 vertices total)
-      // Order: Top outer, Top-right inner, Right outer, Bottom-right inner, 
-      //        Bottom outer, Bottom-left inner, Left outer, Top-left inner
-      const vertices: Array<{ x: number; y: number }> = [
-        // Top (0 degrees - pointing up)
-        { x: centerX, y: centerY - verticalRadius },
-        // Top-right inner
-        { x: centerX + innerRadius, y: centerY - innerRadius },
-        // Right (90 degrees)
-        { x: centerX + horizontalRadius, y: centerY },
-        // Bottom-right inner
-        { x: centerX + innerRadius, y: centerY + innerRadius },
-        // Bottom (180 degrees - pointing down)
-        { x: centerX, y: centerY + verticalRadius },
-        // Bottom-left inner
-        { x: centerX - innerRadius, y: centerY + innerRadius },
-        // Left (270 degrees)
-        { x: centerX - horizontalRadius, y: centerY },
-        // Top-left inner
-        { x: centerX - innerRadius, y: centerY - innerRadius }
+      // Create smooth curved paths using control points for Bezier-like curves
+      // We'll generate points along smooth curves instead of straight lines
+      
+      const segments = [
+        // Top arm - from center up
+        { start: { x: centerX, y: centerY }, end: { x: centerX, y: centerY - verticalRadius }, type: 'vertical' },
+        // Top to right - smooth curve
+        { start: { x: centerX, y: centerY - verticalRadius }, end: { x: centerX + horizontalRadius, y: centerY }, type: 'curve' },
+        // Right arm - from center right
+        { start: { x: centerX + horizontalRadius, y: centerY }, end: { x: centerX, y: centerY }, type: 'horizontal' },
+        // Right to bottom - smooth curve
+        { start: { x: centerX + horizontalRadius, y: centerY }, end: { x: centerX, y: centerY + verticalRadius }, type: 'curve' },
+        // Bottom arm - from center down
+        { start: { x: centerX, y: centerY + verticalRadius }, end: { x: centerX, y: centerY }, type: 'vertical' },
+        // Bottom to left - smooth curve
+        { start: { x: centerX, y: centerY + verticalRadius }, end: { x: centerX - horizontalRadius, y: centerY }, type: 'curve' },
+        // Left arm - from center left
+        { start: { x: centerX - horizontalRadius, y: centerY }, end: { x: centerX, y: centerY }, type: 'horizontal' },
+        // Left to top - smooth curve
+        { start: { x: centerX - horizontalRadius, y: centerY }, end: { x: centerX, y: centerY - verticalRadius }, type: 'curve' }
       ];
       
-      // Draw lines between vertices to form complete star outline
       const pointsPerSegment = Math.ceil(density / 8);
-      for (let i = 0; i < 8; i++) {
-        const start = vertices[i];
-        const end = vertices[(i + 1) % 8];
-        
-        // Interpolate points along each segment
+      
+      segments.forEach((segment, segIndex) => {
         for (let j = 0; j < pointsPerSegment; j++) {
           const t = j / pointsPerSegment;
-          const x = start.x + (end.x - start.x) * t;
-          const y = start.y + (end.y - start.y) * t;
           
-          // Depth based on position
-          // Outer points (even indices 0,2,4,6) are brighter
-          // Top and bottom (0,4) are brightest for emphasis
-          const isOuter = i % 2 === 0;
-          const nextIsOuter = ((i + 1) % 8) % 2 === 0;
+          let x, y, depth;
           
-          let depth;
-          if (isOuter && nextIsOuter) {
-            // Between two outer points - brightest
-            const isVertical = (i === 0 || i === 4); // Top or bottom
-            depth = isVertical ? 1.0 : 0.85; // Vertical points slightly brighter
-          } else if (!isOuter && !nextIsOuter) {
-            depth = 0.5; // Between two inner points - darker
+          if (segment.type === 'vertical') {
+            // Vertical arms - taper smoothly to points
+            const easeT = 1 - Math.pow(1 - t, 2); // Ease out for elegant taper
+            x = segment.start.x;
+            y = segment.start.y + (segment.end.y - segment.start.y) * easeT;
+            
+            // Depth increases towards the tip for emphasis
+            depth = 0.6 + (t * 0.4); // Brighten towards tips
+            
+            // Add subtle width variation for organic feel
+            const width = (1 - t) * innerRadius * 0.5;
+            x += (Math.random() - 0.5) * width;
+            
+          } else if (segment.type === 'horizontal') {
+            // Horizontal arms - shorter and elegant
+            const easeT = 1 - Math.pow(1 - t, 2);
+            x = segment.start.x + (segment.end.x - segment.start.x) * easeT;
+            y = segment.start.y;
+            
+            depth = 0.6 + (t * 0.3);
+            
+            const width = (1 - t) * innerRadius * 0.5;
+            y += (Math.random() - 0.5) * width;
+            
           } else {
-            // Transition between outer and inner
-            depth = isOuter ? 0.9 - (t * 0.4) : 0.5 + (t * 0.4);
+            // Curves - smooth quadratic bezier-like interpolation
+            const easeT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+            
+            // Control point for smooth curve (pull towards center)
+            const controlX = (segment.start.x + segment.end.x) / 2;
+            const controlY = (segment.start.y + segment.end.y) / 2;
+            const pullToCenter = 0.3; // How much to pull towards center
+            const finalControlX = controlX + (centerX - controlX) * pullToCenter;
+            const finalControlY = controlY + (centerY - controlY) * pullToCenter;
+            
+            // Quadratic bezier curve
+            const invT = 1 - easeT;
+            x = invT * invT * segment.start.x + 
+                2 * invT * easeT * finalControlX + 
+                easeT * easeT * segment.end.x;
+            y = invT * invT * segment.start.y + 
+                2 * invT * easeT * finalControlY + 
+                easeT * easeT * segment.end.y;
+            
+            // Depth gradient along curve
+            depth = 0.5 + Math.sin(t * Math.PI) * 0.3;
           }
           
           points.push({
@@ -131,7 +157,7 @@ const generatePattern = (
             depth
           });
         }
-      }
+      });
       break;
 
     case 'spiral':
@@ -304,31 +330,21 @@ export const AnimatedBackground = () => {
 
       // Draw each point with transformations
       points.forEach((point, index) => {
-        // Apply rotation around center
-        const rotatedX = 
-          centerX + 
-          (point.x - centerX) * Math.cos(rotation) - 
-          (point.y - centerY) * Math.sin(rotation);
-        const rotatedY = 
-          centerY + 
-          (point.x - centerX) * Math.sin(rotation) + 
-          (point.y - centerY) * Math.cos(rotation);
-
-        // Apply mouse influence - points move away from mouse
+        // No rotation - star remains static and centered
+        let finalX = point.x;
+        let finalY = point.y;
+        // Minimal mouse influence - subtle interaction
         const mouseX = mouseRef.current.x * canvas.width;
         const mouseY = mouseRef.current.y * canvas.height;
-        const dx = rotatedX - mouseX;
-        const dy = rotatedY - mouseY;
+        const dx = finalX - mouseX;
+        const dy = finalY - mouseY;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        const maxDistance = 200;
+        const maxDistance = 300;
         
-        let finalX = rotatedX;
-        let finalY = rotatedY;
-        
-        if (distance < maxDistance) {
+        if (distance < maxDistance && distance > 0) {
           const force = (1 - distance / maxDistance) * config.mouseInfluence;
-          finalX += (dx / distance) * force * 50;
-          finalY += (dy / distance) * force * 50;
+          finalX += (dx / distance) * force * 30;
+          finalY += (dy / distance) * force * 30;
         }
 
         // Apply scroll influence - pattern shifts based on scroll
