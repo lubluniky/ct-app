@@ -1,111 +1,199 @@
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import { useMemo, useRef, useState } from 'react';
-import * as THREE from 'three';
+import { useEffect, useRef, useState } from 'react';
 
-const ParticleRain = () => {
-  const particlesRef = useRef<THREE.InstancedMesh>(null);
-  const { viewport, pointer } = useThree();
-  const [mousePos] = useState(new THREE.Vector3());
+const TradingChart = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  const particleData = useMemo(() => {
-    const data = [];
-    const colors = ['#00ff00', '#ff8c42', '#00ccff'];
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     
-    for (let i = 0; i < 60; i++) {
-      data.push({
-        x: (Math.random() - 0.5) * 20,
-        y: Math.random() * 15 + 5,
-        z: (Math.random() - 0.5) * 15,
-        baseX: (Math.random() - 0.5) * 20,
-        baseZ: (Math.random() - 0.5) * 15,
-        speed: 0.015 + Math.random() * 0.02,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        length: 0.2 + Math.random() * 0.4,
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    // Generate trading data
+    const points: { x: number; y: number }[] = [];
+    const numPoints = 100;
+    let price = canvas.height / 2;
+    
+    for (let i = 0; i < numPoints; i++) {
+      price += (Math.random() - 0.5) * 30;
+      price = Math.max(canvas.height * 0.3, Math.min(canvas.height * 0.7, price));
+      points.push({
+        x: (i / numPoints) * canvas.width,
+        y: price
       });
     }
-    return data;
+    
+    let offset = 0;
+    
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw grid
+      ctx.strokeStyle = 'rgba(0, 255, 0, 0.05)';
+      ctx.lineWidth = 1;
+      
+      for (let i = 0; i < canvas.width; i += 50) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+      }
+      
+      for (let i = 0; i < canvas.height; i += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+      }
+      
+      // Draw chart line
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
+      ctx.lineWidth = 2;
+      
+      points.forEach((point, index) => {
+        const x = point.x - offset;
+        if (index === 0) {
+          ctx.moveTo(x, point.y);
+        } else {
+          ctx.lineTo(x, point.y);
+        }
+      });
+      
+      ctx.stroke();
+      
+      // Fill area under chart
+      ctx.lineTo(points[points.length - 1].x - offset, canvas.height);
+      ctx.lineTo(points[0].x - offset, canvas.height);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(0, 255, 0, 0.05)';
+      ctx.fill();
+      
+      offset += 0.5;
+      if (offset > canvas.width / numPoints) {
+        offset = 0;
+        // Add new point
+        const lastPoint = points[points.length - 1];
+        let newPrice = lastPoint.y + (Math.random() - 0.5) * 30;
+        newPrice = Math.max(canvas.height * 0.3, Math.min(canvas.height * 0.7, newPrice));
+        points.shift();
+        points.push({
+          x: lastPoint.x + canvas.width / numPoints,
+          y: newPrice
+        });
+      }
+      
+      requestAnimationFrame(animate);
+    };
+    
+    animate();
+    
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+    };
   }, []);
-
-  useFrame(() => {
-    if (!particlesRef.current) return;
-    
-    mousePos.set(
-      (pointer.x * viewport.width) / 2,
-      (pointer.y * viewport.height) / 2,
-      0
-    );
-    
-    const dummy = new THREE.Object3D();
-    
-    particleData.forEach((particle, i) => {
-      particle.y -= particle.speed;
-      
-      if (particle.y < -10) {
-        particle.y = 15;
-        particle.x = (Math.random() - 0.5) * 20;
-        particle.z = (Math.random() - 0.5) * 15;
-        particle.baseX = particle.x;
-        particle.baseZ = particle.z;
-      }
-      
-      // Mouse interaction
-      const dx = mousePos.x - particle.x;
-      const dy = mousePos.y - particle.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const maxDistance = 3;
-      
-      if (distance < maxDistance) {
-        const force = (1 - distance / maxDistance) * 0.5;
-        particle.x -= dx * force * 0.1;
-        particle.z -= (mousePos.z - particle.z) * force * 0.1;
-      } else {
-        particle.x += (particle.baseX - particle.x) * 0.05;
-        particle.z += (particle.baseZ - particle.z) * 0.05;
-      }
-      
-      dummy.position.set(particle.x, particle.y, particle.z);
-      dummy.scale.set(0.02, particle.length, 0.02);
-      dummy.rotation.set(0, 0, Math.PI / 2);
-      dummy.updateMatrix();
-      
-      particlesRef.current!.setMatrixAt(i, dummy.matrix);
-    });
-    
-    particlesRef.current.instanceMatrix.needsUpdate = true;
-  });
-
-  return (
-    <instancedMesh ref={particlesRef} args={[undefined, undefined, 60]}>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshBasicMaterial color="#00ff00" transparent opacity={0.25} />
-    </instancedMesh>
-  );
+  
+  return <canvas ref={canvasRef} className="absolute inset-0" />;
 };
 
-const Scene = () => {
+const ASCIIArt = () => {
+  const [chars, setChars] = useState<Array<{ char: string; x: number; y: number; opacity: number; delay: number }>>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const symbols = ['▲', '▼', '│', '─', '┼', '█', '▒', '░', '$', '%', '↑', '↓', '≈', '∿', '~', '•', '○', '◆', '■'];
+    const newChars: Array<{ char: string; x: number; y: number; opacity: number; delay: number }> = [];
+    
+    const cols = Math.floor(window.innerWidth / 20);
+    const rows = Math.floor(window.innerHeight / 30);
+    
+    for (let i = 0; i < cols * rows * 0.15; i++) {
+      newChars.push({
+        char: symbols[Math.floor(Math.random() * symbols.length)],
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        opacity: 0,
+        delay: Math.random() * 2
+      });
+    }
+    
+    setChars(newChars);
+    
+    // Animate chars in
+    const timeout = setTimeout(() => {
+      setChars(prev => prev.map(char => ({
+        ...char,
+        opacity: Math.random() * 0.3 + 0.1
+      })));
+    }, 100);
+    
+    // Random flicker
+    const interval = setInterval(() => {
+      setChars(prev => prev.map(char => ({
+        ...char,
+        opacity: Math.random() > 0.7 ? Math.random() * 0.4 : char.opacity
+      })));
+    }, 3000);
+    
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, []);
+  
   return (
-    <>
-      <ambientLight intensity={0.1} />
-      <ParticleRain />
-      <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.2} />
-    </>
+    <div ref={containerRef} className="absolute inset-0 pointer-events-none overflow-hidden">
+      {chars.map((char, i) => (
+        <div
+          key={i}
+          className="absolute font-mono text-primary transition-opacity duration-1000"
+          style={{
+            left: `${char.x}%`,
+            top: `${char.y}%`,
+            opacity: char.opacity,
+            fontSize: `${Math.random() * 10 + 14}px`,
+            transitionDelay: `${char.delay}s`,
+            textShadow: '0 0 10px rgba(0, 255, 0, 0.5)'
+          }}
+        >
+          {char.char}
+        </div>
+      ))}
+    </div>
   );
 };
 
 export const AnimatedBackground = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  useEffect(() => {
+    // Trigger entrance animation
+    const timeout = setTimeout(() => {
+      setIsVisible(true);
+    }, 100);
+    
+    return () => clearTimeout(timeout);
+  }, []);
+  
   return (
-    <div className="fixed inset-0 overflow-hidden" style={{ pointerEvents: 'none' }}>
+    <div className={`fixed inset-0 pointer-events-none overflow-hidden transition-opacity duration-1000 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 grid-pattern opacity-10" />
       
-      {/* 3D Canvas */}
-      <Canvas
-        camera={{ position: [0, 0, 8], fov: 50 }}
-        style={{ background: 'transparent', pointerEvents: 'auto' }}
-      >
-        <Scene />
-      </Canvas>
+      {/* Trading Chart */}
+      <TradingChart />
+      
+      {/* ASCII Art Overlay */}
+      <ASCIIArt />
     </div>
   );
 };
