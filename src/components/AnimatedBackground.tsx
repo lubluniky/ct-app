@@ -51,8 +51,9 @@ const DEFAULT_CONFIG: AnimationConfig = {
 };
 
 /**
- * Generate pattern coordinates
+ * Generate pattern coordinates with depth information
  * Returns array of points forming the specified pattern
+ * Each point includes a depth value (0-1) for grayscale shading
  */
 const generatePattern = (
   type: PatternType,
@@ -60,32 +61,65 @@ const generatePattern = (
   centerX: number,
   centerY: number,
   size: number
-): Array<{ x: number; y: number; char: string }> => {
-  const points: Array<{ x: number; y: number; char: string }> = [];
+): Array<{ x: number; y: number; char: string; depth: number }> => {
+  const points: Array<{ x: number; y: number; char: string; depth: number }> = [];
 
   switch (type) {
     case 'star':
-      // Five-pointed star pattern
+      // Five-pointed star pattern with proper geometry
+      const starPoints = 5;
+      const outerRadius = size;
+      const innerRadius = size * 0.38; // Golden ratio for aesthetically pleasing star
+      
+      // Generate points along star outline
       for (let i = 0; i < density; i++) {
-        const angle = (i / density) * Math.PI * 2;
-        const pointIndex = Math.floor((i / density) * 10) % 10;
-        const isOuter = pointIndex % 2 === 0;
-        const radius = isOuter ? size : size * 0.4;
+        const segmentProgress = (i / density) * starPoints;
+        const currentPoint = Math.floor(segmentProgress);
+        const nextPoint = (currentPoint + 1) % starPoints;
+        const progress = segmentProgress - currentPoint;
         
-        const starAngle = angle * 5; // Five points
-        const x = centerX + Math.cos(starAngle) * radius;
-        const y = centerY + Math.sin(starAngle) * radius;
+        // Alternate between outer and inner points
+        const angle1 = (currentPoint / starPoints) * Math.PI * 2 - Math.PI / 2;
+        const angle2 = ((currentPoint + 0.5) / starPoints) * Math.PI * 2 - Math.PI / 2;
+        const angle3 = (nextPoint / starPoints) * Math.PI * 2 - Math.PI / 2;
+        
+        let x, y, depth;
+        
+        if (progress < 0.5) {
+          // From outer point to inner point
+          const t = progress * 2;
+          const startX = centerX + Math.cos(angle1) * outerRadius;
+          const startY = centerY + Math.sin(angle1) * outerRadius;
+          const endX = centerX + Math.cos(angle2) * innerRadius;
+          const endY = centerY + Math.sin(angle2) * innerRadius;
+          
+          x = startX + (endX - startX) * t;
+          y = startY + (endY - startY) * t;
+          depth = 1 - t * 0.6; // Outer points are brighter
+        } else {
+          // From inner point to next outer point
+          const t = (progress - 0.5) * 2;
+          const startX = centerX + Math.cos(angle2) * innerRadius;
+          const startY = centerY + Math.sin(angle2) * innerRadius;
+          const endX = centerX + Math.cos(angle3) * outerRadius;
+          const endY = centerY + Math.sin(angle3) * outerRadius;
+          
+          x = startX + (endX - startX) * t;
+          y = startY + (endY - startY) * t;
+          depth = 0.4 + t * 0.6; // Gradually brighten towards outer point
+        }
         
         points.push({
           x,
           y,
-          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)]
+          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)],
+          depth
         });
       }
       break;
 
     case 'spiral':
-      // Fibonacci spiral pattern
+      // Fibonacci spiral pattern with depth gradient
       for (let i = 0; i < density; i++) {
         const t = i / density;
         const angle = t * Math.PI * 8; // Multiple rotations
@@ -94,58 +128,78 @@ const generatePattern = (
         const x = centerX + Math.cos(angle) * radius;
         const y = centerY + Math.sin(angle) * radius;
         
+        // Depth increases from center to edge
+        const depth = t;
+        
         points.push({
           x,
           y,
-          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)]
+          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)],
+          depth
         });
       }
       break;
 
     case 'wave':
-      // Sine wave pattern
+      // Sine wave pattern with depth based on wave height
       const waves = 4;
       for (let i = 0; i < density; i++) {
         const t = (i / density) * waves * Math.PI * 2;
         const x = centerX + (i / density - 0.5) * size * 2;
-        const y = centerY + Math.sin(t) * size * 0.3;
+        const waveHeight = Math.sin(t);
+        const y = centerY + waveHeight * size * 0.3;
+        
+        // Depth based on wave amplitude (peaks are brighter)
+        const depth = (waveHeight + 1) / 2;
         
         points.push({
           x,
           y,
-          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)]
+          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)],
+          depth
         });
       }
       break;
 
     case 'grid':
-      // Geometric grid pattern
+      // Geometric grid pattern with radial depth gradient
       const gridSize = Math.floor(Math.sqrt(density));
       for (let i = 0; i < gridSize; i++) {
         for (let j = 0; j < gridSize; j++) {
           const x = centerX + (i / gridSize - 0.5) * size * 2;
           const y = centerY + (j / gridSize - 0.5) * size * 2;
           
+          // Distance from center determines depth
+          const dx = (i / gridSize - 0.5);
+          const dy = (j / gridSize - 0.5);
+          const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
+          const depth = 1 - Math.min(distanceFromCenter, 1);
+          
           points.push({
             x,
             y,
-            char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)]
+            char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)],
+            depth
           });
         }
       }
       break;
 
     case 'circle':
-      // Perfect circle pattern
+      // Perfect circle pattern with smooth gradient
       for (let i = 0; i < density; i++) {
         const angle = (i / density) * Math.PI * 2;
         const x = centerX + Math.cos(angle) * size;
         const y = centerY + Math.sin(angle) * size;
         
+        // Depth varies smoothly around circle
+        const depth = (Math.sin(angle * 2) + 1) / 2;
+        
         points.push({
           x,
           y,
-          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)]
+          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)],
+          depth
         });
       }
       break;
@@ -231,9 +285,6 @@ export const AnimatedBackground = () => {
       ctx.font = `${config.charSize}px monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = '#ffffff';
-      ctx.shadowBlur = config.glowIntensity;
 
       // Draw each point with transformations
       points.forEach((point, index) => {
@@ -268,7 +319,30 @@ export const AnimatedBackground = () => {
         const scrollOffset = scrollRef.current * config.scrollInfluence * 0.1;
         finalY += Math.sin(index * 0.1 + scrollOffset) * 10;
 
-        // Draw character with opacity
+        // Calculate grayscale color based on depth
+        // Depth ranges from 0 (dark) to 1 (bright)
+        // Using full range: black → dark gray → gray → light gray → white
+        const baseGray = Math.floor(point.depth * 255);
+        
+        // Add pulsing variation to create more dynamic shading
+        const pulseVariation = (Math.sin(time * config.pulseSpeed * 2 + index * 0.1) + 1) * 0.15;
+        const adjustedGray = Math.floor(Math.min(255, baseGray * (1 + pulseVariation)));
+        
+        // Create grayscale color
+        const grayValue = `rgb(${adjustedGray}, ${adjustedGray}, ${adjustedGray})`;
+        
+        // Apply color with glow effect for brighter tones
+        ctx.fillStyle = grayValue;
+        
+        // Add subtle glow only to brighter characters
+        if (adjustedGray > 128) {
+          ctx.shadowColor = grayValue;
+          ctx.shadowBlur = (adjustedGray / 255) * config.glowIntensity;
+        } else {
+          ctx.shadowBlur = 0;
+        }
+
+        // Draw character with overall opacity
         ctx.globalAlpha = config.opacity;
         ctx.fillText(point.char, finalX, finalY);
       });
