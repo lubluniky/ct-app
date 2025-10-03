@@ -66,27 +66,39 @@ const generatePattern = (
 
   switch (type) {
     case 'star':
-      // Five-pointed star pattern - simplified and reliable
-      const starPoints = 5;
-      const outerRadius = size;
-      const innerRadius = size * 0.4;
+      // Four-pointed star - elongated vertically (like a cross/diamond)
+      // Top and bottom arms are much longer than left and right
+      const verticalRadius = size * 1.5;   // Long vertical arms
+      const horizontalRadius = size * 0.6; // Short horizontal arms
+      const innerRadius = size * 0.15;     // Inner connection point
       
-      // Generate all 10 vertices (5 outer + 5 inner)
-      const vertices: Array<{ x: number; y: number }> = [];
-      for (let i = 0; i < starPoints * 2; i++) {
-        const angle = (i / (starPoints * 2)) * Math.PI * 2 - Math.PI / 2;
-        const radius = i % 2 === 0 ? outerRadius : innerRadius;
-        vertices.push({
-          x: centerX + Math.cos(angle) * radius,
-          y: centerY + Math.sin(angle) * radius
-        });
-      }
+      // Define 4 outer points and 4 inner points (8 vertices total)
+      // Order: Top outer, Top-right inner, Right outer, Bottom-right inner, 
+      //        Bottom outer, Bottom-left inner, Left outer, Top-left inner
+      const vertices: Array<{ x: number; y: number }> = [
+        // Top (0 degrees - pointing up)
+        { x: centerX, y: centerY - verticalRadius },
+        // Top-right inner
+        { x: centerX + innerRadius, y: centerY - innerRadius },
+        // Right (90 degrees)
+        { x: centerX + horizontalRadius, y: centerY },
+        // Bottom-right inner
+        { x: centerX + innerRadius, y: centerY + innerRadius },
+        // Bottom (180 degrees - pointing down)
+        { x: centerX, y: centerY + verticalRadius },
+        // Bottom-left inner
+        { x: centerX - innerRadius, y: centerY + innerRadius },
+        // Left (270 degrees)
+        { x: centerX - horizontalRadius, y: centerY },
+        // Top-left inner
+        { x: centerX - innerRadius, y: centerY - innerRadius }
+      ];
       
-      // Draw lines between vertices to form complete star
-      const pointsPerSegment = Math.ceil(density / 10);
-      for (let i = 0; i < 10; i++) {
+      // Draw lines between vertices to form complete star outline
+      const pointsPerSegment = Math.ceil(density / 8);
+      for (let i = 0; i < 8; i++) {
         const start = vertices[i];
-        const end = vertices[(i + 1) % 10];
+        const end = vertices[(i + 1) % 8];
         
         // Interpolate points along each segment
         for (let j = 0; j < pointsPerSegment; j++) {
@@ -94,14 +106,17 @@ const generatePattern = (
           const x = start.x + (end.x - start.x) * t;
           const y = start.y + (end.y - start.y) * t;
           
-          // Depth based on whether it's outer or inner vertex
-          // Outer points (even indices) are brighter
+          // Depth based on position
+          // Outer points (even indices 0,2,4,6) are brighter
+          // Top and bottom (0,4) are brightest for emphasis
           const isOuter = i % 2 === 0;
-          const nextIsOuter = ((i + 1) % 10) % 2 === 0;
+          const nextIsOuter = ((i + 1) % 8) % 2 === 0;
           
           let depth;
           if (isOuter && nextIsOuter) {
-            depth = 0.9; // Between two outer points - brightest
+            // Between two outer points - brightest
+            const isVertical = (i === 0 || i === 4); // Top or bottom
+            depth = isVertical ? 1.0 : 0.85; // Vertical points slightly brighter
           } else if (!isOuter && !nextIsOuter) {
             depth = 0.5; // Between two inner points - darker
           } else {
