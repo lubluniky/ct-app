@@ -119,11 +119,54 @@
     }
   }
 
+  @keyframes slide-up {
+    0% {
+      transform: translateY(100vh);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.6;
+    }
+    90% {
+      opacity: 0.6;
+    }
+    100% {
+      transform: translateY(-100vh);
+      opacity: 0;
+    }
+  }
+
+  @keyframes draw-chart {
+    0% {
+      stroke-dashoffset: 1000;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes flicker {
+    0%, 100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
   .animate-float {
     animation: float 20s ease-in-out infinite;
   }
 
   .animate-pulse-glow {
     animation: pulse-glow 4s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 15s linear infinite;
+  }
+
+  .animate-flicker {
+    animation: flicker 3s ease-in-out infinite;
   }
 }
