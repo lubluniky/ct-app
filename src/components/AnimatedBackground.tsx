@@ -66,88 +66,83 @@ const generatePattern = (
 
   switch (type) {
     case 'star':
-      // Elegant four-pointed star with smooth, flowing curves
+      // Elegant four-pointed star with sharp, crisp tips
       // Long graceful vertical arms, shorter horizontal arms
       const verticalRadius = size * 1.8;    // Long, elegant vertical reach
       const horizontalRadius = size * 0.7;  // Shorter horizontal arms
-      const innerRadius = size * 0.12;      // Tight center for elegance
+      const innerRadius = size * 0.08;      // Very tight center for sharp transitions
       
-      // Create smooth curved paths using control points for Bezier-like curves
-      // We'll generate points along smooth curves instead of straight lines
-      
-      const segments = [
-        // Top arm - from center up
-        { start: { x: centerX, y: centerY }, end: { x: centerX, y: centerY - verticalRadius }, type: 'vertical' },
-        // Top to right - smooth curve
-        { start: { x: centerX, y: centerY - verticalRadius }, end: { x: centerX + horizontalRadius, y: centerY }, type: 'curve' },
-        // Right arm - from center right
-        { start: { x: centerX + horizontalRadius, y: centerY }, end: { x: centerX, y: centerY }, type: 'horizontal' },
-        // Right to bottom - smooth curve
-        { start: { x: centerX + horizontalRadius, y: centerY }, end: { x: centerX, y: centerY + verticalRadius }, type: 'curve' },
-        // Bottom arm - from center down
-        { start: { x: centerX, y: centerY + verticalRadius }, end: { x: centerX, y: centerY }, type: 'vertical' },
-        // Bottom to left - smooth curve
-        { start: { x: centerX, y: centerY + verticalRadius }, end: { x: centerX - horizontalRadius, y: centerY }, type: 'curve' },
-        // Left arm - from center left
-        { start: { x: centerX - horizontalRadius, y: centerY }, end: { x: centerX, y: centerY }, type: 'horizontal' },
-        // Left to top - smooth curve
-        { start: { x: centerX - horizontalRadius, y: centerY }, end: { x: centerX, y: centerY - verticalRadius }, type: 'curve' }
+      // Define the four sharp points and create segments between them
+      const vertices = [
+        { x: centerX, y: centerY - verticalRadius, type: 'tip' },           // Top tip
+        { x: centerX + innerRadius, y: centerY - innerRadius, type: 'inner' },
+        { x: centerX + horizontalRadius, y: centerY, type: 'tip' },         // Right tip
+        { x: centerX + innerRadius, y: centerY + innerRadius, type: 'inner' },
+        { x: centerX, y: centerY + verticalRadius, type: 'tip' },           // Bottom tip
+        { x: centerX - innerRadius, y: centerY + innerRadius, type: 'inner' },
+        { x: centerX - horizontalRadius, y: centerY, type: 'tip' },         // Left tip
+        { x: centerX - innerRadius, y: centerY - innerRadius, type: 'inner' }
       ];
       
-      const pointsPerSegment = Math.ceil(density / 8);
+      const totalVertices = vertices.length;
+      const pointsPerSegment = Math.ceil(density / totalVertices);
       
-      segments.forEach((segment, segIndex) => {
+      for (let i = 0; i < totalVertices; i++) {
+        const start = vertices[i];
+        const end = vertices[(i + 1) % totalVertices];
+        
+        // Determine if this segment leads to or from a tip
+        const isToTip = end.type === 'tip';
+        const isFromTip = start.type === 'tip';
+        
         for (let j = 0; j < pointsPerSegment; j++) {
           const t = j / pointsPerSegment;
           
           let x, y, depth;
           
-          if (segment.type === 'vertical') {
-            // Vertical arms - taper smoothly to points
-            const easeT = 1 - Math.pow(1 - t, 2); // Ease out for elegant taper
-            x = segment.start.x;
-            y = segment.start.y + (segment.end.y - segment.start.y) * easeT;
+          if (isFromTip) {
+            // From tip to inner - use exponential easing for sharp point
+            // This creates a rapid expansion from the tip
+            const sharpT = Math.pow(t, 0.4); // Sharp at start, gradual expansion
+            x = start.x + (end.x - start.x) * sharpT;
+            y = start.y + (end.y - start.y) * sharpT;
             
-            // Depth increases towards the tip for emphasis
-            depth = 0.6 + (t * 0.4); // Brighten towards tips
+            // Brightest at tip, fading towards center
+            depth = 1.0 - (t * 0.5);
             
-            // Add subtle width variation for organic feel
-            const width = (1 - t) * innerRadius * 0.5;
-            x += (Math.random() - 0.5) * width;
+            // Very minimal width variation near tip for sharpness
+            const width = Math.pow(t, 2) * innerRadius * 0.3;
+            if (Math.abs(end.x - start.x) > Math.abs(end.y - start.y)) {
+              // Horizontal variation
+              y += (Math.random() - 0.5) * width;
+            } else {
+              // Vertical variation
+              x += (Math.random() - 0.5) * width;
+            }
             
-          } else if (segment.type === 'horizontal') {
-            // Horizontal arms - shorter and elegant
-            const easeT = 1 - Math.pow(1 - t, 2);
-            x = segment.start.x + (segment.end.x - segment.start.x) * easeT;
-            y = segment.start.y;
+          } else if (isToTip) {
+            // From inner to tip - use exponential easing for sharp convergence
+            // This creates points that taper to a fine point
+            const sharpT = Math.pow(t, 2.5); // Gradual at start, very sharp at end
+            x = start.x + (end.x - start.x) * sharpT;
+            y = start.y + (end.y - start.y) * sharpT;
             
-            depth = 0.6 + (t * 0.3);
+            // Brighten as we approach tip
+            depth = 0.5 + (t * 0.5);
             
-            const width = (1 - t) * innerRadius * 0.5;
-            y += (Math.random() - 0.5) * width;
+            // Converge to zero width at tip
+            const width = Math.pow(1 - t, 2) * innerRadius * 0.3;
+            if (Math.abs(end.x - start.x) > Math.abs(end.y - start.y)) {
+              y += (Math.random() - 0.5) * width;
+            } else {
+              x += (Math.random() - 0.5) * width;
+            }
             
           } else {
-            // Curves - smooth quadratic bezier-like interpolation
-            const easeT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-            
-            // Control point for smooth curve (pull towards center)
-            const controlX = (segment.start.x + segment.end.x) / 2;
-            const controlY = (segment.start.y + segment.end.y) / 2;
-            const pullToCenter = 0.3; // How much to pull towards center
-            const finalControlX = controlX + (centerX - controlX) * pullToCenter;
-            const finalControlY = controlY + (centerY - controlY) * pullToCenter;
-            
-            // Quadratic bezier curve
-            const invT = 1 - easeT;
-            x = invT * invT * segment.start.x + 
-                2 * invT * easeT * finalControlX + 
-                easeT * easeT * segment.end.x;
-            y = invT * invT * segment.start.y + 
-                2 * invT * easeT * finalControlY + 
-                easeT * easeT * segment.end.y;
-            
-            // Depth gradient along curve
-            depth = 0.5 + Math.sin(t * Math.PI) * 0.3;
+            // Between two inner points - straight connection
+            x = start.x + (end.x - start.x) * t;
+            y = start.y + (end.y - start.y) * t;
+            depth = 0.5;
           }
           
           points.push({
@@ -157,7 +152,7 @@ const generatePattern = (
             depth
           });
         }
-      });
+      }
       break;
 
     case 'spiral':
