@@ -1,6 +1,8 @@
 import { Hero } from "@/components/Hero";
-import { Skills } from "@/components/Skills";
-import { Projects } from "@/components/Projects";
+import { Philosophy } from "@/components/Philosophy";
+import { Experience } from "@/components/Experience";
+import { Ideas } from "@/components/Ideas";
+import { Models } from "@/components/Models";
 import { Contact } from "@/components/Contact";
 
 const Index = () => {
@@ -10,43 +12,37 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="text-xl font-bold">BORKISS</div>
           <div className="flex gap-8">
-            <a href="#work" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Work
+            <a href="#philosophy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Philosophy
             </a>
-            <a href="#skills" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Skills
+            <a href="#experience" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Experience
             </a>
-            <a href="#contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Contact
+            <a href="#connect" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Connect
             </a>
           </div>
         </div>
       </nav>
       
       <Hero />
-      <div id="skills">
-        <Skills />
+      <div id="philosophy">
+        <Philosophy />
       </div>
-      <div id="work">
-        <Projects />
+      <div id="experience">
+        <Experience />
       </div>
-      <div id="contact">
+      <Ideas />
+      <Models />
+      <div id="connect">
         <Contact />
       </div>
       
       <footer className="border-t border-border py-8">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 text-center">
           <p className="text-sm text-muted-foreground">
             © 2025 borkiss.trade — All rights reserved
           </p>
-          <div className="flex gap-6">
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Privacy
-            </a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Terms
-            </a>
-          </div>
         </div>
       </footer>
     </div>
