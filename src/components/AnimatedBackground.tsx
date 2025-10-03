@@ -1,587 +1,226 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
- * Classic ASCII Art Animations
- * Uses only standard ASCII characters: A-Z, a-z, 0-9, and basic punctuation
- * No Unicode symbols or rasterization - pure text-based art like old terminals
+ * Full-Screen Dense ASCII Wave Animation
+ * Creates an immersive "ocean" of ASCII characters with flowing colors
+ * Every part of the screen is animated - no empty spaces
  */
 
-const ASCII_ANIMATIONS = {
-  // Rotating 3D Cube - using letters and slashes for structure
-  rotatingCube: [
-    `
-       -------
-      /      /|
-     /      / |
-    -------   |
-    |      |  |
-    |      | /
-    |      |/
-    -------
-    `,
-    `
-       -------
-      /|     /|
-     / |    / |
-    -------   |
-    |  |   |  |
-    |  ----+--+
-    | /    | /
-    |/     |/
-    -------
-    `,
-    `
-      .-------.
-     /       /|
-    /       / |
-   '-------'  |
-   |       |  |
-   |       |  '
-   |       | /
-   '-------'
-    `,
-    `
-      .------.
-     /|     /|
-    / |    / |
-   '------'  |
-   |  |   |  |
-   |  '---|--'
-   | /    | /
-   |/     |/
-   '------'
-    `
-  ],
+// ASCII character set - only classic letters and punctuation
+const ASCII_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-=*/\\|:;.,<>()[]{}';
 
-  // Walking trader character
-  walkingTrader: [
-    `
-      O
-     /|\\
-     / \\
-    `,
-    `
-      O
-     /|\\
-      |
-     / \\
-    `,
-    `
-      O
-     \\|/
-      |
-     / \\
-    `,
-    `
-      O
-      |\\
-     /|
-      / \\
-    `,
-    `
-      O
-     /|
-      |\\
-     / \\
-    `
-  ],
-
-  // Trading chart going up
-  tradingChart: [
-    `
-    PRICE CHART
-    
-         /
-        /
-       /
-      /
-     .
-    `,
-    `
-    PRICE CHART
-    
-          /
-         /
-        /
-       .
-      /
-    `,
-    `
-    PRICE CHART
-    
-           /
-          /
-         .
-        /
-       /
-    `,
-    `
-    PRICE CHART
-    
-            .
-           /
-          /
-         /
-        /
-    `
-  ],
-
-  // Rocket launching (trading to the moon)
-  rocket: [
-    `
-       /\\
-      /  \\
-     |BULL|
-     |    |
-      \\  /
-       \\/
-    `,
-    `
-       /\\
-      /  \\
-     |BULL|
-     |    |
-      \\  /
-       MM
-    `,
-    `
-       /\\
-      /  \\
-     |BULL|
-      \\  /
-       MM
-       MM
-    `,
-    `
-       /\\
-      /  \\
-      \\  /
-       MM
-       MM
-       ..
-    `
-  ],
-
-  // Dollar sign pulsing
-  dollar: [
-    `
-      SSS
-     S   S
-      S
-       S
-     S   S
-      SSS
-    `,
-    `
-      ###
-     #   #
-      #
-       #
-     #   #
-      ###
-    `,
-    `
-      ***
-     *   *
-      *
-       *
-     *   *
-      ***
-    `,
-    `
-      ===
-     =   =
-      =
-       =
-     =   =
-      ===
-    `
-  ],
-
-  // Candlestick chart animation
-  candlesticks: [
-    `
-      |    |    |    |
-      |    #    |    #
-      #    #    #    #
-      #    |    #    |
-      |    |    |    |
-    `,
-    `
-      |    |    |    |
-      #    |    #    |
-      #    #    #    #
-      |    #    |    #
-      |    |    |    |
-    `,
-    `
-      |    |    |    |
-      |    #    |    #
-      #    #    #    #
-      #    #    #    |
-      |    |    |    |
-    `,
-    `
-      |    |    |    |
-      #    |    #    |
-      #    #    #    #
-      #    #    |    #
-      |    |    |    |
-    `
-  ],
-
-  // Percentage increasing
-  percentage: [
-    `
-     +2.5%
-    `,
-    `
-     +5.0%
-    `,
-    `
-     +7.5%
-    `,
-    `
-    +10.0%
-    `
-  ],
-
-  // Bull running
-  bull: [
-    `
-    (__)
-    (oo)
-     \\/
-    `,
-    `
-     __)
-    (oo)
-     \\/
-    `,
-    `
-    __)
-    oo)
-     \\/
-    `,
-    `
-    ___)
-    (oo)
-     \\/
-    `
-  ],
-
-  // Loading bar for trading
-  loadingBar: [
-    `
-    [          ]
-    `,
-    `
-    [=         ]
-    `,
-    `
-    [==        ]
-    `,
-    `
-    [===       ]
-    `,
-    `
-    [====      ]
-    `,
-    `
-    [=====     ]
-    `,
-    `
-    [======    ]
-    `,
-    `
-    [=======   ]
-    `,
-    `
-    [========  ]
-    `,
-    `
-    [========= ]
-    `,
-    `
-    [==========]
-    `
-  ],
-
-  // Arrow pointing up (bullish)
-  arrowUp: [
-    `
-        ^
-       / \\
-      /   \\
-     /     \\
-    /       \\
-    `,
-    `
-        A
-       / \\
-      /   \\
-     /     \\
-    /       \\
-    `,
-    `
-        ^
-       /^\\
-      / ^ \\
-     /  ^  \\
-    /   ^   \\
-    `,
-    `
-        ^
-       ^^^
-      ^^^^^
-     ^^^^^^^
-    ^^^^^^^^^
-    `
-  ]
-};
-
-interface ASCIIAnimationProps {
-  animation: keyof typeof ASCII_ANIMATIONS;
-  fps?: number;
-  scale?: number;
-  color?: string;
-  position: { x: string; y: string };
+interface AnimationConfig {
+  // Density: character size (smaller = more dense)
+  charSize: number;
+  // Wave animation speed
+  waveSpeed: number;
+  // Wave amplitude (how much characters move)
+  waveAmplitude: number;
+  // Color animation speed
+  colorSpeed: number;
+  // Color palette (HSL hue values)
+  colorPalette: {
+    start: number;  // Starting hue
+    end: number;    // Ending hue
+    saturation: number;
+    lightness: number;
+  };
 }
 
-/**
- * Single ASCII Animation Component
- * Cycles through frames using requestAnimationFrame for smooth performance
- */
-const ASCIIAnimation = ({ 
-  animation, 
-  fps = 8, 
-  scale = 1, 
-  color = '#00ff00', 
-  position 
-}: ASCIIAnimationProps) => {
-  const [currentFrame, setCurrentFrame] = useState(0);
-  const frameRef = useRef<number>(0);
-  const lastTimeRef = useRef<number>(0);
+const ASCIIWaveCanvas = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationFrameRef = useRef<number>();
+
+  // Animation configuration - easy to adjust
+  const config: AnimationConfig = {
+    charSize: 14,           // Character size in pixels
+    waveSpeed: 0.02,        // Speed of wave motion
+    waveAmplitude: 15,      // How much the wave moves
+    colorSpeed: 0.01,       // Speed of color transitions
+    colorPalette: {
+      start: 120,           // Green hue
+      end: 30,              // Orange hue
+      saturation: 80,       // Color intensity
+      lightness: 50         // Brightness
+    }
+  };
 
   useEffect(() => {
-    const frames = ASCII_ANIMATIONS[animation];
-    const frameDuration = 1000 / fps;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const animate = (timestamp: number) => {
-      // Only update frame when enough time has passed
-      if (timestamp - lastTimeRef.current >= frameDuration) {
-        setCurrentFrame((prev) => (prev + 1) % frames.length);
-        lastTimeRef.current = timestamp;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas size to fill screen
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Calculate grid dimensions
+    const cols = Math.ceil(canvas.width / config.charSize);
+    const rows = Math.ceil(canvas.height / config.charSize);
+
+    // Initialize character grid - each cell gets a random character
+    const charGrid: string[][] = [];
+    for (let y = 0; y < rows; y++) {
+      charGrid[y] = [];
+      for (let x = 0; x < cols; x++) {
+        charGrid[y][x] = ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)];
       }
-      frameRef.current = requestAnimationFrame(animate);
+    }
+
+    // Animation time tracker
+    let time = 0;
+
+    /**
+     * Main animation loop
+     * Uses requestAnimationFrame for smooth 60fps performance
+     */
+    const animate = () => {
+      time += 0.016; // Approximate time delta for 60fps
+
+      // Clear canvas with semi-transparent black for trailing effect
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Set font for ASCII characters
+      ctx.font = `${config.charSize}px monospace`;
+      ctx.textBaseline = 'top';
+
+      // Draw each character with wave animation and color gradient
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          // Calculate base position
+          const baseX = x * config.charSize;
+          const baseY = y * config.charSize;
+
+          // Wave motion - creates flowing effect
+          // Using sine waves with different frequencies for natural movement
+          const waveX = Math.sin(time * config.waveSpeed + y * 0.1) * config.waveAmplitude;
+          const waveY = Math.cos(time * config.waveSpeed * 0.8 + x * 0.1) * config.waveAmplitude * 0.5;
+
+          // Final position with wave offset
+          const finalX = baseX + waveX;
+          const finalY = baseY + waveY;
+
+          // Calculate color based on position and time
+          // Creates smooth gradient that flows across screen
+          const colorPhase = (x / cols) * (y / rows) + time * config.colorSpeed;
+          const hue = config.colorPalette.start + 
+                     (Math.sin(colorPhase * Math.PI) * 0.5 + 0.5) * 
+                     (config.colorPalette.end - config.colorPalette.start);
+          
+          // Add depth variation - characters further from center are dimmer
+          const centerX = cols / 2;
+          const centerY = rows / 2;
+          const distanceFromCenter = Math.sqrt(
+            Math.pow((x - centerX) / cols, 2) + 
+            Math.pow((y - centerY) / rows, 2)
+          );
+          const lightness = config.colorPalette.lightness * (1 - distanceFromCenter * 0.3);
+
+          // Set character color with smooth HSL transition
+          ctx.fillStyle = `hsla(${hue}, ${config.colorPalette.saturation}%, ${lightness}%, 0.8)`;
+
+          // Add glow effect for depth
+          ctx.shadowColor = `hsla(${hue}, ${config.colorPalette.saturation}%, ${lightness}%, 0.5)`;
+          ctx.shadowBlur = 4;
+
+          // Draw the character
+          ctx.fillText(charGrid[y][x], finalX, finalY);
+
+          // Occasionally change character for variation
+          if (Math.random() > 0.995) {
+            charGrid[y][x] = ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)];
+          }
+        }
+      }
+
+      // Reset shadow for next frame
+      ctx.shadowBlur = 0;
+
+      // Continue animation loop
+      animationFrameRef.current = requestAnimationFrame(animate);
     };
 
-    frameRef.current = requestAnimationFrame(animate);
+    // Start animation
+    animate();
 
     // Cleanup on unmount
     return () => {
-      if (frameRef.current) {
-        cancelAnimationFrame(frameRef.current);
+      window.removeEventListener('resize', resizeCanvas);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [animation, fps]);
-
-  const frames = ASCII_ANIMATIONS[animation];
-
-  return (
-    <pre
-      className="font-mono whitespace-pre leading-tight select-none"
-      style={{
-        position: 'absolute',
-        left: position.x,
-        top: position.y,
-        color: color,
-        fontSize: `${10 * scale}px`,
-        textShadow: `0 0 8px ${color}`,
-        opacity: 0.5,
-        pointerEvents: 'none',
-        letterSpacing: '0.05em'
-      }}
-    >
-      {frames[currentFrame]}
-    </pre>
-  );
-};
-
-/**
- * Floating ASCII characters
- * Simple letters and numbers floating across screen
- */
-const FloatingASCIIChars = () => {
-  const chars = ['A', 'B', 'X', 'Y', '0', '1', '+', '-', '*', '/', '=', '%'];
-  const [particles, setParticles] = useState<Array<{
-    char: string;
-    x: number;
-    y: number;
-    speed: number;
-    opacity: number;
-  }>>([]);
-
-  useEffect(() => {
-    // Initialize particles
-    const newParticles = Array.from({ length: 15 }, () => ({
-      char: chars[Math.floor(Math.random() * chars.length)],
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      speed: 0.3 + Math.random() * 0.8,
-      opacity: 0.1 + Math.random() * 0.2
-    }));
-    setParticles(newParticles);
-
-    // Animate particles falling
-    const interval = setInterval(() => {
-      setParticles(prev =>
-        prev.map(p => ({
-          ...p,
-          y: p.y > 105 ? -5 : p.y + p.speed * 0.15
-        }))
-      );
-    }, 50);
-
-    return () => clearInterval(interval);
   }, []);
 
   return (
-    <>
-      {particles.map((particle, i) => (
-        <div
-          key={i}
-          className="absolute font-mono text-primary pointer-events-none select-none"
-          style={{
-            left: `${particle.x}%`,
-            top: `${particle.y}%`,
-            opacity: particle.opacity,
-            fontSize: '14px',
-            transition: 'top 0.05s linear'
-          }}
-        >
-          {particle.char}
-        </div>
-      ))}
-    </>
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0"
+      style={{
+        width: '100%',
+        height: '100%',
+        background: '#000'
+      }}
+    />
   );
 };
 
 /**
- * Main Animated Background Component
- * Displays multiple ASCII art animations positioned across the screen
+ * Alternative: CSS-based ASCII wave for lighter performance
+ * Uses pure CSS animations - good for less powerful devices
+ */
+const ASCIIWaveCSS = () => {
+  const chars = ASCII_CHARS.split('');
+  const gridSize = 20; // Number of characters per row/column
+
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-black">
+      <div className="relative w-full h-full">
+        {Array.from({ length: gridSize * gridSize }).map((_, i) => {
+          const x = i % gridSize;
+          const y = Math.floor(i / gridSize);
+          const char = chars[Math.floor(Math.random() * chars.length)];
+          
+          // Create staggered animation delays for wave effect
+          const delay = (x + y) * 0.1;
+          const duration = 3 + Math.random() * 2;
+
+          return (
+            <div
+              key={i}
+              className="absolute font-mono text-lg select-none pointer-events-none"
+              style={{
+                left: `${(x / gridSize) * 100}%`,
+                top: `${(y / gridSize) * 100}%`,
+                color: `hsl(${120 + (x / gridSize) * 60}, 80%, 50%)`,
+                animation: `float ${duration}s ease-in-out ${delay}s infinite`,
+                textShadow: '0 0 10px currentColor',
+                opacity: 0.6
+              }}
+            >
+              {char}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Main component - uses Canvas for better performance and density
  */
 export const AnimatedBackground = () => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    // Fade in effect on mount
-    const timer = setTimeout(() => setIsVisible(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
-    <div
-      className={`fixed inset-0 pointer-events-none overflow-hidden transition-opacity duration-1000 ${
-        isVisible ? 'opacity-100' : 'opacity-0'
-      }`}
-      style={{ zIndex: 0 }}
-    >
-      {/* Subtle grid pattern */}
-      <div className="absolute inset-0 grid-pattern opacity-5" />
-
-      {/* Floating ASCII characters */}
-      <FloatingASCIIChars />
-
-      {/* ASCII Art Animations distributed across screen */}
-      
-      {/* Top left - Rotating cube */}
-      <ASCIIAnimation
-        animation="rotatingCube"
-        fps={4}
-        scale={0.9}
-        color="#00ff00"
-        position={{ x: '8%', y: '12%' }}
-      />
-
-      {/* Top right - Rocket */}
-      <ASCIIAnimation
-        animation="rocket"
-        fps={6}
-        scale={1}
-        color="#ff8c42"
-        position={{ x: '82%', y: '15%' }}
-      />
-
-      {/* Middle left - Trading chart */}
-      <ASCIIAnimation
-        animation="tradingChart"
-        fps={5}
-        scale={1.1}
-        color="#00ccff"
-        position={{ x: '5%', y: '45%' }}
-      />
-
-      {/* Middle right - Candlesticks */}
-      <ASCIIAnimation
-        animation="candlesticks"
-        fps={6}
-        scale={0.9}
-        color="#00ff00"
-        position={{ x: '75%', y: '48%' }}
-      />
-
-      {/* Bottom left - Bull */}
-      <ASCIIAnimation
-        animation="bull"
-        fps={8}
-        scale={1.2}
-        color="#ff8c42"
-        position={{ x: '12%', y: '75%' }}
-      />
-
-      {/* Bottom right - Arrow up */}
-      <ASCIIAnimation
-        animation="arrowUp"
-        fps={5}
-        scale={0.8}
-        color="#00ccff"
-        position={{ x: '80%', y: '72%' }}
-      />
-
-      {/* Center - Walking trader */}
-      <ASCIIAnimation
-        animation="walkingTrader"
-        fps={8}
-        scale={1}
-        color="#00ff00"
-        position={{ x: '45%', y: '58%' }}
-      />
-
-      {/* Extra animations for richness */}
-      <ASCIIAnimation
-        animation="dollar"
-        fps={4}
-        scale={0.7}
-        color="#ff8c42"
-        position={{ x: '35%', y: '25%' }}
-      />
-
-      <ASCIIAnimation
-        animation="percentage"
-        fps={3}
-        scale={1}
-        color="#00ccff"
-        position={{ x: '60%', y: '35%' }}
-      />
-
-      <ASCIIAnimation
-        animation="loadingBar"
-        fps={10}
-        scale={0.8}
-        color="#00ff00"
-        position={{ x: '40%', y: '82%' }}
-      />
+    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+      <ASCIIWaveCanvas />
     </div>
   );
 };
