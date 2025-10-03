@@ -260,8 +260,8 @@ export const AnimatedBackground = () => {
       time += 0.016; // ~60fps
       rotation += config.rotationSpeed;
 
-      // Clear canvas with pure black
-      ctx.fillStyle = '#000000';
+      // Clear canvas with transparent black for trailing effect
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Calculate center point
@@ -378,7 +378,7 @@ export const AnimatedBackground = () => {
       style={{
         zIndex: 0,
         mixBlendMode: 'normal',
-        background: '#000000'
+        background: 'transparent'
       }}
     />
   );
