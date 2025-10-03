@@ -1,49 +1,168 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
- * Full-Screen Dense ASCII Wave Animation
- * Creates an immersive "ocean" of ASCII characters with flowing colors
- * Every part of the screen is animated - no empty spaces
+ * Interactive ASCII Pattern Background
+ * Features:
+ * - White ASCII on black background for high contrast
+ * - Forms recognizable geometric patterns (star, spiral, wave)
+ * - Reacts to mouse movement and scroll
+ * - Fully customizable via config object
+ * - Non-intrusive opacity to keep main content readable
  */
 
-// ASCII character set - only classic letters and punctuation
-const ASCII_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-=*/\\|:;.,<>()[]{}';
+// ASCII character set - classic letters and numbers only
+const ASCII_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+// Pattern types available
+type PatternType = 'star' | 'spiral' | 'wave' | 'grid' | 'circle';
 
 interface AnimationConfig {
-  // Density: character size (smaller = more dense)
-  charSize: number;
-  // Wave animation speed
-  waveSpeed: number;
-  // Wave amplitude (how much characters move)
-  waveAmplitude: number;
-  // Color animation speed
-  colorSpeed: number;
-  // Color palette (HSL hue values)
-  colorPalette: {
-    start: number;  // Starting hue
-    end: number;    // Ending hue
-    saturation: number;
-    lightness: number;
-  };
+  // Pattern configuration
+  pattern: PatternType;
+  charSize: number;          // Size of each character
+  density: number;           // How many points in the pattern
+  
+  // Animation settings
+  rotationSpeed: number;     // Pattern rotation speed
+  pulseSpeed: number;        // Pulsing animation speed
+  pulseAmplitude: number;    // How much the pattern expands/contracts
+  
+  // Interactivity
+  mouseInfluence: number;    // How much mouse affects the pattern (0-1)
+  scrollInfluence: number;   // How much scroll affects the pattern (0-1)
+  
+  // Visual settings
+  opacity: number;           // Overall opacity (0-1)
+  glowIntensity: number;     // Text glow strength
 }
 
-const ASCIIWaveCanvas = () => {
+// Default configuration - easy to customize
+const DEFAULT_CONFIG: AnimationConfig = {
+  pattern: 'star',
+  charSize: 12,
+  density: 300,
+  rotationSpeed: 0.0005,
+  pulseSpeed: 0.002,
+  pulseAmplitude: 0.15,
+  mouseInfluence: 0.3,
+  scrollInfluence: 0.2,
+  opacity: 0.25,
+  glowIntensity: 8
+};
+
+/**
+ * Generate pattern coordinates
+ * Returns array of points forming the specified pattern
+ */
+const generatePattern = (
+  type: PatternType,
+  density: number,
+  centerX: number,
+  centerY: number,
+  size: number
+): Array<{ x: number; y: number; char: string }> => {
+  const points: Array<{ x: number; y: number; char: string }> = [];
+
+  switch (type) {
+    case 'star':
+      // Five-pointed star pattern
+      for (let i = 0; i < density; i++) {
+        const angle = (i / density) * Math.PI * 2;
+        const pointIndex = Math.floor((i / density) * 10) % 10;
+        const isOuter = pointIndex % 2 === 0;
+        const radius = isOuter ? size : size * 0.4;
+        
+        const starAngle = angle * 5; // Five points
+        const x = centerX + Math.cos(starAngle) * radius;
+        const y = centerY + Math.sin(starAngle) * radius;
+        
+        points.push({
+          x,
+          y,
+          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)]
+        });
+      }
+      break;
+
+    case 'spiral':
+      // Fibonacci spiral pattern
+      for (let i = 0; i < density; i++) {
+        const t = i / density;
+        const angle = t * Math.PI * 8; // Multiple rotations
+        const radius = t * size;
+        
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+        
+        points.push({
+          x,
+          y,
+          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)]
+        });
+      }
+      break;
+
+    case 'wave':
+      // Sine wave pattern
+      const waves = 4;
+      for (let i = 0; i < density; i++) {
+        const t = (i / density) * waves * Math.PI * 2;
+        const x = centerX + (i / density - 0.5) * size * 2;
+        const y = centerY + Math.sin(t) * size * 0.3;
+        
+        points.push({
+          x,
+          y,
+          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)]
+        });
+      }
+      break;
+
+    case 'grid':
+      // Geometric grid pattern
+      const gridSize = Math.floor(Math.sqrt(density));
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          const x = centerX + (i / gridSize - 0.5) * size * 2;
+          const y = centerY + (j / gridSize - 0.5) * size * 2;
+          
+          points.push({
+            x,
+            y,
+            char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)]
+          });
+        }
+      }
+      break;
+
+    case 'circle':
+      // Perfect circle pattern
+      for (let i = 0; i < density; i++) {
+        const angle = (i / density) * Math.PI * 2;
+        const x = centerX + Math.cos(angle) * size;
+        const y = centerY + Math.sin(angle) * size;
+        
+        points.push({
+          x,
+          y,
+          char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)]
+        });
+      }
+      break;
+  }
+
+  return points;
+};
+
+export const AnimatedBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number>();
-
-  // Animation configuration - easy to adjust
-  const config: AnimationConfig = {
-    charSize: 14,           // Character size in pixels
-    waveSpeed: 0.02,        // Speed of wave motion
-    waveAmplitude: 15,      // How much the wave moves
-    colorSpeed: 0.01,       // Speed of color transitions
-    colorPalette: {
-      start: 120,           // Green hue
-      end: 30,              // Orange hue
-      saturation: 80,       // Color intensity
-      lightness: 50         // Brightness
-    }
-  };
+  const [config] = useState<AnimationConfig>(DEFAULT_CONFIG);
+  
+  // Track mouse position for interactivity
+  const mouseRef = useRef({ x: 0, y: 0 });
+  // Track scroll position for interactivity
+  const scrollRef = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -52,7 +171,7 @@ const ASCIIWaveCanvas = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size to fill screen
+    // Resize canvas to fill screen
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -60,167 +179,154 @@ const ASCIIWaveCanvas = () => {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Calculate grid dimensions
-    const cols = Math.ceil(canvas.width / config.charSize);
-    const rows = Math.ceil(canvas.height / config.charSize);
+    // Mouse move handler - track position
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current = {
+        x: e.clientX / window.innerWidth,
+        y: e.clientY / window.innerHeight
+      };
+    };
+    window.addEventListener('mousemove', handleMouseMove);
 
-    // Initialize character grid - each cell gets a random character
-    const charGrid: string[][] = [];
-    for (let y = 0; y < rows; y++) {
-      charGrid[y] = [];
-      for (let x = 0; x < cols; x++) {
-        charGrid[y][x] = ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)];
-      }
-    }
+    // Scroll handler - track scroll position
+    const handleScroll = () => {
+      scrollRef.current = window.scrollY;
+    };
+    window.addEventListener('scroll', handleScroll);
 
-    // Animation time tracker
+    // Animation state
     let time = 0;
+    let rotation = 0;
 
     /**
      * Main animation loop
-     * Uses requestAnimationFrame for smooth 60fps performance
      */
     const animate = () => {
-      time += 0.016; // Approximate time delta for 60fps
+      time += 0.016; // ~60fps
+      rotation += config.rotationSpeed;
 
-      // Clear canvas with semi-transparent black for trailing effect
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      // Clear canvas with pure black
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Set font for ASCII characters
+      // Calculate center point
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      // Calculate base size with pulsing effect
+      const baseSize = Math.min(canvas.width, canvas.height) * 0.3;
+      const pulse = Math.sin(time * config.pulseSpeed) * config.pulseAmplitude;
+      const currentSize = baseSize * (1 + pulse);
+
+      // Generate pattern points
+      const points = generatePattern(
+        config.pattern,
+        config.density,
+        centerX,
+        centerY,
+        currentSize
+      );
+
+      // Set up drawing style
       ctx.font = `${config.charSize}px monospace`;
-      ctx.textBaseline = 'top';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = config.glowIntensity;
 
-      // Draw each character with wave animation and color gradient
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          // Calculate base position
-          const baseX = x * config.charSize;
-          const baseY = y * config.charSize;
+      // Draw each point with transformations
+      points.forEach((point, index) => {
+        // Apply rotation around center
+        const rotatedX = 
+          centerX + 
+          (point.x - centerX) * Math.cos(rotation) - 
+          (point.y - centerY) * Math.sin(rotation);
+        const rotatedY = 
+          centerY + 
+          (point.x - centerX) * Math.sin(rotation) + 
+          (point.y - centerY) * Math.cos(rotation);
 
-          // Wave motion - creates flowing effect
-          // Using sine waves with different frequencies for natural movement
-          const waveX = Math.sin(time * config.waveSpeed + y * 0.1) * config.waveAmplitude;
-          const waveY = Math.cos(time * config.waveSpeed * 0.8 + x * 0.1) * config.waveAmplitude * 0.5;
-
-          // Final position with wave offset
-          const finalX = baseX + waveX;
-          const finalY = baseY + waveY;
-
-          // Calculate color based on position and time
-          // Creates smooth gradient that flows across screen
-          const colorPhase = (x / cols) * (y / rows) + time * config.colorSpeed;
-          const hue = config.colorPalette.start + 
-                     (Math.sin(colorPhase * Math.PI) * 0.5 + 0.5) * 
-                     (config.colorPalette.end - config.colorPalette.start);
-          
-          // Add depth variation - characters further from center are dimmer
-          const centerX = cols / 2;
-          const centerY = rows / 2;
-          const distanceFromCenter = Math.sqrt(
-            Math.pow((x - centerX) / cols, 2) + 
-            Math.pow((y - centerY) / rows, 2)
-          );
-          const lightness = config.colorPalette.lightness * (1 - distanceFromCenter * 0.3);
-
-          // Set character color with smooth HSL transition
-          ctx.fillStyle = `hsla(${hue}, ${config.colorPalette.saturation}%, ${lightness}%, 0.8)`;
-
-          // Add glow effect for depth
-          ctx.shadowColor = `hsla(${hue}, ${config.colorPalette.saturation}%, ${lightness}%, 0.5)`;
-          ctx.shadowBlur = 4;
-
-          // Draw the character
-          ctx.fillText(charGrid[y][x], finalX, finalY);
-
-          // Occasionally change character for variation
-          if (Math.random() > 0.995) {
-            charGrid[y][x] = ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)];
-          }
+        // Apply mouse influence - points move away from mouse
+        const mouseX = mouseRef.current.x * canvas.width;
+        const mouseY = mouseRef.current.y * canvas.height;
+        const dx = rotatedX - mouseX;
+        const dy = rotatedY - mouseY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const maxDistance = 200;
+        
+        let finalX = rotatedX;
+        let finalY = rotatedY;
+        
+        if (distance < maxDistance) {
+          const force = (1 - distance / maxDistance) * config.mouseInfluence;
+          finalX += (dx / distance) * force * 50;
+          finalY += (dy / distance) * force * 50;
         }
-      }
 
-      // Reset shadow for next frame
-      ctx.shadowBlur = 0;
+        // Apply scroll influence - pattern shifts based on scroll
+        const scrollOffset = scrollRef.current * config.scrollInfluence * 0.1;
+        finalY += Math.sin(index * 0.1 + scrollOffset) * 10;
 
-      // Continue animation loop
+        // Draw character with opacity
+        ctx.globalAlpha = config.opacity;
+        ctx.fillText(point.char, finalX, finalY);
+      });
+
+      // Reset global alpha
+      ctx.globalAlpha = 1;
+
+      // Continue animation
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
     // Start animation
     animate();
 
-    // Cleanup on unmount
+    // Cleanup
     return () => {
       window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('scroll', handleScroll);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, []);
+  }, [config]);
 
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0"
+      className="fixed inset-0 pointer-events-none"
       style={{
-        width: '100%',
-        height: '100%',
-        background: '#000'
+        zIndex: 0,
+        mixBlendMode: 'normal',
+        background: '#000000'
       }}
     />
   );
 };
 
 /**
- * Alternative: CSS-based ASCII wave for lighter performance
- * Uses pure CSS animations - good for less powerful devices
+ * CUSTOMIZATION GUIDE:
+ * 
+ * To change the pattern:
+ * - Modify DEFAULT_CONFIG.pattern to: 'star', 'spiral', 'wave', 'grid', or 'circle'
+ * 
+ * To adjust animation speed:
+ * - rotationSpeed: higher = faster rotation
+ * - pulseSpeed: higher = faster pulsing
+ * - pulseAmplitude: higher = more expansion/contraction
+ * 
+ * To change interactivity:
+ * - mouseInfluence: 0 = no effect, 1 = maximum effect
+ * - scrollInfluence: 0 = no effect, 1 = maximum effect
+ * 
+ * To adjust visibility:
+ * - opacity: lower = more transparent, keeps text readable
+ * - glowIntensity: higher = more glow effect
+ * 
+ * To change density:
+ * - density: higher = more characters in pattern
+ * - charSize: larger = bigger characters
  */
-const ASCIIWaveCSS = () => {
-  const chars = ASCII_CHARS.split('');
-  const gridSize = 20; // Number of characters per row/column
-
-  return (
-    <div className="absolute inset-0 overflow-hidden bg-black">
-      <div className="relative w-full h-full">
-        {Array.from({ length: gridSize * gridSize }).map((_, i) => {
-          const x = i % gridSize;
-          const y = Math.floor(i / gridSize);
-          const char = chars[Math.floor(Math.random() * chars.length)];
-          
-          // Create staggered animation delays for wave effect
-          const delay = (x + y) * 0.1;
-          const duration = 3 + Math.random() * 2;
-
-          return (
-            <div
-              key={i}
-              className="absolute font-mono text-lg select-none pointer-events-none"
-              style={{
-                left: `${(x / gridSize) * 100}%`,
-                top: `${(y / gridSize) * 100}%`,
-                color: `hsl(${120 + (x / gridSize) * 60}, 80%, 50%)`,
-                animation: `float ${duration}s ease-in-out ${delay}s infinite`,
-                textShadow: '0 0 10px currentColor',
-                opacity: 0.6
-              }}
-            >
-              {char}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-/**
- * Main component - uses Canvas for better performance and density
- */
-export const AnimatedBackground = () => {
-  return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
-      <ASCIIWaveCanvas />
-    </div>
-  );
-};
