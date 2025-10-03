@@ -4,10 +4,12 @@ import { Experience } from "@/components/Experience";
 import { Ideas } from "@/components/Ideas";
 import { Models } from "@/components/Models";
 import { Contact } from "@/components/Contact";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
+      <AnimatedBackground />
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="text-xl font-bold">BORKISS</div>
