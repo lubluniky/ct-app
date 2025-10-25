@@ -98,27 +98,21 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
           priceScaleId: 'right',
         });
 
-        // Add histogram series in separate pane if tensionData is provided
-        let histogramSeries: ISeriesApi<'Histogram'> | null = null;
-        if (tensionData && tensionData.length > 0) {
-          histogramSeries = chart.addSeries(HistogramSeries, {
-            color: 'rgba(128, 128, 128, 0.5)',
-            priceFormat: {
-              type: 'volume',
-            },
-            priceScaleId: 'histogram',
-          }, 1); // paneIndex: 1 = separate pane below
-        }
+        // Always add histogram series in separate pane (will be populated when data arrives)
+        const histogramSeries = chart.addSeries(HistogramSeries, {
+          color: 'rgba(128, 128, 128, 0.5)',
+          priceFormat: {
+            type: 'volume',
+          },
+          priceScaleId: 'histogram',
+        }, 1); // paneIndex: 1 = separate pane below
 
         chartRef.current = chart;
         candlestickSeriesRef.current = candlestickSeries;
         histogramSeriesRef.current = histogramSeries;
         isInitializedRef.current = true;
 
-        console.log('[OhlcChart] Chart initialized successfully', {
-          hasTensionData: !!tensionData,
-          hasHistogram: !!histogramSeries,
-        });
+        console.log('[OhlcChart] Chart initialized successfully with histogram pane');
       } catch (error) {
         console.error('[OhlcChart] Failed to initialize chart:', error);
       }
@@ -164,7 +158,22 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
 
   // Update histogram data when tensionData changes
   useEffect(() => {
-    if (!histogramSeriesRef.current || !isInitializedRef.current || !tensionData || tensionData.length === 0) return;
+    if (!histogramSeriesRef.current || !isInitializedRef.current) {
+      console.log('[OhlcChart] Histogram update skipped:', {
+        hasHistogramRef: !!histogramSeriesRef.current,
+        isInitialized: isInitializedRef.current,
+        hasTensionData: !!tensionData,
+        tensionDataLength: tensionData?.length || 0,
+      });
+      return;
+    }
+
+    if (!tensionData || tensionData.length === 0) {
+      console.log('[OhlcChart] No tension data to display');
+      // Clear histogram if no data
+      histogramSeriesRef.current.setData([]);
+      return;
+    }
 
     try {
       const histogramData: HistogramData[] = tensionData.map((t) => ({
@@ -174,7 +183,13 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
       }));
 
       histogramSeriesRef.current.setData(histogramData);
-      console.log('[OhlcChart] Updated histogram data:', histogramData.length, 'points');
+      console.log('[OhlcChart] Updated histogram data:', {
+        points: histogramData.length,
+        firstTime: histogramData[0]?.time,
+        lastTime: histogramData[histogramData.length - 1]?.time,
+        threshold,
+        sample: histogramData.slice(0, 3),
+      });
     } catch (error) {
       console.error('[OhlcChart] Error setting histogram data:', error);
     }
