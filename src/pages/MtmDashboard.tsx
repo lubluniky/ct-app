@@ -97,7 +97,7 @@ function Panel({ timeframe, symbol, dataSource }: PanelProps) {
   const statusColor = error ? 'bg-red-500' : isLoading ? 'bg-amber-500' : 'bg-green-500';
 
   return (
-    <Card className="p-4 bg-card border border-border">
+    <Card className="p-4 bg-card border border-border w-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -131,7 +131,7 @@ function Panel({ timeframe, symbol, dataSource }: PanelProps) {
           klines={klines} 
           tensionData={tensionData}
           threshold={threshold}
-          height={350} 
+          height={400} 
         />
       </div>
 
@@ -256,7 +256,7 @@ export default function MtmDashboard() {
 
       {/* Dashboard Content */}
       <main className="max-w-[1600px] mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="flex flex-col gap-6">
           {TIMEFRAMES.map((tf) => (
             <Panel key={tf.id} timeframe={tf} symbol={symbol} dataSource={dataSource} />
           ))}
