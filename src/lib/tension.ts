@@ -111,7 +111,7 @@ export function calculateTensionIndicators(
   // Extract close prices and volumes
   const closePrices = klines.map((k) => k.close);
   const volumes = klines.map((k) => k.volume);
-  const timestamps = klines.map((k) => k.closeTime);
+  const timestamps = klines.map((k) => k.openTime); // Use openTime to match candlestick chart
 
   // Calculate relative volatility (rolling std / price)
   const rollingStdValues = rollingStd(closePrices, period);

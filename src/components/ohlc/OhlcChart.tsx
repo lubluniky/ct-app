@@ -186,9 +186,10 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
 
   // Update histogram data when tensionData changes
   useEffect(() => {
-    if (!histogramSeriesRef.current || !isInitializedRef.current) {
+    if (!histogramSeriesRef.current || !chartRef.current || !isInitializedRef.current) {
       console.log('[OhlcChart] Histogram update skipped:', {
         hasHistogramRef: !!histogramSeriesRef.current,
+        hasChartRef: !!chartRef.current,
         isInitialized: isInitializedRef.current,
         hasTensionData: !!tensionData,
         tensionDataLength: tensionData?.length || 0,
@@ -196,32 +197,73 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
       return;
     }
 
-    if (!tensionData || tensionData.length === 0) {
-      console.log('[OhlcChart] No tension data to display');
+    if (!tensionData || tensionData.length === 0 || klines.length === 0) {
+      console.log('[OhlcChart] No tension data or klines to display');
       // Clear histogram if no data
       histogramSeriesRef.current.setData([]);
       return;
     }
 
     try {
-      const histogramData: HistogramData[] = tensionData.map((t) => ({
-        time: (t.timestamp / 1000) as any, // Convert to seconds
-        value: t.tensionIndex,
-        color: t.tensionIndex > threshold ? '#26a69a' : 'rgba(128, 128, 128, 0.5)',
-      }));
+      // Build a map of candle openTime -> index for fast lookup
+      const candleTimeMap = new Map<number, number>();
+      klines.forEach((k, idx) => {
+        const timeInSeconds = Math.floor(k.openTime / 1000);
+        candleTimeMap.set(timeInSeconds, idx);
+      });
 
+      // Get the first and last candle times (in seconds)
+      const firstCandleTime = Math.floor(klines[0].openTime / 1000);
+      const lastCandleTime = Math.floor(klines[klines.length - 1].openTime / 1000);
+
+      // Map tension data to candle timestamps
+      // Tension uses closeTime, but we need to align it with the candle's openTime
+      const histogramData: HistogramData[] = [];
+      
+      for (let i = 0; i < tensionData.length; i++) {
+        const tensionPoint = tensionData[i];
+        const tensionTimeSeconds = Math.floor(tensionPoint.timestamp / 1000);
+        
+        // Try to find the corresponding candle by matching timestamp
+        // Tension closeTime should align with next candle's openTime
+        let candleTimeSeconds = tensionTimeSeconds;
+        
+        // If not found, try to find the nearest candle openTime
+        if (!candleTimeMap.has(candleTimeSeconds) && i < klines.length) {
+          candleTimeSeconds = Math.floor(klines[i].openTime / 1000);
+        }
+        
+        // Only include if within candle range
+        if (candleTimeSeconds >= firstCandleTime && candleTimeSeconds <= lastCandleTime) {
+          histogramData.push({
+            time: candleTimeSeconds as any,
+            value: tensionPoint.tensionIndex,
+            color: tensionPoint.tensionIndex > threshold ? '#26a69a' : 'rgba(128, 128, 128, 0.5)',
+          });
+        }
+      }
+
+      // Set histogram data
       histogramSeriesRef.current.setData(histogramData);
+
+      // Fit content to ensure alignment
+      chartRef.current.timeScale().fitContent();
+
       console.log('[OhlcChart] Updated histogram data:', {
-        points: histogramData.length,
-        firstTime: histogramData[0]?.time,
-        lastTime: histogramData[histogramData.length - 1]?.time,
+        candleCount: klines.length,
+        tensionCount: tensionData.length,
+        histogramBars: histogramData.length,
+        firstCandleTime: new Date(firstCandleTime * 1000).toISOString(),
+        firstTensionTime: tensionData[0] ? new Date(Math.floor(tensionData[0].timestamp / 1000) * 1000).toISOString() : 'N/A',
+        firstHistogramTime: histogramData[0] ? new Date((histogramData[0].time as number) * 1000).toISOString() : 'N/A',
+        lastCandleTime: new Date(lastCandleTime * 1000).toISOString(),
+        lastHistogramTime: histogramData[histogramData.length - 1] ? new Date((histogramData[histogramData.length - 1].time as number) * 1000).toISOString() : 'N/A',
         threshold,
-        sample: histogramData.slice(0, 3),
       });
     } catch (error) {
       console.error('[OhlcChart] Error setting histogram data:', error);
     }
-  }, [tensionData, threshold]);
+  }, [tensionData, threshold, klines]);
 
   // Handle resize
   useEffect(() => {
