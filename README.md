@@ -259,4 +259,4 @@ Potential additions (not implemented):
 - Custom alerts when tension exceeds threshold
 - Multiple symbol comparison
 - WebSocket for real-time updates
-````
+````# trigger deploy Sat Oct 25 03:07:25 CEST 2025
