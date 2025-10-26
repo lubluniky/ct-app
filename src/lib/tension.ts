@@ -166,38 +166,47 @@ export function calculateTensionIndicators(
     let tensionIdx = tensionIndex[i];
     
     // If values are NaN due to insufficient window, calculate with smaller window
-    if (!isFinite(tensionIdx) && effectiveWindow >= 2) {
+    if (!isFinite(tensionIdx) && effectiveWindow >= 1) {
       // Recalculate with smaller window for this specific candle
       const startIdx = Math.max(0, i - effectiveWindow + 1);
       const windowPrices = closePrices.slice(startIdx, i + 1);
       const windowVolumes = volumes.slice(startIdx, i + 1);
       
-      // Calculate std for this window
-      const mean = windowPrices.reduce((sum, p) => sum + p, 0) / windowPrices.length;
-      const variance = windowPrices.reduce((sum, p) => sum + Math.pow(p - mean, 2), 0) / windowPrices.length;
-      const std = Math.sqrt(variance);
-      
-      // Relative volatility
-      rvValue = std / closePrices[i];
-      
-      // Volatility score (normalized within available window)
-      const windowRV = windowPrices.map((p, idx) => {
-        const wMean = windowPrices.slice(0, idx + 1).reduce((s, v) => s + v, 0) / (idx + 1);
-        const wVar = windowPrices.slice(0, idx + 1).reduce((s, v) => s + Math.pow(v - wMean, 2), 0) / (idx + 1);
-        return Math.sqrt(wVar) / p;
-      }).filter(v => isFinite(v));
-      
-      const rvMinVal = Math.min(...windowRV);
-      const rvMaxVal = Math.max(...windowRV);
-      vsValue = normalizeScore(rvValue, rvMinVal, rvMaxVal, true);
-      
-      // Volume score (normalized within available window)
-      const volMinVal = Math.min(...windowVolumes);
-      const volMaxVal = Math.max(...windowVolumes);
-      volScore = normalizeScore(volumes[i], volMinVal, volMaxVal, false);
-      
-      // Tension index
-      tensionIdx = (vsValue + volScore) / 2;
+      // For single candle (i=0), use simple values
+      if (windowPrices.length === 1) {
+        // No volatility calculation possible, use neutral values
+        rvValue = 0;
+        vsValue = 50; // Neutral score
+        volScore = 50; // Neutral score
+        tensionIdx = 50; // Neutral tension
+      } else {
+        // Calculate std for this window
+        const mean = windowPrices.reduce((sum, p) => sum + p, 0) / windowPrices.length;
+        const variance = windowPrices.reduce((sum, p) => sum + Math.pow(p - mean, 2), 0) / windowPrices.length;
+        const std = Math.sqrt(variance);
+        
+        // Relative volatility
+        rvValue = std / closePrices[i];
+        
+        // Volatility score (normalized within available window)
+        const windowRV = windowPrices.map((p, idx) => {
+          const wMean = windowPrices.slice(0, idx + 1).reduce((s, v) => s + v, 0) / (idx + 1);
+          const wVar = windowPrices.slice(0, idx + 1).reduce((s, v) => s + Math.pow(v - wMean, 2), 0) / (idx + 1);
+          return Math.sqrt(wVar) / p;
+        }).filter(v => isFinite(v));
+        
+        const rvMinVal = Math.min(...windowRV);
+        const rvMaxVal = Math.max(...windowRV);
+        vsValue = normalizeScore(rvValue, rvMinVal, rvMaxVal, true);
+        
+        // Volume score (normalized within available window)
+        const volMinVal = Math.min(...windowVolumes);
+        const volMaxVal = Math.max(...windowVolumes);
+        volScore = normalizeScore(volumes[i], volMinVal, volMaxVal, false);
+        
+        // Tension index
+        tensionIdx = (vsValue + volScore) / 2;
+      }
     }
     
     // Only add if we have valid finite values

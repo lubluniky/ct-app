@@ -305,20 +305,28 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
         tensionCount: tensionData.length,
         histogramBars: histogramData.length,
         missingCount: missingCount,
-        aligned: missingCount === 0 ? '✓ Perfect alignment' : `⚠ ${missingCount} bars missing`,
+        aligned: missingCount === 0 ? '✅ All bars aligned perfectly' : `⚠ ${Math.abs(missingCount)} bars ${missingCount > 0 ? 'missing' : 'extra'}`,
         firstCandleTime: new Date(firstCandleTime * 1000).toISOString(),
+        firstTensionTime: tensionData[0] ? new Date(Math.floor(tensionData[0].timestamp / 1000) * 1000).toISOString() : 'N/A',
         firstHistogramTime: histogramData[0] ? new Date((histogramData[0].time as number) * 1000).toISOString() : 'N/A',
         lastCandleTime: new Date(lastCandleTime * 1000).toISOString(),
         lastHistogramTime: histogramData[histogramData.length - 1] ? new Date((histogramData[histogramData.length - 1].time as number) * 1000).toISOString() : 'N/A',
         threshold,
-        timeDiffStart: histogramData[0] ? (histogramData[0].time as number) - firstCandleTime : 'N/A',
+        timeDiffStart: histogramData[0] && tensionData[0] 
+          ? (Math.floor(tensionData[0].timestamp / 1000) - firstCandleTime) + 's'
+          : 'N/A',
+        timestampMatch: histogramData[0] && tensionData[0]
+          ? Math.floor(tensionData[0].timestamp / 1000) === firstCandleTime ? '✅' : '❌'
+          : 'N/A',
       });
 
-      // Log backfill info if applicable
+      // Log alignment status
       if (missingCount < 0) {
         console.warn('[OhlcChart] More tension data than candles - this should not happen');
       } else if (missingCount === 0) {
-        console.log('[OhlcChart] ✓ All candles have tension data - perfect 1:1 alignment');
+        console.log('[OhlcChart] ✅ All bars aligned perfectly - perfect 1:1 match!');
+      } else {
+        console.warn(`[OhlcChart] ⚠️ Missing ${missingCount} tension data points`);
       }
     } catch (error) {
       console.error('[OhlcChart] Error setting histogram data:', error);
