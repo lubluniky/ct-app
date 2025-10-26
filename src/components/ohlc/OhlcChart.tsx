@@ -2,7 +2,7 @@
  * OHLC candlestick chart using lightweight-charts
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   createChart,
   ColorType,
@@ -15,6 +15,7 @@ import {
 } from 'lightweight-charts';
 import type { Kline } from '@/lib/binance';
 import type { TensionDataPoint } from '@/lib/tension';
+import { Watermark } from '@/components/Watermark';
 
 export interface OhlcChartProps {
   klines: Kline[];
@@ -30,6 +31,7 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const histogramSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const isInitializedRef = useRef(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Initialize chart only once when container is ready
   useEffect(() => {
@@ -145,6 +147,8 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
   useEffect(() => {
     if (!candlestickSeriesRef.current || !chartRef.current || !isInitializedRef.current || klines.length === 0) return;
 
+    setIsLoading(true);
+
     try {
       const candleData: CandlestickData[] = klines.map((k) => ({
         time: (k.openTime / 1000) as any, // Convert to seconds
@@ -185,8 +189,12 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
         firstTime: new Date((candleData[0]?.time as number) * 1000).toISOString(),
         lastTime: new Date((candleData[candleData.length - 1]?.time as number) * 1000).toISOString(),
       });
+
+      // Mark as loaded after a brief delay to ensure rendering is complete
+      setTimeout(() => setIsLoading(false), 300);
     } catch (error) {
       console.error('[OhlcChart] Error setting candlestick data:', error);
+      setIsLoading(false);
     }
   }, [klines]);
 
@@ -363,6 +371,8 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
       ref={containerRef}
       className={className}
       style={{ position: 'relative', width: '100%', height: `${height}px` }}
-    />
+    >
+      <Watermark visible={!isLoading} />
+    </div>
   );
 }
