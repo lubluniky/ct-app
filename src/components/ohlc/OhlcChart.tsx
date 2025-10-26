@@ -16,6 +16,7 @@ import {
 import type { Kline } from '@/lib/binance';
 import type { TensionDataPoint } from '@/lib/tension';
 import { Watermark } from '@/components/Watermark';
+import { TensionGlow } from '@/components/ohlc/TensionGlow';
 
 export interface OhlcChartProps {
   klines: Kline[];
@@ -117,6 +118,13 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
         candlestickSeriesRef.current = candlestickSeries;
         histogramSeriesRef.current = histogramSeries;
         isInitializedRef.current = true;
+
+        // Set z-index on chart canvas to ensure it's above glow layer
+        const chartContainer = containerRef.current.querySelector('table') as HTMLElement;
+        if (chartContainer) {
+          chartContainer.style.position = 'relative';
+          chartContainer.style.zIndex = '1';
+        }
 
         console.log('[OhlcChart] Chart initialized successfully with histogram pane');
       } catch (error) {
@@ -372,6 +380,16 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
       className={className}
       style={{ position: 'relative', width: '100%', height: `${height}px` }}
     >
+      {/* Tension glow layer - below chart canvas */}
+      {chartRef.current && tensionData && tensionData.length > 0 && (
+        <TensionGlow
+          chartApi={chartRef.current}
+          tensionData={tensionData}
+          threshold={threshold}
+          width={containerRef.current?.getBoundingClientRect().width || 0}
+          height={height}
+        />
+      )}
       <Watermark visible={!isLoading} />
     </div>
   );
