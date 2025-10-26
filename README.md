@@ -1,119 +1,235 @@
-# Welcome to your Lovable project
+# borkiss.trade# Welcome to your Lovable project
 
-## Project info
 
-**URL**: https://lovable.dev/projects/f3fc6053-e1fb-4358-a1f8-bbac87153c3a
 
-## How can I edit this code?
+Market analytics and dashboard tools.## Project info
 
-There are several ways of editing your application.
 
-**Use Lovable**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/f3fc6053-e1fb-4358-a1f8-bbac87153c3a) and start prompting.
+## Tech Stack**URL**: https://lovable.dev/projects/f3fc6053-e1fb-4358-a1f8-bbac87153c3a
+
+
+
+- **Vite** - Build tool## How can I edit this code?
+
+- **React 18** - UI framework
+
+- **TypeScript** - Type safetyThere are several ways of editing your application.
+
+- **Tailwind CSS** - Styling
+
+- **shadcn/ui** - Component library**Use Lovable**
+
+- **React Router** - Client-side routing
+
+- **lightweight-charts** - Charting librarySimply visit the [Lovable Project](https://lovable.dev/projects/f3fc6053-e1fb-4358-a1f8-bbac87153c3a) and start prompting.
+
+- **Vercel Analytics** - Web analytics
 
 Changes made via Lovable will be committed automatically to this repo.
 
+## Getting Started
+
 **Use your preferred IDE**
+
+### Prerequisites
 
 If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Node.js 18+ ([install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating))
 
-Follow these steps:
+- npm or bunThe only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+
+
+### InstallationFollow these steps:
+
+
+
+```bash```sh
+
+# Clone the repository# Step 1: Clone the repository using the project's Git URL.
+
+git clone https://github.com/lubluniky/borkiss.site.gitgit clone <YOUR_GIT_URL>
+
+cd borkiss.site
 
 # Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+
+# Install dependenciescd <YOUR_PROJECT_NAME>
+
+npm install
 
 # Step 3: Install the necessary dependencies.
-npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development servernpm i
+
 npm run dev
-```
 
-**Edit a file directly in GitHub**
+```# Step 4: Start the development server with auto-reloading and an instant preview.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+npm run dev
 
-**Use GitHub Codespaces**
+The app will be available at `http://localhost:8080````
 
-- Navigate to the main page of your repository.
+
+
+### Build for Production**Edit a file directly in GitHub**
+
+
+
+```bash- Navigate to the desired file(s).
+
+npm run build- Click the "Edit" button (pencil icon) at the top right of the file view.
+
+```- Make your changes and commit the changes.
+
+
+
+Output will be in the `dist/` directory.**Use GitHub Codespaces**
+
+
+
+## Project Structure- Navigate to the main page of your repository.
+
 - Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-## What technologies are used for this project?
+```- Select the "Codespaces" tab.
 
-This project is built with:
+src/- Click on "New codespace" to launch a new Codespace environment.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+├── components/       # Reusable UI components- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-## How can I deploy this project?
+│   ├── ohlc/        # Chart components
 
-Simply open [Lovable](https://lovable.dev/projects/f3fc6053-e1fb-4358-a1f8-bbac87153c3a) and click on Share -> Publish.
+│   └── ui/          # shadcn/ui components## What technologies are used for this project?
 
-## Can I connect a custom domain to my Lovable project?
+├── hooks/           # Custom React hooks
 
-Yes, you can!
+├── lib/             # Utility functions and API clientsThis project is built with:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+├── pages/           # Route pages
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+│   ├── Index.tsx           # Home page- Vite
 
----
+│   ├── MtmDashboard.tsx    # Market Tension Map- TypeScript
 
-## MTM Dashboard (Market Tension Map)
+│   └── NotFound.tsx        # 404 page- React
 
-### Overview
+└── App.tsx          # Root component with routing- shadcn-ui
 
-The MTM Dashboard is a real-time market analysis tool that displays OHLC candlestick charts alongside "Tension Map" histograms for multiple timeframes. It helps identify potential market compression zones by analyzing volatility and volume patterns.
+```- Tailwind CSS
 
-### Features
 
-- **Three Timeframes**: M15 (4 days), 1H (10 days), 4H (40 days)
-- **Real-time Data**: Auto-refreshes every 15 seconds with intelligent rate limiting
-- **Tension Indicators**: Combined volatility and volume score normalized to 0-100
+
+## MTM Dashboard## How can I deploy this project?
+
+
+
+The Market Tension Map (MTM) Dashboard displays real-time OHLC candlestick charts with tension histograms for crypto markets.Simply open [Lovable](https://lovable.dev/projects/f3fc6053-e1fb-4358-a1f8-bbac87153c3a) and click on Share -> Publish.
+
+
+
+### Features## Can I connect a custom domain to my Lovable project?
+
+
+
+- **Multi-Timeframe Analysis**: M15, 1H, 4H chartsYes, you can!
+
+- **Auto-Refresh**: Updates every 15 seconds with rate limiting
+
+- **Tension Indicators**: Volatility + volume scores (0-100)To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+- **Binance Integration**: Spot and Futures data
+
+- **Synchronized Charts**: Histogram aligned with candlesticksRead more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+
+
+### Data Source---
+
+
+
+Fetches from Binance public REST API:## MTM Dashboard (Market Tension Map)
+
+- Spot: `https://api.binance.com/api/v3/klines`
+
+- Futures: `https://fapi.binance.com/fapi/v1/klines`### Overview
+
+
+
+### Tension CalculationThe MTM Dashboard is a real-time market analysis tool that displays OHLC candlestick charts alongside "Tension Map" histograms for multiple timeframes. It helps identify potential market compression zones by analyzing volatility and volume patterns.
+
+
+
+Tension Index = (Volatility Score + Volume Score) / 2### Features
+
+
+
+- **Volatility Score**: Normalized rolling std dev (inverted)- **Three Timeframes**: M15 (4 days), 1H (10 days), 4H (40 days)
+
+- **Volume Score**: Normalized volume against rolling window- **Real-time Data**: Auto-refreshes every 15 seconds with intelligent rate limiting
+
+- Bars above threshold highlighted in green- **Tension Indicators**: Combined volatility and volume score normalized to 0-100
+
 - **Interactive Charts**: Lightweight candlestick charts with synchronized tension histograms
-- **Symbol Selection**: Switch between BTCUSDT and ETHUSDT
+
+### Configuration- **Symbol Selection**: Switch between BTCUSDT and ETHUSDT
+
 - **Data Source Toggle**: Choose between Binance Spot or Futures API
+
+Adjust settings in `src/pages/MtmDashboard.tsx`:
 
 ### Installation
 
-The dashboard uses the `lightweight-charts` library for charting. To install dependencies:
+```typescript
 
-```bash
-npm install
+const TIMEFRAMES = [The dashboard uses the `lightweight-charts` library for charting. To install dependencies:
+
+  { interval: '15m', lookbackDays: 4 },
+
+  { interval: '1h', lookbackDays: 10 },```bash
+
+  { interval: '4h', lookbackDays: 40 },npm install
+
+];```
+
 ```
 
 All required dependencies are already listed in `package.json`.
 
+Periods and thresholds in `src/lib/tension.ts`:
+
 ### Running Locally
 
-Start the development server:
+```typescript
 
-```bash
+getRecommendedPeriod(interval);  // Rolling window sizeStart the development server:
+
+getRecommendedThreshold(interval); // Tension threshold
+
+``````bash
+
 npm run dev
-```
 
-Then navigate to: `http://localhost:8080/dashboard/mtm`
+## Deployment```
 
-### Data Source
 
-The dashboard fetches data from Binance's public REST API:
+
+The site is deployed on Vercel at [borkiss.trade](https://borkiss.trade).Then navigate to: `http://localhost:8080/dashboard/mtm`
+
+
+
+Auto-deploys on push to `main` branch.### Data Source
+
+
+
+## LicenseThe dashboard fetches data from Binance's public REST API:
+
 - **Spot**: `https://api.binance.com/api/v3/klines`
-- **Futures**: `https://fapi.binance.com/fapi/v1/klines`
+
+Private project - All rights reserved.- **Futures**: `https://fapi.binance.com/fapi/v1/klines`
+
 
 No authentication is required for public market data.
 
