@@ -3,9 +3,10 @@
  * Displays three panels with OHLC charts and tension histograms
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useKlines } from '@/hooks/useKlines';
 import { OhlcChart } from '@/components/ohlc/OhlcChart';
+import { SnapshotButton } from '@/components/SnapshotButton';
 import { getRecommendedThreshold } from '@/lib/tension';
 import { Button } from '@/components/ui/button';
 import {
@@ -62,6 +63,8 @@ interface PanelProps {
 }
 
 function Panel({ timeframe, symbol, dataSource }: PanelProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   // Debug logging
   useEffect(() => {
     console.log(`[Panel ${timeframe.label}] Rendering with:`, { symbol, dataSource, timeframe });
@@ -97,7 +100,7 @@ function Panel({ timeframe, symbol, dataSource }: PanelProps) {
   const statusColor = error ? 'bg-red-500' : isLoading ? 'bg-amber-500' : 'bg-green-500';
 
   return (
-    <Card className="p-4 bg-card border border-border w-full">
+    <Card ref={containerRef} className="p-4 bg-card border border-border w-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -106,15 +109,22 @@ function Panel({ timeframe, symbol, dataSource }: PanelProps) {
           </h3>
           <div className={`w-2 h-2 rounded-full ${statusColor}`} title={error ? 'Error' : isLoading ? 'Loading' : 'OK'} />
         </div>
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          {lastUpdated && (
+        <div className="flex items-center gap-2">
+          <SnapshotButton 
+            containerRef={containerRef}
+            symbol={symbol}
+            timeframe={timeframe.label}
+          />
+          <div className="flex items-center gap-4 text-xs text-muted-foreground" data-snapshot-hide>
+            {lastUpdated && (
+              <span className="font-mono">
+                Last: {lastUpdated.toLocaleTimeString('en-US', { hour12: false })} UTC
+              </span>
+            )}
             <span className="font-mono">
-              Last: {lastUpdated.toLocaleTimeString('en-US', { hour12: false })} UTC
+              Next: {secondsRemaining}s
             </span>
-          )}
-          <span className="font-mono">
-            Next: {secondsRemaining}s
-          </span>
+          </div>
         </div>
       </div>
 
