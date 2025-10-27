@@ -382,7 +382,7 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
         position: 'relative', 
         width: '100%', 
         height: `${height}px`,
-        background: 'transparent',
+        background: '#141414', // Dark background for glow visibility
         isolation: 'isolate', // Create stacking context
       }}
     >

@@ -116,12 +116,19 @@ export const TensionGlow: React.FC<TensionGlowProps> = ({
 
       // Check if chart is ready
       if (!isChartReadyRef.current) {
-        // Draw test gradient to verify canvas works
+        // Draw test pattern to verify canvas is visible
+        // Red circle in center
         const testGradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, 100);
-        testGradient.addColorStop(0, 'rgba(255, 0, 0, 0.1)');
+        testGradient.addColorStop(0, 'rgba(255, 0, 0, 0.2)');
         testGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
         ctx.fillStyle = testGradient;
         ctx.fillRect(width / 2 - 100, height / 2 - 100, 200, 200);
+        
+        // Test text
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+        ctx.font = '14px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('GLOW LAYER (waiting for chart...)', width / 2, height / 2);
         
         animationFrameRef.current = requestAnimationFrame(render);
         return;
