@@ -46,6 +46,7 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
 
   // Debug logging
   useEffect(() => {
+    console.log('[RvwapPanel] Mounted and rendering');
     console.log('[RvwapPanel] State:', {
       symbol,
       period,
@@ -54,6 +55,7 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
       isLoading,
       error,
     });
+    console.log('[TensionGlow] Disabled for RVWAP context - glow not initialized');
   }, [symbol, period, timeframe, rvwapData, isLoading, error]);
 
   // Status color

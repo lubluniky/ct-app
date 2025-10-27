@@ -198,6 +198,7 @@ export default function MtmDashboard() {
     console.log('[MtmDashboard] Symbol:', symbol);
     console.log('[MtmDashboard] DataSource:', dataSource);
     console.log('[MtmDashboard] ShowRvwap:', showRvwap);
+    console.log('[TensionGlow] Disabled - feature removed in revert');
   }, [symbol, dataSource, showRvwap]);
 
   // Persist settings to localStorage
@@ -302,6 +303,15 @@ export default function MtmDashboard() {
               style={{ animationFillMode: 'backwards' }}
             >
               <RvwapPanel symbol={symbol} dataSource={dataSource} />
+            </div>
+          )}
+
+          {/* RVWAP Status Indicator (when hidden) */}
+          {!showRvwap && (
+            <div className="p-4 bg-muted/30 rounded border border-border text-center">
+              <p className="text-sm text-muted-foreground">
+                💡 <strong>Rolling VWAP panel is hidden.</strong> Toggle "Show Rolling VWAP" above to display it.
+              </p>
             </div>
           )}
         </div>
