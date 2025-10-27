@@ -7,8 +7,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useKlines } from '@/hooks/useKlines';
 import { OhlcChart } from '@/components/ohlc/OhlcChart';
 import { SnapshotButton } from '@/components/SnapshotButton';
+import { RvwapPanel } from '@/components/rvwap/RvwapPanel';
 import { getRecommendedThreshold } from '@/lib/tension';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -185,13 +188,17 @@ export default function MtmDashboard() {
   const [dataSource, setDataSource] = useState<DataSource>(() => {
     return (localStorage.getItem('mtm_dataSource') as DataSource) || 'spot';
   });
+  const [showRvwap, setShowRvwap] = useState<boolean>(() => {
+    return localStorage.getItem('mtm_showRvwap') === 'true';
+  });
 
   // Debug logging
   useEffect(() => {
     console.log('[MtmDashboard] Component mounted');
     console.log('[MtmDashboard] Symbol:', symbol);
     console.log('[MtmDashboard] DataSource:', dataSource);
-  }, [symbol, dataSource]);
+    console.log('[MtmDashboard] ShowRvwap:', showRvwap);
+  }, [symbol, dataSource, showRvwap]);
 
   // Persist settings to localStorage
   useEffect(() => {
@@ -201,6 +208,10 @@ export default function MtmDashboard() {
   useEffect(() => {
     localStorage.setItem('mtm_dataSource', dataSource);
   }, [dataSource]);
+
+  useEffect(() => {
+    localStorage.setItem('mtm_showRvwap', String(showRvwap));
+  }, [showRvwap]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -228,6 +239,18 @@ export default function MtmDashboard() {
 
             {/* Controls */}
             <div className="flex items-center gap-3">
+              {/* RVWAP Toggle */}
+              <div className="flex items-center gap-2 px-3 py-1 rounded-md border border-border">
+                <Switch
+                  id="rvwap-toggle"
+                  checked={showRvwap}
+                  onCheckedChange={setShowRvwap}
+                />
+                <Label htmlFor="rvwap-toggle" className="text-sm cursor-pointer">
+                  Show Rolling VWAP
+                </Label>
+              </div>
+
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Symbol:</span>
                 <Select value={symbol} onValueChange={setSymbol}>
@@ -267,9 +290,20 @@ export default function MtmDashboard() {
       {/* Dashboard Content */}
       <main className="max-w-[1600px] mx-auto px-4 py-6">
         <div className="flex flex-col gap-6">
+          {/* MTM Panels */}
           {TIMEFRAMES.map((tf) => (
             <Panel key={tf.id} timeframe={tf} symbol={symbol} dataSource={dataSource} />
           ))}
+
+          {/* RVWAP Panel - Conditionally Rendered */}
+          {showRvwap && (
+            <div
+              className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+              style={{ animationFillMode: 'backwards' }}
+            >
+              <RvwapPanel symbol={symbol} dataSource={dataSource} />
+            </div>
+          )}
         </div>
 
         {/* Info Footer */}
