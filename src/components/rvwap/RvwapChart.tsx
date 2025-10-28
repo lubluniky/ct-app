@@ -27,6 +27,8 @@ export function RvwapChart({ data, height = 400, className = '' }: RvwapChartPro
   const isInitializedRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  console.log('[RvwapChart] 🔴 Component render called with data:', data.length);
+
   // Initialize chart
   useEffect(() => {
     if (!containerRef.current || isInitializedRef.current) return;

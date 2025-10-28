@@ -46,8 +46,8 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
 
   // Debug logging
   useEffect(() => {
-    console.log('[RvwapPanel] Mounted and rendering');
-    console.log('[RvwapPanel] State:', {
+    console.log('[RvwapPanel] 🎨 Mounted and rendering');
+    console.log('[RvwapPanel] 📊 State:', {
       symbol,
       period,
       timeframe,
@@ -55,6 +55,7 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
       isLoading,
       error,
     });
+    console.log('[RvwapPanel] 🔍 Will render chart?', !isLoading && rvwapData.length > 0);
   }, [symbol, period, timeframe, rvwapData, isLoading, error]);
 
   // Status color
@@ -144,6 +145,18 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
       {!isLoading && rvwapData.length > 0 && (
         <div className="mb-3">
           <RvwapChart data={rvwapData} height={400} />
+        </div>
+      )}
+      
+      {/* Debug: why chart not rendering */}
+      {isLoading && rvwapData.length > 0 && (
+        <div className="text-xs text-yellow-500">
+          ⚠️ DEBUG: isLoading=true blocks chart (data ready: {rvwapData.length} points)
+        </div>
+      )}
+      {!isLoading && rvwapData.length === 0 && (
+        <div className="text-xs text-red-500">
+          ⚠️ DEBUG: No data (isLoading=false, length=0)
         </div>
       )}
 
