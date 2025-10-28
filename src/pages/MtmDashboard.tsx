@@ -7,8 +7,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useKlines } from '@/hooks/useKlines';
 import { OhlcChart } from '@/components/ohlc/OhlcChart';
 import { SnapshotButton } from '@/components/SnapshotButton';
+import { RvwapPanel } from '@/components/rvwap/RvwapPanel';
 import { getRecommendedThreshold } from '@/lib/tension';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -179,11 +182,24 @@ function Panel({ timeframe, symbol, dataSource }: PanelProps) {
 
 export default function MtmDashboard() {
   const navigate = useNavigate();
+  
+  // Query param override for RVWAP visibility
+  const forceRvwapParam = new URLSearchParams(window.location.search).get('forceRvwap');
+  
   const [symbol, setSymbol] = useState<string>(() => {
     return localStorage.getItem('mtm_symbol') || 'BTCUSDT';
   });
   const [dataSource, setDataSource] = useState<DataSource>(() => {
     return (localStorage.getItem('mtm_dataSource') as DataSource) || 'spot';
+  });
+  const [showRvwap, setShowRvwap] = useState<boolean>(() => {
+    // Query param override takes precedence
+    if (forceRvwapParam === '1') return true;
+    if (forceRvwapParam === '0') return false;
+    
+    // Default to true if localStorage key is absent (first-run)
+    const stored = localStorage.getItem('mtm_showRvwap');
+    return stored === null ? true : stored === 'true';
   });
 
   // Debug logging
@@ -191,7 +207,10 @@ export default function MtmDashboard() {
     console.log('[MtmDashboard] Component mounted');
     console.log('[MtmDashboard] Symbol:', symbol);
     console.log('[MtmDashboard] DataSource:', dataSource);
-  }, [symbol, dataSource]);
+    console.log('[MtmDashboard] ShowRvwap:', showRvwap);
+    console.log('[MtmDashboard] Query param forceRvwap:', forceRvwapParam || 'none');
+    console.log('[MtmDashboard] localStorage mtm_showRvwap:', localStorage.getItem('mtm_showRvwap'));
+  }, [symbol, dataSource, showRvwap]);
 
   // Persist settings to localStorage
   useEffect(() => {
@@ -201,6 +220,29 @@ export default function MtmDashboard() {
   useEffect(() => {
     localStorage.setItem('mtm_dataSource', dataSource);
   }, [dataSource]);
+
+  useEffect(() => {
+    localStorage.setItem('mtm_showRvwap', String(showRvwap));
+  }, [showRvwap]);
+
+  // URL override effect and mount verification
+  useEffect(() => {
+    const forced = new URLSearchParams(window.location.search).get('forceRvwap');
+    if (forced === '1') setShowRvwap(true);
+    if (forced === '0') setShowRvwap(false);
+
+    // Verify panel mounts when expected
+    setTimeout(() => {
+      const el = document.querySelector('[data-testid="rvwap-root"]');
+      if (!el && showRvwap) {
+        console.error('[RVWAP] ❌ Panel expected but not mounted on /dashboard/mtm');
+        console.error('[RVWAP] showRvwap:', showRvwap);
+        console.error('[RVWAP] Check conditional render logic');
+      } else if (el && showRvwap) {
+        console.log('[RVWAP] ✅ Panel successfully mounted on /dashboard/mtm');
+      }
+    }, 1000);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -228,6 +270,18 @@ export default function MtmDashboard() {
 
             {/* Controls */}
             <div className="flex items-center gap-3">
+              {/* RVWAP Toggle */}
+              <div className="flex items-center gap-2 px-3 py-1 rounded-md border border-border">
+                <Switch
+                  id="rvwap-toggle"
+                  checked={showRvwap}
+                  onCheckedChange={setShowRvwap}
+                />
+                <Label htmlFor="rvwap-toggle" className="text-sm cursor-pointer">
+                  Show Rolling VWAP
+                </Label>
+              </div>
+
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Symbol:</span>
                 <Select value={symbol} onValueChange={setSymbol}>
@@ -267,9 +321,30 @@ export default function MtmDashboard() {
       {/* Dashboard Content */}
       <main className="max-w-[1600px] mx-auto px-4 py-6">
         <div className="flex flex-col gap-6">
+          {/* MTM Panels */}
           {TIMEFRAMES.map((tf) => (
             <Panel key={tf.id} timeframe={tf} symbol={symbol} dataSource={dataSource} />
           ))}
+
+          {/* RVWAP Panel - Conditionally Rendered */}
+          {showRvwap && (
+            <div
+              className="mt-6 border-2 border-emerald-600/40 rounded-lg overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500"
+              style={{ animationFillMode: 'backwards' }}
+              data-testid="rvwap-wrapper"
+            >
+              <RvwapPanel symbol={symbol} dataSource={dataSource} />
+            </div>
+          )}
+
+          {/* RVWAP Status Indicator (when hidden) */}
+          {!showRvwap && (
+            <div className="p-4 bg-muted/30 rounded border border-border text-center">
+              <p className="text-sm text-muted-foreground">
+                💡 <strong>Rolling VWAP panel is hidden.</strong> Toggle "Show Rolling VWAP" above to display it.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Info Footer */}
