@@ -4,17 +4,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { RvwapChart } from './RvwapChart';
-import { useRvwap } from '@/hooks/useRvwap';
+import { useMultiRvwap } from '@/hooks/useMultiRvwap';
 import { Card } from '@/components/ui/card';
 import { SnapshotButton } from '@/components/SnapshotButton';
 import { TrendingUp } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import type { DataSource } from '@/lib/binance';
 
 interface RvwapPanelProps {
@@ -22,44 +15,25 @@ interface RvwapPanelProps {
   dataSource: DataSource;
 }
 
-const PERIODS = [
-  { value: '30d', label: '30 Days' },
-  { value: '90d', label: '90 Days' },
-  { value: '365d', label: '365 Days' },
-];
-
-const TIMEFRAMES = [
-  { value: '15m', label: 'M15' },
-  { value: '1h', label: '1H' },
-  { value: '4h', label: '4H' },
-];
-
 export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
-  const [period, setPeriod] = useState('90d');
-  const [timeframe, setTimeframe] = useState('1h');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { rvwapData, klines, isLoading, error, lastUpdated } = useRvwap({
-    symbol,
-    interval: timeframe,
-    period,
-    dataSource: 'spot', // Always use spot for RVWAP
-    enabled: true,
-  });
+  const { rvwapData, klines, isLoading, error, lastUpdated } = useMultiRvwap(symbol, 'spot');
 
   // Debug logging
   useEffect(() => {
     console.log('[RvwapPanel] 🎨 Mounted and rendering');
     console.log('[RvwapPanel] 📊 State:', {
       symbol,
-      period,
-      timeframe,
-      dataPoints: rvwapData.length,
+      dataPoints30d: rvwapData['30d'].length,
+      dataPoints90d: rvwapData['90d'].length,
+      dataPoints365d: rvwapData['365d'].length,
       isLoading,
       error,
     });
-    console.log('[RvwapPanel] 🔍 Will render chart?', !isLoading && rvwapData.length > 0);
-  }, [symbol, period, timeframe, rvwapData, isLoading, error]);
+    const hasData = rvwapData['30d'].length > 0 || rvwapData['90d'].length > 0 || rvwapData['365d'].length > 0;
+    console.log('[RvwapPanel] 🔍 Will render chart?', !isLoading && hasData);
+  }, [symbol, rvwapData, isLoading, error]);
 
   // Status color
   const statusColor = error ? 'bg-red-500' : isLoading ? 'bg-amber-500' : 'bg-green-500';
@@ -87,42 +61,8 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
             <SnapshotButton
               containerRef={containerRef}
               symbol={symbol}
-              timeframe={`RVWAP_${period}`}
+              timeframe="RVWAP_Multi"
             />
-          </div>
-          
-          {/* Period Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Period:</span>
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-[120px] h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PERIODS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}>
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Timeframe Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Timeframe:</span>
-            <Select value={timeframe} onValueChange={setTimeframe}>
-              <SelectTrigger className="w-[100px] h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIMEFRAMES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Last Updated */}
@@ -142,10 +82,28 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
       )}
 
       {/* Chart */}
-      {!isLoading && rvwapData.length > 0 && (
-        <div className="mb-3" style={{ minHeight: '400px' }}>
-          <RvwapChart data={rvwapData} klines={klines} height={400} />
-        </div>
+      {!isLoading && (rvwapData['30d'].length > 0 || rvwapData['90d'].length > 0 || rvwapData['365d'].length > 0) && (
+        <>
+          <div className="mb-2" style={{ minHeight: '400px' }}>
+            <RvwapChart multiData={rvwapData} klines={klines} height={400} />
+          </div>
+          
+          {/* Legend */}
+          <div className="mb-3 flex items-center justify-center gap-6 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5 bg-emerald-500"></div>
+              <span className="text-muted-foreground">30D RVWAP</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5 bg-cyan-500"></div>
+              <span className="text-muted-foreground">90D RVWAP</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5 bg-purple-500"></div>
+              <span className="text-muted-foreground">365D RVWAP</span>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Loading placeholder to prevent layout shift */}
@@ -159,33 +117,43 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
       )}
       
       {/* Debug: why chart not rendering */}
-      {isLoading && rvwapData.length > 0 && (
+      {isLoading && (rvwapData['30d'].length > 0 || rvwapData['90d'].length > 0) && (
         <div className="text-xs text-yellow-500">
-          ⚠️ DEBUG: isLoading=true blocks chart (data ready: {rvwapData.length} points)
+          ⚠️ DEBUG: isLoading=true blocks chart (data ready: {rvwapData['30d'].length}/{rvwapData['90d'].length}/{rvwapData['365d'].length} points)
         </div>
       )}
-      {!isLoading && rvwapData.length === 0 && (
+      {!isLoading && rvwapData['30d'].length === 0 && rvwapData['90d'].length === 0 && rvwapData['365d'].length === 0 && (
         <div className="text-xs text-red-500">
-          ⚠️ DEBUG: No data (isLoading=false, length=0)
+          ⚠️ DEBUG: No data (isLoading=false, all periods empty)
         </div>
       )}
 
       {/* Stats */}
-      {rvwapData.length > 0 && (
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+      {(rvwapData['30d'].length > 0 || rvwapData['90d'].length > 0 || rvwapData['365d'].length > 0) && (
+        <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
           <div className="font-mono">
-            <span className="text-muted-foreground">Data Points:</span>{' '}
-            <span className="text-foreground">{rvwapData.length}</span>
+            <span className="text-muted-foreground">30D Points:</span>{' '}
+            <span className="text-emerald-500 font-semibold">{rvwapData['30d'].length}</span>
           </div>
           <div className="font-mono">
-            <span className="text-muted-foreground">Current VWAP:</span>{' '}
-            <span className="text-foreground">
-              ${rvwapData[rvwapData.length - 1]?.vwap.toFixed(2) || 'N/A'}
-            </span>
+            <span className="text-muted-foreground">90D Points:</span>{' '}
+            <span className="text-cyan-500 font-semibold">{rvwapData['90d'].length}</span>
           </div>
           <div className="font-mono">
-            <span className="text-muted-foreground">Window:</span>{' '}
-            <span className="text-foreground">{period} × {timeframe}</span>
+            <span className="text-muted-foreground">365D Points:</span>{' '}
+            <span className="text-purple-500 font-semibold">{rvwapData['365d'].length}</span>
+          </div>
+          {rvwapData['90d'].length > 0 && (
+            <div className="font-mono">
+              <span className="text-muted-foreground">90D VWAP:</span>{' '}
+              <span className="text-foreground">
+                ${rvwapData['90d'][rvwapData['90d'].length - 1]?.vwap.toFixed(2) || 'N/A'}
+              </span>
+            </div>
+          )}
+          <div className="font-mono">
+            <span className="text-muted-foreground">Base:</span>{' '}
+            <span className="text-foreground">1H</span>
           </div>
         </div>
       )}

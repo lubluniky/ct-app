@@ -15,24 +15,30 @@ import {
 } from 'lightweight-charts';
 import type { RvwapDataPoint } from '@/lib/rvwap';
 import type { Kline } from '@/lib/binance';
+import type { MultiRvwapData } from '@/hooks/useMultiRvwap';
 import { Watermark } from '@/components/Watermark';
 
 export interface RvwapChartProps {
-  data: RvwapDataPoint[];
+  data?: RvwapDataPoint[]; // Single period (legacy)
+  multiData?: MultiRvwapData; // Multiple periods
   klines: Kline[];
   height?: number;
   className?: string;
 }
 
-export function RvwapChart({ data, klines, height = 400, className = '' }: RvwapChartProps) {
+export function RvwapChart({ data, multiData, klines, height = 400, className = '' }: RvwapChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const lineSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const line30dRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const line90dRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const line365dRef = useRef<ISeriesApi<'Line'> | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const isInitializedRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log('[RvwapChart] 🔴 Component render called with data:', data.length, 'klines:', klines.length);
+  const dataLength = data?.length || (multiData ? Math.max(multiData['30d'].length, multiData['90d'].length, multiData['365d'].length) : 0);
+  console.log('[RvwapChart] 🔴 Component render called with data:', dataLength, 'klines:', klines.length, 'multiData:', !!multiData);
 
   // Initialize chart
   useEffect(() => {
@@ -96,23 +102,7 @@ export function RvwapChart({ data, klines, height = 400, className = '' }: Rvwap
           hasChart: !!chart,
         });
 
-        // Add line series for RVWAP line
-        const lineSeries = chart.addSeries(LineSeries, {
-          color: '#00b4ff',
-          lineWidth: 2, // Thinner line
-          priceLineVisible: true,
-          lastValueVisible: true,
-          crosshairMarkerVisible: true,
-          crosshairMarkerRadius: 4,
-        });
-
-        console.log('[RvwapChart] 📈 LineSeries added:', {
-          hasLineSeries: !!lineSeries,
-          color: '#00b4ff',
-          lineWidth: 2,
-        });
-
-        // Add candlestick series below RVWAP line
+        // Add candlestick series first (background)
         const candlestickSeries = chart.addSeries(CandlestickSeries, {
           upColor: '#26a69a',
           downColor: '#ef5350',
@@ -124,20 +114,118 @@ export function RvwapChart({ data, klines, height = 400, className = '' }: Rvwap
 
         console.log('[RvwapChart] 🕯️ CandlestickSeries added');
 
+        // Add RVWAP line series (on top)
+        if (multiData) {
+          // Multi-period mode: 3 lines
+          const line30d = chart.addSeries(LineSeries, {
+            color: '#10b981', // emerald-500
+            lineWidth: 2,
+            priceLineVisible: false,
+            lastValueVisible: true,
+            crosshairMarkerVisible: true,
+            crosshairMarkerRadius: 4,
+            title: '30D',
+          });
+
+          const line90d = chart.addSeries(LineSeries, {
+            color: '#06b6d4', // cyan-500
+            lineWidth: 2,
+            priceLineVisible: false,
+            lastValueVisible: true,
+            crosshairMarkerVisible: true,
+            crosshairMarkerRadius: 4,
+            title: '90D',
+          });
+
+          const line365d = chart.addSeries(LineSeries, {
+            color: '#a855f7', // purple-500
+            lineWidth: 2,
+            priceLineVisible: false,
+            lastValueVisible: true,
+            crosshairMarkerVisible: true,
+            crosshairMarkerRadius: 4,
+            title: '365D',
+          });
+
+          line30dRef.current = line30d;
+          line90dRef.current = line90d;
+          line365dRef.current = line365d;
+
+          console.log('[RvwapChart] 📈 3 RVWAP LineSeries added (30d/90d/365d)');
+        } else {
+          // Single period mode (legacy)
+          const lineSeries = chart.addSeries(LineSeries, {
+            color: '#00b4ff',
+            lineWidth: 2,
+            priceLineVisible: true,
+            lastValueVisible: true,
+            crosshairMarkerVisible: true,
+            crosshairMarkerRadius: 4,
+          });
+
+          lineSeriesRef.current = lineSeries;
+          console.log('[RvwapChart] � Single LineSeries added');
+        }
+
         chartRef.current = chart;
-        lineSeriesRef.current = lineSeries;
         candlestickSeriesRef.current = candlestickSeries;
         isInitializedRef.current = true;
 
         console.log('[RvwapChart] ✅ Chart initialized successfully');
 
         // 🔥 CRITICAL: If data is already available, set it now!
-        if (data.length > 0 && klines.length > 0) {
-          console.log('[RvwapChart] 🔥 Data already available, setting immediately:', {
+        if (multiData) {
+          // Multi-period mode
+          const hasData = multiData['30d']?.length > 0 && multiData['90d']?.length > 0 && multiData['365d']?.length > 0;
+          
+          if (hasData && klines.length > 0) {
+            console.log('[RvwapChart] 🔥 Multi-period data already available, setting immediately:', {
+              '30d': multiData['30d'].length,
+              '90d': multiData['90d'].length,
+              '365d': multiData['365d'].length,
+              klines: klines.length,
+            });
+
+            // Set RVWAP data for all 3 periods
+            const data30d: LineData[] = multiData['30d'].map((d) => ({
+              time: (d.timestamp / 1000) as any,
+              value: d.vwap,
+            }));
+
+            const data90d: LineData[] = multiData['90d'].map((d) => ({
+              time: (d.timestamp / 1000) as any,
+              value: d.vwap,
+            }));
+
+            const data365d: LineData[] = multiData['365d'].map((d) => ({
+              time: (d.timestamp / 1000) as any,
+              value: d.vwap,
+            }));
+
+            const candleData: CandlestickData[] = klines.map((k) => ({
+              time: (k.openTime / 1000) as any,
+              open: k.open,
+              high: k.high,
+              low: k.low,
+              close: k.close,
+            }));
+
+            line30dRef.current?.setData(data30d);
+            line90dRef.current?.setData(data90d);
+            line365dRef.current?.setData(data365d);
+            candlestickSeries.setData(candleData);
+            chart.timeScale().fitContent();
+
+            console.log('[RvwapChart] ✅ Initial multi-period data set successfully (3 RVWAP lines + Candles)');
+            setIsLoading(false);
+          }
+        } else if (data.length > 0 && klines.length > 0) {
+          // Single period mode (legacy)
+          console.log('[RvwapChart] 🔥 Single-period data already available, setting immediately:', {
             rvwap: data.length,
             klines: klines.length,
           });
-          
+
           const lineData: LineData[] = data.map((d) => ({
             time: (d.timestamp / 1000) as any,
             value: d.vwap,
@@ -151,10 +239,10 @@ export function RvwapChart({ data, klines, height = 400, className = '' }: Rvwap
             close: k.close,
           }));
 
-          lineSeries.setData(lineData);
+          lineSeriesRef.current?.setData(lineData);
           candlestickSeries.setData(candleData);
           chart.timeScale().fitContent();
-          
+
           console.log('[RvwapChart] ✅ Initial data set successfully (RVWAP + Candles)');
           setIsLoading(false);
         }
@@ -170,6 +258,9 @@ export function RvwapChart({ data, klines, height = 400, className = '' }: Rvwap
         chartRef.current.remove();
         chartRef.current = null;
         lineSeriesRef.current = null;
+        line30dRef.current = null;
+        line90dRef.current = null;
+        line365dRef.current = null;
         candlestickSeriesRef.current = null;
         isInitializedRef.current = false;
       }
@@ -179,72 +270,122 @@ export function RvwapChart({ data, klines, height = 400, className = '' }: Rvwap
   // Update data
   useEffect(() => {
     console.log('[RvwapChart] 🔄 Update effect triggered:', {
-      dataLength: data.length,
+      mode: multiData ? 'multi-period' : 'single-period',
+      dataLength: multiData ? `30d:${multiData['30d']?.length || 0}, 90d:${multiData['90d']?.length || 0}, 365d:${multiData['365d']?.length || 0}` : data.length,
       klinesLength: klines.length,
+      hasLine30d: !!line30dRef.current,
+      hasLine90d: !!line90dRef.current,
+      hasLine365d: !!line365dRef.current,
       hasLineSeries: !!lineSeriesRef.current,
       hasCandlestickSeries: !!candlestickSeriesRef.current,
       hasChart: !!chartRef.current,
       isInitialized: isInitializedRef.current,
     });
-    
-    if (!lineSeriesRef.current || !candlestickSeriesRef.current || !chartRef.current || data.length === 0 || klines.length === 0) {
-      console.log('[RvwapChart] ⚠️ Update skipped:', {
-        hasLineSeries: !!lineSeriesRef.current,
-        hasCandlestickSeries: !!candlestickSeriesRef.current,
-        hasChart: !!chartRef.current,
-        dataLength: data.length,
-        klinesLength: klines.length,
-      });
+
+    if (!candlestickSeriesRef.current || !chartRef.current || klines.length === 0) {
+      console.log('[RvwapChart] ⚠️ Update skipped (missing chart/candles)');
       return;
     }
 
-    setIsLoading(true);
+    if (multiData) {
+      // Multi-period mode
+      const hasData = multiData['30d']?.length > 0 && multiData['90d']?.length > 0 && multiData['365d']?.length > 0;
+      if (!hasData || !line30dRef.current || !line90dRef.current || !line365dRef.current) {
+        console.log('[RvwapChart] ⚠️ Update skipped (multi-period mode, missing data or series)');
+        return;
+      }
 
-    try {
-      const lineData: LineData[] = data.map((d) => ({
-        time: (d.timestamp / 1000) as any,
-        value: d.vwap,
-      }));
+      setIsLoading(true);
 
-      const candleData: CandlestickData[] = klines.map((k) => ({
-        time: (k.openTime / 1000) as any,
-        open: k.open,
-        high: k.high,
-        low: k.low,
-        close: k.close,
-      }));
+      try {
+        const data30d: LineData[] = multiData['30d'].map((d) => ({
+          time: (d.timestamp / 1000) as any,
+          value: d.vwap,
+        }));
 
-      console.log('[RvwapChart] 📝 Calling setData with:', {
-        rvwapPoints: lineData.length,
-        candlePoints: candleData.length,
-        firstRvwap: lineData[0],
-        firstCandle: candleData[0],
-      });
+        const data90d: LineData[] = multiData['90d'].map((d) => ({
+          time: (d.timestamp / 1000) as any,
+          value: d.vwap,
+        }));
 
-      lineSeriesRef.current.setData(lineData);
-      candlestickSeriesRef.current.setData(candleData);
+        const data365d: LineData[] = multiData['365d'].map((d) => ({
+          time: (d.timestamp / 1000) as any,
+          value: d.vwap,
+        }));
 
-      console.log('[RvwapChart] ✅ setData completed (RVWAP + Candles)');
+        const candleData: CandlestickData[] = klines.map((k) => ({
+          time: (k.openTime / 1000) as any,
+          open: k.open,
+          high: k.high,
+          low: k.low,
+          close: k.close,
+        }));
 
-      // Fit content to show all data
-      chartRef.current.timeScale().fitContent();
+        console.log('[RvwapChart] 📝 Calling setData (multi-period) with:', {
+          rvwap30d: data30d.length,
+          rvwap90d: data90d.length,
+          rvwap365d: data365d.length,
+          candles: candleData.length,
+        });
 
-      console.log('[RvwapChart] ✅ fitContent completed');
+        line30dRef.current.setData(data30d);
+        line90dRef.current.setData(data90d);
+        line365dRef.current.setData(data365d);
+        candlestickSeriesRef.current.setData(candleData);
 
-      console.log('[RvwapChart] 📊 Updated data:', {
-        points: lineData.length,
-        firstTime: new Date(data[0].timestamp).toISOString(),
-        lastTime: new Date(data[data.length - 1].timestamp).toISOString(),
-        firstVwap: data[0].vwap.toFixed(2),
-        lastVwap: data[data.length - 1].vwap.toFixed(2),
-      });
+        console.log('[RvwapChart] ✅ setData completed (3 RVWAP lines + Candles)');
 
-      setTimeout(() => setIsLoading(false), 300);
-    } catch (error) {
-      console.error('[RvwapChart] ❌ Error setting data:', error);
-      setIsLoading(false);
+        chartRef.current.timeScale().fitContent();
+        console.log('[RvwapChart] ✅ fitContent completed');
+
+        setTimeout(() => setIsLoading(false), 300);
+      } catch (error) {
+        console.error('[RvwapChart] ❌ Error setting multi-period data:', error);
+        setIsLoading(false);
+      }
+    } else {
+      // Single period mode (legacy)
+      if (!lineSeriesRef.current || data.length === 0) {
+        console.log('[RvwapChart] ⚠️ Update skipped (single-period mode, missing data or series)');
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        const lineData: LineData[] = data.map((d) => ({
+          time: (d.timestamp / 1000) as any,
+          value: d.vwap,
+        }));
+
+        const candleData: CandlestickData[] = klines.map((k) => ({
+          time: (k.openTime / 1000) as any,
+          open: k.open,
+          high: k.high,
+          low: k.low,
+          close: k.close,
+        }));
+
+        console.log('[RvwapChart] 📝 Calling setData (single-period) with:', {
+          rvwapPoints: lineData.length,
+          candlePoints: candleData.length,
+        });
+
+        lineSeriesRef.current.setData(lineData);
+        candlestickSeriesRef.current.setData(candleData);
+
+        console.log('[RvwapChart] ✅ setData completed (RVWAP + Candles)');
+
+        chartRef.current.timeScale().fitContent();
+        console.log('[RvwapChart] ✅ fitContent completed');
+
+        setTimeout(() => setIsLoading(false), 300);
+      } catch (error) {
+        console.error('[RvwapChart] ❌ Error setting data:', error);
+        setIsLoading(false);
+      }
     }
-  }, [data, klines]); // Add klines to dependencies
+  }, [data, klines, multiData]);
 
   // Handle resize
   useEffect(() => {
