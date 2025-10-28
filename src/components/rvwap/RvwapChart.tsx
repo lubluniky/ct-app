@@ -112,6 +112,22 @@ export function RvwapChart({ data, height = 400, className = '' }: RvwapChartPro
         isInitializedRef.current = true;
 
         console.log('[RvwapChart] ✅ Chart initialized successfully');
+
+        // 🔥 CRITICAL: If data is already available, set it now!
+        if (data.length > 0) {
+          console.log('[RvwapChart] 🔥 Data already available, setting immediately:', data.length);
+          
+          const lineData: LineData[] = data.map((d) => ({
+            time: (d.timestamp / 1000) as any,
+            value: d.vwap,
+          }));
+
+          lineSeries.setData(lineData);
+          chart.timeScale().fitContent();
+          
+          console.log('[RvwapChart] ✅ Initial data set successfully');
+          setIsLoading(false);
+        }
       } catch (error) {
         console.error('[RvwapChart] ❌ Failed to initialize:', error);
       }
