@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { fetchKlines, type DataSource } from '@/lib/binance';
+import { fetchKlines, type DataSource, type Kline } from '@/lib/binance';
 import { calculateRollingVwap, getWindowSize, getLookbackDays, type RvwapDataPoint } from '@/lib/rvwap';
 
 interface UseRvwapOptions {
@@ -16,6 +16,7 @@ interface UseRvwapOptions {
 
 interface UseRvwapResult {
   rvwapData: RvwapDataPoint[];
+  klines: Kline[]; // Add klines to return
   isLoading: boolean;
   error: string | null;
   lastUpdated: Date | null;
@@ -29,6 +30,7 @@ export function useRvwap({
   enabled = true,
 }: UseRvwapOptions): UseRvwapResult {
   const [rvwapData, setRvwapData] = useState<RvwapDataPoint[]>([]);
+  const [klines, setKlines] = useState<Kline[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -92,6 +94,7 @@ export function useRvwap({
         console.log('[useRvwap] ✅ points', rvwap.length, { period, interval });
 
         setRvwapData(rvwap);
+        setKlines(klines);
         setLastUpdated(new Date());
         setError(null);
       } catch (err: any) {
@@ -104,6 +107,7 @@ export function useRvwap({
         console.error('[useRvwap] Error:', errorMessage, err);
         setError(errorMessage);
         setRvwapData([]);
+        setKlines([]);
       } finally {
         setIsLoading(false);
       }
@@ -121,6 +125,7 @@ export function useRvwap({
 
   return {
     rvwapData,
+    klines,
     isLoading,
     error,
     lastUpdated,

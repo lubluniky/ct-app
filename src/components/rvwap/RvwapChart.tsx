@@ -7,27 +7,32 @@ import {
   createChart,
   ColorType,
   LineSeries,
+  CandlestickSeries,
   type IChartApi,
   type ISeriesApi,
   type LineData,
+  type CandlestickData,
 } from 'lightweight-charts';
 import type { RvwapDataPoint } from '@/lib/rvwap';
+import type { Kline } from '@/lib/binance';
 import { Watermark } from '@/components/Watermark';
 
 export interface RvwapChartProps {
   data: RvwapDataPoint[];
+  klines: Kline[];
   height?: number;
   className?: string;
 }
 
-export function RvwapChart({ data, height = 400, className = '' }: RvwapChartProps) {
+export function RvwapChart({ data, klines, height = 400, className = '' }: RvwapChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const lineSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const isInitializedRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log('[RvwapChart] 🔴 Component render called with data:', data.length);
+  console.log('[RvwapChart] 🔴 Component render called with data:', data.length, 'klines:', klines.length);
 
   // Initialize chart
   useEffect(() => {
@@ -94,38 +99,63 @@ export function RvwapChart({ data, height = 400, className = '' }: RvwapChartPro
         // Add line series for RVWAP line
         const lineSeries = chart.addSeries(LineSeries, {
           color: '#00b4ff',
-          lineWidth: 3,
+          lineWidth: 2, // Thinner line
           priceLineVisible: true,
           lastValueVisible: true,
           crosshairMarkerVisible: true,
-          crosshairMarkerRadius: 6,
+          crosshairMarkerRadius: 4,
         });
 
         console.log('[RvwapChart] 📈 LineSeries added:', {
           hasLineSeries: !!lineSeries,
           color: '#00b4ff',
-          lineWidth: 3,
+          lineWidth: 2,
         });
+
+        // Add candlestick series below RVWAP line
+        const candlestickSeries = chart.addSeries(CandlestickSeries, {
+          upColor: '#26a69a',
+          downColor: '#ef5350',
+          borderUpColor: '#26a69a',
+          borderDownColor: '#ef5350',
+          wickUpColor: '#26a69a',
+          wickDownColor: '#ef5350',
+        });
+
+        console.log('[RvwapChart] 🕯️ CandlestickSeries added');
 
         chartRef.current = chart;
         lineSeriesRef.current = lineSeries;
+        candlestickSeriesRef.current = candlestickSeries;
         isInitializedRef.current = true;
 
         console.log('[RvwapChart] ✅ Chart initialized successfully');
 
         // 🔥 CRITICAL: If data is already available, set it now!
-        if (data.length > 0) {
-          console.log('[RvwapChart] 🔥 Data already available, setting immediately:', data.length);
+        if (data.length > 0 && klines.length > 0) {
+          console.log('[RvwapChart] 🔥 Data already available, setting immediately:', {
+            rvwap: data.length,
+            klines: klines.length,
+          });
           
           const lineData: LineData[] = data.map((d) => ({
             time: (d.timestamp / 1000) as any,
             value: d.vwap,
           }));
 
+          const candleData: CandlestickData[] = klines.map((k) => ({
+            time: (k.openTime / 1000) as any,
+            open: k.open,
+            high: k.high,
+            low: k.low,
+            close: k.close,
+          }));
+
           lineSeries.setData(lineData);
+          candlestickSeries.setData(candleData);
           chart.timeScale().fitContent();
           
-          console.log('[RvwapChart] ✅ Initial data set successfully');
+          console.log('[RvwapChart] ✅ Initial data set successfully (RVWAP + Candles)');
           setIsLoading(false);
         }
       } catch (error) {
@@ -140,6 +170,7 @@ export function RvwapChart({ data, height = 400, className = '' }: RvwapChartPro
         chartRef.current.remove();
         chartRef.current = null;
         lineSeriesRef.current = null;
+        candlestickSeriesRef.current = null;
         isInitializedRef.current = false;
       }
     };
@@ -149,16 +180,20 @@ export function RvwapChart({ data, height = 400, className = '' }: RvwapChartPro
   useEffect(() => {
     console.log('[RvwapChart] 🔄 Update effect triggered:', {
       dataLength: data.length,
+      klinesLength: klines.length,
       hasLineSeries: !!lineSeriesRef.current,
+      hasCandlestickSeries: !!candlestickSeriesRef.current,
       hasChart: !!chartRef.current,
       isInitialized: isInitializedRef.current,
     });
     
-    if (!lineSeriesRef.current || !chartRef.current || data.length === 0) {
+    if (!lineSeriesRef.current || !candlestickSeriesRef.current || !chartRef.current || data.length === 0 || klines.length === 0) {
       console.log('[RvwapChart] ⚠️ Update skipped:', {
         hasLineSeries: !!lineSeriesRef.current,
+        hasCandlestickSeries: !!candlestickSeriesRef.current,
         hasChart: !!chartRef.current,
         dataLength: data.length,
+        klinesLength: klines.length,
       });
       return;
     }
@@ -171,16 +206,25 @@ export function RvwapChart({ data, height = 400, className = '' }: RvwapChartPro
         value: d.vwap,
       }));
 
+      const candleData: CandlestickData[] = klines.map((k) => ({
+        time: (k.openTime / 1000) as any,
+        open: k.open,
+        high: k.high,
+        low: k.low,
+        close: k.close,
+      }));
+
       console.log('[RvwapChart] 📝 Calling setData with:', {
-        points: lineData.length,
-        firstPoint: lineData[0],
-        lastPoint: lineData[lineData.length - 1],
-        sample: lineData.slice(0, 3),
+        rvwapPoints: lineData.length,
+        candlePoints: candleData.length,
+        firstRvwap: lineData[0],
+        firstCandle: candleData[0],
       });
 
       lineSeriesRef.current.setData(lineData);
+      candlestickSeriesRef.current.setData(candleData);
 
-      console.log('[RvwapChart] ✅ setData completed');
+      console.log('[RvwapChart] ✅ setData completed (RVWAP + Candles)');
 
       // Fit content to show all data
       chartRef.current.timeScale().fitContent();
@@ -200,7 +244,7 @@ export function RvwapChart({ data, height = 400, className = '' }: RvwapChartPro
       console.error('[RvwapChart] ❌ Error setting data:', error);
       setIsLoading(false);
     }
-  }, [data]);
+  }, [data, klines]); // Add klines to dependencies
 
   // Handle resize
   useEffect(() => {

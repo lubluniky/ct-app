@@ -36,7 +36,7 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
   const [period, setPeriod] = useState('90d');
   const [timeframe, setTimeframe] = useState('1h');
 
-  const { rvwapData, isLoading, error, lastUpdated } = useRvwap({
+  const { rvwapData, klines, isLoading, error, lastUpdated } = useRvwap({
     symbol,
     interval: timeframe,
     period,
@@ -144,7 +144,7 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
       {/* Chart */}
       {!isLoading && rvwapData.length > 0 && (
         <div className="mb-3">
-          <RvwapChart data={rvwapData} height={400} />
+          <RvwapChart data={rvwapData} klines={klines} height={400} />
         </div>
       )}
       
