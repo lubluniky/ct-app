@@ -7,6 +7,7 @@ import { RvwapChart } from './RvwapChart';
 import { useRvwap } from '@/hooks/useRvwap';
 import { Card } from '@/components/ui/card';
 import { SnapshotButton } from '@/components/SnapshotButton';
+import { TrendingUp } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -69,23 +70,11 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
         className="p-4 bg-card border border-border w-full relative" 
         data-testid="rvwap-root"
       >
-        {/* Snapshot Button */}
-        <div className="absolute top-2 right-2 z-50" data-snapshot-hide>
-          <SnapshotButton
-            containerRef={containerRef}
-            symbol={symbol}
-            timeframe={`RVWAP_${period}`}
-          />
-        </div>
-
-        {/* Visible Debug Badge */}
-        <div className="absolute top-4 right-14 z-40 px-3 py-1 bg-emerald-500/20 border-2 border-emerald-500 rounded-md text-emerald-400 text-xs font-bold shadow-lg">
-          RVWAP ACTIVE
-        </div>
       
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
+          <TrendingUp className="h-5 w-5 text-emerald-500" />
           <h3 className="text-lg font-semibold">
             Rolling VWAP
           </h3>
@@ -93,6 +82,15 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
         </div>
         
         <div className="flex items-center gap-4">
+          {/* Snapshot Button */}
+          <div data-snapshot-hide>
+            <SnapshotButton
+              containerRef={containerRef}
+              symbol={symbol}
+              timeframe={`RVWAP_${period}`}
+            />
+          </div>
+          
           {/* Period Selector */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Period:</span>
