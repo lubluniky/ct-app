@@ -59,6 +59,12 @@ export function useRvwap({
         const endTime = Date.now();
         const startTime = endTime - (lookbackDays * 24 * 60 * 60 * 1000);
         
+        console.log('[useRvwap] Time range:', {
+          lookbackDays,
+          startTime: new Date(startTime).toISOString(),
+          endTime: new Date(endTime).toISOString(),
+        });
+        
         // Fetch klines from Binance
         const klines = await fetchKlines({
           symbol,

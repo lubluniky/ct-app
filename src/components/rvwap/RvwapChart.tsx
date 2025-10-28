@@ -121,6 +121,12 @@ export function RvwapChart({ data, height = 400, className = '' }: RvwapChartPro
   // Update data
   useEffect(() => {
     if (!lineSeriesRef.current || !areaSeriesRef.current || !chartRef.current || data.length === 0) {
+      console.log('[RvwapChart] Update skipped:', {
+        hasLineSeries: !!lineSeriesRef.current,
+        hasAreaSeries: !!areaSeriesRef.current,
+        hasChart: !!chartRef.current,
+        dataLength: data.length,
+      });
       return;
     }
 
@@ -142,6 +148,8 @@ export function RvwapChart({ data, height = 400, className = '' }: RvwapChartPro
         points: lineData.length,
         firstTime: new Date(data[0].timestamp).toISOString(),
         lastTime: new Date(data[data.length - 1].timestamp).toISOString(),
+        firstVwap: data[0].vwap.toFixed(2),
+        lastVwap: data[data.length - 1].vwap.toFixed(2),
       });
 
       setTimeout(() => setIsLoading(false), 300);

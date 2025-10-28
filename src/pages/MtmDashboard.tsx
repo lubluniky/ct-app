@@ -182,6 +182,10 @@ function Panel({ timeframe, symbol, dataSource }: PanelProps) {
 
 export default function MtmDashboard() {
   const navigate = useNavigate();
+  
+  // Query param override for RVWAP visibility
+  const forceRvwapParam = new URLSearchParams(window.location.search).get('forceRvwap');
+  
   const [symbol, setSymbol] = useState<string>(() => {
     return localStorage.getItem('mtm_symbol') || 'BTCUSDT';
   });
@@ -189,7 +193,13 @@ export default function MtmDashboard() {
     return (localStorage.getItem('mtm_dataSource') as DataSource) || 'spot';
   });
   const [showRvwap, setShowRvwap] = useState<boolean>(() => {
-    return localStorage.getItem('mtm_showRvwap') === 'true';
+    // Query param override takes precedence
+    if (forceRvwapParam === '1') return true;
+    if (forceRvwapParam === '0') return false;
+    
+    // Default to true if localStorage key is absent (first-run)
+    const stored = localStorage.getItem('mtm_showRvwap');
+    return stored === null ? true : stored === 'true';
   });
 
   // Debug logging
@@ -198,7 +208,8 @@ export default function MtmDashboard() {
     console.log('[MtmDashboard] Symbol:', symbol);
     console.log('[MtmDashboard] DataSource:', dataSource);
     console.log('[MtmDashboard] ShowRvwap:', showRvwap);
-    console.log('[TensionGlow] Disabled - feature removed in revert');
+    console.log('[MtmDashboard] Query param forceRvwap:', forceRvwapParam || 'none');
+    console.log('[MtmDashboard] localStorage mtm_showRvwap:', localStorage.getItem('mtm_showRvwap'));
   }, [symbol, dataSource, showRvwap]);
 
   // Persist settings to localStorage

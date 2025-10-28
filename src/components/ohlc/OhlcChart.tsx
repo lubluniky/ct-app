@@ -119,7 +119,6 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
         isInitializedRef.current = true;
 
         console.log('[OhlcChart] Chart initialized successfully with histogram pane');
-        console.log('[TensionGlow] Not initialized - feature removed in revert');
       } catch (error) {
         console.error('[OhlcChart] Failed to initialize chart:', error);
       }
