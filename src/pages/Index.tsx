@@ -21,7 +21,7 @@ const Index = () => {
               <a href="#experience" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Experience
               </a>
-              <a href="/dashboard/mtm" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <a href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Dashboard
               </a>
               <a href="#connect" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
