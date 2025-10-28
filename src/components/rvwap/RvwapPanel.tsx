@@ -40,7 +40,7 @@ export function RvwapPanel({ symbol, dataSource }: RvwapPanelProps) {
     symbol,
     interval: timeframe,
     period,
-    dataSource,
+    dataSource: 'spot', // Always use spot for RVWAP
     enabled: true,
   });
 
