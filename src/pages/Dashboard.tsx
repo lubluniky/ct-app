@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 
 // Import panels
 import { RvwapPanel } from '@/components/rvwap/RvwapPanel';
+import { MTMPanel } from '@/components/mtm/MTMPanel';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -39,11 +40,11 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+          {/* MTM Panel */}
+          <MTMPanel symbol="BTCUSDT" dataSource="spot" />
+          
           {/* RVWAP Panel */}
           <RvwapPanel symbol="BTCUSDT" dataSource="spot" />
-          
-          {/* TODO: Add MTM Panel here when ready */}
-          {/* <MTMPanel symbol="BTCUSDT" /> */}
         </main>
       </div>
     </div>
