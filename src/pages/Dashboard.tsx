@@ -1,4 +1,4 @@
-import { AnimatedBackground } from '@/components/AnimatedBackground';
+import LiquidEther from '@/components/LiquidEther';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -10,16 +10,29 @@ import { MTMPanel } from '@/components/mtm/MTMPanel';
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
     
+    // Check for reduced motion preference
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    
+    const handleChange = (e: MediaQueryListEvent) => {
+      setPrefersReducedMotion(e.matches);
+    };
+    
+    mediaQuery.addEventListener('change', handleChange);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      mediaQuery.removeEventListener('change', handleChange);
+    };
   }, []);
 
   // Mobile blocker
@@ -52,8 +65,33 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
-      {/* Animated Background */}
-      <AnimatedBackground />
+      {/* Liquid Ether Background - lowest z-index, no pointer events */}
+      <div className="fixed inset-0 z-0" style={{ pointerEvents: 'none' }}>
+        <LiquidEther
+          colors={['#5227FF', '#FF9FFC', '#B19EEF']}
+          mouseForce={prefersReducedMotion ? 10 : 20}
+          cursorSize={100}
+          isViscous={false}
+          viscous={30}
+          iterationsViscous={prefersReducedMotion ? 16 : 32}
+          iterationsPoisson={prefersReducedMotion ? 16 : 32}
+          resolution={prefersReducedMotion ? 0.3 : 0.5}
+          isBounce={false}
+          autoDemo={true}
+          autoSpeed={prefersReducedMotion ? 0.3 : 0.5}
+          autoIntensity={2.2}
+          takeoverDuration={0.25}
+          autoResumeDelay={3000}
+          autoRampDuration={0.6}
+          style={{ width: '100%', height: '100%' }}
+        />
+      </div>
+
+      {/* Darkening mask for chart readability */}
+      <div 
+        className="fixed inset-0 z-[1] bg-black/60" 
+        style={{ pointerEvents: 'none' }}
+      />
 
       {/* Content */}
       <div className="relative z-10 min-h-screen">
