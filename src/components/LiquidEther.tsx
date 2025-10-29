@@ -196,22 +196,24 @@ export default function LiquidEther({
       private _onTouchEnd = this.onTouchEnd.bind(this);
       init(container: HTMLElement) {
         this.container = container;
-        container.addEventListener('mousemove', this._onMouseMove);
-        container.addEventListener('touchstart', this._onTouchStart, { passive: true });
-        container.addEventListener('touchmove', this._onTouchMove, { passive: true });
+        // Use document-level events since container is behind content layer (z-0)
+        document.addEventListener('mousemove', this._onMouseMove);
+        document.addEventListener('touchstart', this._onTouchStart, { passive: true });
+        document.addEventListener('touchmove', this._onTouchMove, { passive: true });
         container.addEventListener('mouseenter', this._onMouseEnter);
         container.addEventListener('mouseleave', this._onMouseLeave);
-        container.addEventListener('touchend', this._onTouchEnd);
+        document.addEventListener('touchend', this._onTouchEnd);
+        console.log('🎨 LiquidEther: Mouse event listeners attached to document');
       }
       dispose() {
         const c = this.container;
         if (!c) return;
-        c.removeEventListener('mousemove', this._onMouseMove);
-        c.removeEventListener('touchstart', this._onTouchStart);
-        c.removeEventListener('touchmove', this._onTouchMove);
+        document.removeEventListener('mousemove', this._onMouseMove);
+        document.removeEventListener('touchstart', this._onTouchStart);
+        document.removeEventListener('touchmove', this._onTouchMove);
         c.removeEventListener('mouseenter', this._onMouseEnter);
         c.removeEventListener('mouseleave', this._onMouseLeave);
-        c.removeEventListener('touchend', this._onTouchEnd);
+        document.removeEventListener('touchend', this._onTouchEnd);
       }
       setCoords(x: number, y: number) {
         if (!this.container) return;
