@@ -18,23 +18,21 @@ export default function LoadingOverlay({ onComplete }: LoadingOverlayProps) {
     const vh = window.innerHeight;
     const minDimension = Math.min(vw, vh);
     
-    // Scale text size based on viewport
-    // Small screens (< 768px): smaller text
-    // Medium screens (768-1024px): medium text
-    // Large screens (> 1024px): full text
-    if (minDimension < 500) return 90;   // Very small mobile (было 80)
-    if (minDimension < 768) return 110;  // Mobile (было 100)
-    if (minDimension < 1024) return 120; // Tablet
-    return 130; // Desktop
+    // Увеличены размеры для лучшей читаемости ASCII
+    if (minDimension < 500) return 110;  // Увеличено с 90
+    if (minDimension < 768) return 130;  // Увеличено с 110
+    if (minDimension < 1024) return 140; // Увеличено с 120
+    return 150; // Увеличено с 130
   };
   
   // Adaptive plane base height - bigger on small screens for visibility
   const getAdaptivePlaneHeight = () => {
     const minDimension = Math.min(window.innerWidth, window.innerHeight);
     
-    if (minDimension < 500) return 9;  // Больше для маленьких экранов
-    if (minDimension < 768) return 8;  // Средний размер
-    return 7; // Стандартный для десктопа
+    // Увеличены значения для лучшей видимости (camera.z теперь 15 вместо 30)
+    if (minDimension < 500) return 12;  // Ещё больше для маленьких (было 9)
+    if (minDimension < 768) return 10;  // Больше для мобильных (было 8)
+    return 8; // Больше для десктопа (было 7)
   };
   
   const adaptiveTextSize = getAdaptiveTextSize();
@@ -87,7 +85,7 @@ export default function LoadingOverlay({ onComplete }: LoadingOverlayProps) {
       <div className="relative w-full h-full">
         <ASCIIText
           text="Fetching_data..."
-          asciiFontSize={9}
+          asciiFontSize={7}
           textFontSize={adaptiveTextSize}
           textColor="#A855F7"
           planeBaseHeight={adaptivePlaneHeight}

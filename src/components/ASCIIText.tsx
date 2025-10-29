@@ -320,7 +320,8 @@ class CanvAscii {
     this.enableWaves = enableWaves;
 
     this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 1, 1000);
-    this.camera.position.z = 30;
+    // Move camera closer for better text visibility (was 30)
+    this.camera.position.z = 15;
 
     this.scene = new THREE.Scene();
     this.mouse = { x: 0, y: 0 };
@@ -367,7 +368,9 @@ class CanvAscii {
       padding: padding.toFixed(2),
       planeBaseHeight: this.planeBaseHeight,
       planeSize: `${planeW.toFixed(2)}x${planeH.toFixed(2)}`,
-      textFontSize: this.textFontSize
+      textFontSize: this.textFontSize,
+      asciiFontSize: this.asciiFontSize,
+      cameraZ: 15
     });
 
     this.geometry = new THREE.PlaneGeometry(planeW, planeH, 36, 36);
