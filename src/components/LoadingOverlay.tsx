@@ -3,10 +3,10 @@ import ASCIIText from './ASCIIText';
 
 interface LoadingOverlayProps {
   onComplete?: () => void;
-  duration?: number; // in milliseconds, default 2800ms (2.8s)
+  duration?: number; // in milliseconds, default 3300ms (2.5s animation + 0.8s fade)
 }
 
-export default function LoadingOverlay({ onComplete, duration = 2800 }: LoadingOverlayProps) {
+export default function LoadingOverlay({ onComplete, duration = 3300 }: LoadingOverlayProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [opacity, setOpacity] = useState(1);
   

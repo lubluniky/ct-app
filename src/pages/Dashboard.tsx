@@ -94,7 +94,7 @@ const Dashboard = () => {
       {showLoading && (
         <LoadingOverlay 
           onComplete={handleLoadingComplete}
-          duration={2800} // 2.8 seconds - longer display time
+          duration={3300} // 2.5s animation + 0.8s fade-out
         />
       )}
 
