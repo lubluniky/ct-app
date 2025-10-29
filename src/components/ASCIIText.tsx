@@ -344,9 +344,21 @@ class CanvAscii {
     this.texture.minFilter = THREE.NearestFilter;
 
     const textAspect = this.textCanvas.width / this.textCanvas.height;
-    const baseH = this.planeBaseHeight;
-    const planeW = baseH * textAspect;
-    const planeH = baseH;
+    const viewportAspect = this.width / this.height;
+    
+    // Adaptive sizing: fit text to viewport with responsive padding
+    let planeW, planeH;
+    const padding = this.getAdaptivePadding();
+    
+    if (textAspect > viewportAspect) {
+      // Text is wider than viewport - fit to width
+      planeW = this.planeBaseHeight * viewportAspect * padding;
+      planeH = planeW / textAspect;
+    } else {
+      // Text is taller - fit to height
+      planeH = this.planeBaseHeight * padding;
+      planeW = planeH * textAspect;
+    }
 
     this.geometry = new THREE.PlaneGeometry(planeW, planeH, 36, 36);
     this.material = new THREE.ShaderMaterial({
@@ -363,6 +375,16 @@ class CanvAscii {
 
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.scene.add(this.mesh);
+  }
+  
+  getAdaptivePadding(): number {
+    const minDimension = Math.min(this.width, this.height);
+    
+    // Smaller screens need more padding to prevent text clipping
+    if (minDimension < 400) return 0.70; // 70% for very small screens
+    if (minDimension < 600) return 0.75; // 75% for small screens
+    if (minDimension < 768) return 0.80; // 80% for mobile
+    return 0.85; // 85% for tablets and desktop
   }
 
   setRenderer() {
@@ -399,6 +421,35 @@ class CanvAscii {
     this.filter.setSize(w, h);
 
     this.center = { x: w / 2, y: h / 2 };
+    
+    // Recalculate plane size to fit new viewport
+    this.updateMeshSize();
+  }
+  
+  updateMeshSize() {
+    if (!this.textCanvas || !this.mesh || !this.geometry) return;
+    
+    const textAspect = this.textCanvas.width / this.textCanvas.height;
+    const viewportAspect = this.width / this.height;
+    
+    // Adaptive sizing: fit text to viewport with responsive padding
+    let planeW, planeH;
+    const padding = this.getAdaptivePadding();
+    
+    if (textAspect > viewportAspect) {
+      // Text is wider than viewport - fit to width
+      planeW = this.planeBaseHeight * viewportAspect * padding;
+      planeH = planeW / textAspect;
+    } else {
+      // Text is taller - fit to height
+      planeH = this.planeBaseHeight * padding;
+      planeW = planeH * textAspect;
+    }
+    
+    // Update geometry scale instead of recreating
+    const scaleX = planeW / (this.planeBaseHeight * textAspect);
+    const scaleY = planeH / this.planeBaseHeight;
+    this.mesh.scale.set(scaleX, scaleY, 1);
   }
 
   load() {

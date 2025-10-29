@@ -12,6 +12,24 @@ export default function LoadingOverlay({ onComplete }: LoadingOverlayProps) {
   // Check for reduced motion preference
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   
+  // Adaptive text size based on viewport
+  const getAdaptiveTextSize = () => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const minDimension = Math.min(vw, vh);
+    
+    // Scale text size based on viewport
+    // Small screens (< 768px): smaller text
+    // Medium screens (768-1024px): medium text
+    // Large screens (> 1024px): full text
+    if (minDimension < 500) return 80;  // Very small mobile
+    if (minDimension < 768) return 100; // Mobile
+    if (minDimension < 1024) return 120; // Tablet
+    return 130; // Desktop
+  };
+  
+  const adaptiveTextSize = getAdaptiveTextSize();
+  
   // Timing configuration
   const animationDuration = prefersReducedMotion ? 800 : 3200; // 3.2s ASCII animation
   const fadeOutDuration = 800; // 0.8s fade out
@@ -60,7 +78,7 @@ export default function LoadingOverlay({ onComplete }: LoadingOverlayProps) {
         <ASCIIText
           text="Fetching_data..."
           asciiFontSize={9}
-          textFontSize={130}
+          textFontSize={adaptiveTextSize}
           textColor="#A855F7"
           planeBaseHeight={7}
           enableWaves={!prefersReducedMotion}
