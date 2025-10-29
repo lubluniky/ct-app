@@ -28,36 +28,47 @@ export const Philosophy = () => {
             <span className="text-6xl font-bold text-primary/20">01</span>
             <h2 className="text-4xl md:text-5xl font-bold">Philosophy</h2>
           </div>
-          <div className="w-20 h-1 bg-primary" />
+          <div className="w-20 h-1 bg-primary shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
         </div>
         
         <div className="space-y-4">
           {questions.map((item, idx) => (
             <div
               key={idx}
-              className="border border-border bg-card transition-all"
+              className="border border-border bg-card transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]"
             >
               <button
                 onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
-                className="w-full text-left p-6 flex items-start justify-between gap-4 hover:bg-primary/5 transition-all"
+                className="w-full text-left p-6 flex items-start justify-between gap-4 hover:bg-primary/5 transition-all duration-300"
               >
                 <span className="text-lg font-medium">{item.q}</span>
-                <span className="text-2xl text-primary flex-shrink-0 transition-transform" style={{
-                  transform: openIndex === idx ? 'rotate(45deg)' : 'rotate(0)'
-                }}>
+                <span 
+                  className="text-2xl text-primary flex-shrink-0 transition-transform duration-400"
+                  style={{
+                    transform: openIndex === idx ? 'rotate(45deg)' : 'rotate(0)',
+                    transitionTimingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)'
+                  }}
+                >
                   +
                 </span>
               </button>
-              {openIndex === idx && (
+              <div
+                className="overflow-hidden transition-all duration-400"
+                style={{
+                  maxHeight: openIndex === idx ? '500px' : '0',
+                  opacity: openIndex === idx ? '1' : '0',
+                  transitionTimingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)'
+                }}
+              >
                 <div className="px-6 pb-6 text-muted-foreground border-t border-border pt-4">
                   {item.a}
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
 
-        <blockquote className="mt-16 border-l-4 border-primary/50 pl-6 py-4 text-lg text-muted-foreground italic">
+        <blockquote className="mt-16 border-l-4 border-primary/50 pl-6 py-4 text-lg text-muted-foreground italic shadow-[-4px_0_15px_rgba(168,85,247,0.1)]">
           "Our society views trading not as a profession but as a gamble where one can get rich by chance. People enter the market with illusions, lose money, and leave disappointed. The problem lies in the culture of mass consumption where intermediaries and 'story sellers' promise easy money instead of knowledge. This devalues trading and harms the market. To change this the word 'trader' should become as respected as 'engineer' or 'surgeon'. Traders are crucial to the economy ensuring the flow of capital. We need education, examples of professionals, and an honest conversation about trading being hard work not a lottery. Only then will the market stop stagnating."
         </blockquote>
       </div>

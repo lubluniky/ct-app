@@ -22,14 +22,14 @@ export const Ideas = () => {
             <span className="text-6xl font-bold text-primary/20">03</span>
             <h2 className="text-4xl md:text-5xl font-bold">Ideas</h2>
           </div>
-          <div className="w-20 h-1 bg-primary" />
+          <div className="w-20 h-1 bg-primary shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {ideas.map((idea, idx) => (
             <div
               key={idx}
-              className="border border-border bg-card p-8 hover-lift"
+              className="border border-border bg-card p-8 hover-lift transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]"
             >
               <h3 className="text-xl font-semibold mb-4">{idea.title}</h3>
               <p className="text-muted-foreground">{idea.description}</p>

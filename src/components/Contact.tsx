@@ -25,7 +25,7 @@ export const Contact = () => {
             <span className="text-6xl font-bold text-primary/20">05</span>
             <h2 className="text-4xl md:text-5xl font-bold">Connect</h2>
           </div>
-          <div className="w-20 h-1 bg-primary" />
+          <div className="w-20 h-1 bg-primary shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
         </div>
         
         <div className="space-y-6">
@@ -35,7 +35,7 @@ export const Contact = () => {
               href={contact.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="block border border-border bg-card p-8 hover-lift group"
+              className="block border border-border bg-card p-8 hover-lift group transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]"
             >
               <div className="flex items-center justify-between">
                 <div>
