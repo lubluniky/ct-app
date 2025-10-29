@@ -3,10 +3,10 @@ import ASCIIText from './ASCIIText';
 
 interface LoadingOverlayProps {
   onComplete?: () => void;
-  duration?: number; // in milliseconds, default 2400ms (2.4s)
+  duration?: number; // in milliseconds, default 2800ms (2.8s)
 }
 
-export default function LoadingOverlay({ onComplete, duration = 2400 }: LoadingOverlayProps) {
+export default function LoadingOverlay({ onComplete, duration = 2800 }: LoadingOverlayProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [opacity, setOpacity] = useState(1);
   
@@ -15,7 +15,7 @@ export default function LoadingOverlay({ onComplete, duration = 2400 }: LoadingO
   
   // Adjust duration for reduced motion (quick fade only)
   const actualDuration = prefersReducedMotion ? 400 : duration;
-  const fadeOutDuration = 600; // 600ms fade out
+  const fadeOutDuration = 800; // 800ms fade out for smoother transition
 
   useEffect(() => {
     // Start fade out before completion

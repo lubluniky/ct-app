@@ -54,10 +54,10 @@ const Dashboard = () => {
 
   const handleLoadingComplete = () => {
     setShowLoading(false);
-    // Fade in content after loading completes
+    // Fade in content after loading completes (smoother with longer delay)
     setTimeout(() => {
       setContentOpacity(1);
-    }, 50);
+    }, 100);
   };
 
   // Mobile blocker
@@ -94,7 +94,7 @@ const Dashboard = () => {
       {showLoading && (
         <LoadingOverlay 
           onComplete={handleLoadingComplete}
-          duration={2400} // 2.4 seconds
+          duration={2800} // 2.8 seconds - longer display time
         />
       )}
 
@@ -134,7 +134,7 @@ const Dashboard = () => {
 
       {/* Content - fades in after loading */}
       <div 
-        className="relative z-10 min-h-screen transition-opacity duration-600"
+        className="relative z-10 min-h-screen transition-opacity duration-1000"
         style={{ 
           pointerEvents: 'auto',
           opacity: contentOpacity,
