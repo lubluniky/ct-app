@@ -11,15 +11,24 @@ uniform float uEnableWaves;
 
 void main() {
     vUv = uv;
-    float time = uTime * 5.;
+    float time = uTime * 3.;
 
     float waveFactor = uEnableWaves;
 
     vec3 transformed = position;
 
-    transformed.x += sin(time + position.y) * 0.5 * waveFactor;
-    transformed.y += cos(time + position.z) * 0.15 * waveFactor;
-    transformed.z += sin(time + position.x) * waveFactor;
+    // Enhanced wave motion - snake-like movement
+    float waveX = sin(time + position.y * 2.0) * 0.8;
+    float waveY = cos(time * 0.8 + position.x * 1.5) * 0.3;
+    float waveZ = sin(time * 1.2 + position.x * 2.0) * 1.2;
+    
+    transformed.x += waveX * waveFactor;
+    transformed.y += waveY * waveFactor;
+    transformed.z += waveZ * waveFactor;
+    
+    // Add pulsing effect
+    float pulse = sin(time * 2.0) * 0.15 + 1.0;
+    transformed *= pulse;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
 }
@@ -32,15 +41,26 @@ uniform float uTime;
 uniform sampler2D uTexture;
 
 void main() {
-    float time = uTime;
+    float time = uTime * 2.0;
     vec2 pos = vUv;
     
-    float move = sin(time + mouse) * 0.01;
-    float r = texture2D(uTexture, pos + cos(time * 2. - time + pos.x) * .01).r;
-    float g = texture2D(uTexture, pos + tan(time * .5 + pos.x - time) * .01).g;
-    float b = texture2D(uTexture, pos - cos(time * 2. + time + pos.y) * .01).b;
+    // Enhanced chromatic aberration with animation
+    float aberration = 0.015;
+    float offset = sin(time) * aberration;
+    
+    float r = texture2D(uTexture, pos + vec2(offset, 0.0)).r;
+    float g = texture2D(uTexture, pos).g;
+    float b = texture2D(uTexture, pos - vec2(offset, 0.0)).b;
     float a = texture2D(uTexture, pos).a;
-    gl_FragColor = vec4(r, g, b, a);
+    
+    // Add color shift for rainbow effect
+    vec3 color = vec3(r, g, b);
+    float hueShift = time * 0.3;
+    
+    // Boost colors
+    color *= 1.2;
+    
+    gl_FragColor = vec4(color, a);
 }
 `;
 
@@ -674,18 +694,50 @@ export default function ASCIIText({
           position: absolute;
           left: 0;
           top: 0;
-          background-image: radial-gradient(circle, #ff6188 0%, #fc9867 50%, #ffd866 100%);
-          background-attachment: fixed;
+          /* Enhanced animated gradient - psychedelic colors */
+          background: linear-gradient(
+            45deg,
+            #ff0080 0%,
+            #ff8c00 15%,
+            #40e0d0 30%,
+            #9d00ff 45%,
+            #00ff88 60%,
+            #ff1493 75%,
+            #00bfff 90%,
+            #ff0080 100%
+          );
+          background-size: 400% 400%;
+          animation: gradientShift 8s ease infinite;
           -webkit-text-fill-color: transparent;
           -webkit-background-clip: text;
           background-clip: text;
           z-index: 9;
-          mix-blend-mode: difference;
+          mix-blend-mode: screen;
           /* Performance optimizations */
-          will-change: contents;
+          will-change: contents, background-position;
           contain: strict;
           transform: translateZ(0);
           backface-visibility: hidden;
+          /* Glow effect */
+          filter: brightness(1.3) contrast(1.2);
+        }
+        
+        @keyframes gradientShift {
+          0% {
+            background-position: 0% 50%;
+          }
+          25% {
+            background-position: 50% 100%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          75% {
+            background-position: 50% 0%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
         }
       `}</style>
     </div>

@@ -71,18 +71,62 @@ export default function LoadingOverlay({ onComplete }: LoadingOverlayProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black transition-opacity"
+      className="fixed inset-0 z-[100] flex items-center justify-center transition-opacity overflow-hidden"
       style={{
         opacity: isFadingOut ? 0 : 1,
         transitionDuration: `${fadeOutDuration}ms`,
         transitionTimingFunction: 'cubic-bezier(0.4, 0.0, 0.2, 1)',
-        willChange: 'opacity', // GPU acceleration hint
-        transform: 'translateZ(0)', // Force GPU layer
-        backfaceVisibility: 'hidden' // Improve rendering
+        willChange: 'opacity',
+        transform: 'translateZ(0)',
+        backfaceVisibility: 'hidden',
+        background: 'radial-gradient(circle at center, #0a0015 0%, #000000 100%)'
       }}
     >
+      {/* Animated background glow */}
+      {!prefersReducedMotion && (
+        <>
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(circle at 50% 50%, rgba(157, 0, 255, 0.3) 0%, transparent 50%)',
+              animation: 'pulse-glow 4s ease-in-out infinite',
+              filter: 'blur(80px)'
+            }}
+          />
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(circle at 30% 40%, rgba(255, 0, 128, 0.2) 0%, transparent 40%)',
+              animation: 'pulse-glow 5s ease-in-out infinite reverse',
+              filter: 'blur(60px)'
+            }}
+          />
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(circle at 70% 60%, rgba(0, 191, 255, 0.2) 0%, transparent 40%)',
+              animation: 'pulse-glow 6s ease-in-out infinite',
+              filter: 'blur(70px)'
+            }}
+          />
+        </>
+      )}
+      
+      <style>{`
+        @keyframes pulse-glow {
+          0%, 100% {
+            opacity: 0.3;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.6;
+            transform: scale(1.1);
+          }
+        }
+      `}</style>
+
       {/* ASCII Animation */}
-      <div className="relative w-full h-full">
+      <div className="relative w-full h-full z-10">
         <ASCIIText
           text="Fetching_data..."
           asciiFontSize={7}
@@ -93,19 +137,34 @@ export default function LoadingOverlay({ onComplete }: LoadingOverlayProps) {
         />
       </div>
 
-      {/* Subtle loading indicator */}
+      {/* Enhanced loading indicator */}
       {!prefersReducedMotion && (
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2">
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-20">
           <div className="flex gap-3">
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
-                className="w-2.5 h-2.5 rounded-full bg-primary/70"
-                style={{
-                  animation: `pulse 1.5s ease-in-out ${i * 0.3}s infinite`,
-                  willChange: 'transform, opacity'
-                }}
-              />
+                className="relative"
+              >
+                <div
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{
+                    background: 'linear-gradient(45deg, #ff0080, #00bfff)',
+                    animation: `pulse 1.5s ease-in-out ${i * 0.3}s infinite`,
+                    willChange: 'transform, opacity',
+                    boxShadow: '0 0 10px rgba(255, 0, 128, 0.5)'
+                  }}
+                />
+                <div
+                  className="absolute inset-0 w-2.5 h-2.5 rounded-full"
+                  style={{
+                    background: 'linear-gradient(45deg, #ff0080, #00bfff)',
+                    animation: `pulse 1.5s ease-in-out ${i * 0.3}s infinite`,
+                    filter: 'blur(4px)',
+                    opacity: 0.6
+                  }}
+                />
+              </div>
             ))}
           </div>
         </div>
