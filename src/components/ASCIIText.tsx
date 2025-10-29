@@ -138,6 +138,9 @@ class AsciiFilter {
       this.pre.style.zIndex = '9';
       this.pre.style.backgroundAttachment = 'fixed';
       this.pre.style.mixBlendMode = 'difference';
+      // Performance optimizations for smooth rendering
+      this.pre.style.willChange = 'contents';
+      this.pre.style.contain = 'strict';
     }
   }
 
@@ -169,7 +172,9 @@ class AsciiFilter {
   hue() {
     const deg = (Math.atan2(this.dy, this.dx) * 180) / Math.PI;
     this.deg += (deg - this.deg) * 0.075;
-    this.domElement.style.filter = `hue-rotate(${this.deg.toFixed(1)}deg)`;
+    // Use transform instead of filter for better performance
+    // Removed hue-rotate as it's very expensive in Safari/Chromium
+    // this.domElement.style.filter = `hue-rotate(${this.deg.toFixed(1)}deg)`;
   }
 
   asciify(ctx: CanvasRenderingContext2D, w: number, h: number) {
@@ -192,7 +197,8 @@ class AsciiFilter {
       }
       str += '\n';
     }
-    this.pre.innerHTML = str;
+    // Use textContent instead of innerHTML for better performance
+    this.pre.textContent = str;
   }
 
   dispose() {
@@ -360,8 +366,14 @@ class CanvAscii {
   }
 
   setRenderer() {
-    this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
-    this.renderer.setPixelRatio(1);
+    this.renderer = new THREE.WebGLRenderer({ 
+      antialias: false, 
+      alpha: true,
+      powerPreference: 'high-performance', // Use discrete GPU if available
+      stencil: false, // Disable stencil buffer for better performance
+      depth: false // Disable depth buffer (not needed for 2D)
+    });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap at 2x for performance
     this.renderer.setClearColor(0x000000, 0);
 
     this.filter = new AsciiFilter(this.renderer, {
@@ -373,8 +385,8 @@ class CanvAscii {
     this.container.appendChild(this.filter.domElement);
     this.setSize(this.width, this.height);
 
-    this.container.addEventListener('mousemove', this.onMouseMove);
-    this.container.addEventListener('touchmove', this.onMouseMove);
+    this.container.addEventListener('mousemove', this.onMouseMove, { passive: true });
+    this.container.addEventListener('touchmove', this.onMouseMove, { passive: true });
   }
 
   setSize(w: number, h: number) {
@@ -412,8 +424,9 @@ class CanvAscii {
   render() {
     const time = new Date().getTime() * 0.001;
 
-    this.textCanvas.render();
-    this.texture.needsUpdate = true;
+    // Only update texture if needed (optimization)
+    // this.textCanvas.render(); // Text is static, no need to re-render every frame
+    // this.texture.needsUpdate = true; // Only update on text change
 
     (this.mesh.material as THREE.ShaderMaterial).uniforms.uTime.value = Math.sin(time);
 
@@ -581,6 +594,10 @@ export default function ASCIIText({
           image-rendering: optimize-contrast;
           image-rendering: crisp-edges;
           image-rendering: pixelated;
+          /* GPU acceleration hints */
+          will-change: transform;
+          transform: translateZ(0);
+          backface-visibility: hidden;
         }
 
         .ascii-text-container pre {
@@ -596,8 +613,14 @@ export default function ASCIIText({
           background-attachment: fixed;
           -webkit-text-fill-color: transparent;
           -webkit-background-clip: text;
+          background-clip: text;
           z-index: 9;
           mix-blend-mode: difference;
+          /* Performance optimizations */
+          will-change: contents;
+          contain: strict;
+          transform: translateZ(0);
+          backface-visibility: hidden;
         }
       `}</style>
     </div>

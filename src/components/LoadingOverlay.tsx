@@ -49,7 +49,10 @@ export default function LoadingOverlay({ onComplete }: LoadingOverlayProps) {
       style={{
         opacity: isFadingOut ? 0 : 1,
         transitionDuration: `${fadeOutDuration}ms`,
-        transitionTimingFunction: 'cubic-bezier(0.4, 0.0, 0.2, 1)'
+        transitionTimingFunction: 'cubic-bezier(0.4, 0.0, 0.2, 1)',
+        willChange: 'opacity', // GPU acceleration hint
+        transform: 'translateZ(0)', // Force GPU layer
+        backfaceVisibility: 'hidden' // Improve rendering
       }}
     >
       {/* ASCII Animation */}
@@ -73,7 +76,8 @@ export default function LoadingOverlay({ onComplete }: LoadingOverlayProps) {
                 key={i}
                 className="w-2.5 h-2.5 rounded-full bg-primary/70"
                 style={{
-                  animation: `pulse 1.5s ease-in-out ${i * 0.3}s infinite`
+                  animation: `pulse 1.5s ease-in-out ${i * 0.3}s infinite`,
+                  willChange: 'transform, opacity'
                 }}
               />
             ))}
