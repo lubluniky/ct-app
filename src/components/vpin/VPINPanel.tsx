@@ -145,7 +145,7 @@ export function VPINPanel({
                 </div>
                 <div>
                   <span className="text-muted-foreground">Source:</span>{' '}
-                  <span className="text-foreground font-mono">Futures</span>
+                  <span className="text-foreground font-mono">CryptoCompare</span>
                 </div>
               </div>
 

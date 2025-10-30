@@ -44,71 +44,40 @@ interface UseVPINOptions {
   refreshInterval?: number;
 }
 
-// Fetch trades via our own Vercel proxy endpoint
+// Fetch trades via our Vercel proxy (uses CryptoCompare data)
 async function fetchBinanceTrades(symbol: string, hours: number): Promise<AggTrade[]> {
   const endTime = Date.now();
   const startTime = endTime - hours * 60 * 60 * 1000;
   
-  const allTrades: AggTrade[] = [];
-  let fromId: number | null = null;
-  let iterationCount = 0;
-  const maxIterations = 150;
-
-  console.log(`[useVPIN] Fetching ${hours}h of ${symbol} trades via Vercel proxy...`);
+  console.log(`[useVPIN] Fetching ${hours}h of ${symbol} data via CryptoCompare proxy...`);
 
   try {
-    while (iterationCount < maxIterations) {
-      iterationCount++;
-      
-      const params = new URLSearchParams({
-        symbol,
-        startTime: startTime.toString(),
-        endTime: endTime.toString(),
-        limit: '1000',
-      });
-      
-      if (fromId !== null) {
-        params.append('fromId', fromId.toString());
-      }
+    const params = new URLSearchParams({
+      symbol,
+      startTime: startTime.toString(),
+      endTime: endTime.toString(),
+      limit: '2000',
+    });
 
-      // Use our own proxy endpoint instead of Binance directly
-      const proxyUrl = `/api/binance-proxy?${params}`;
-      console.log(`[useVPIN] Iteration ${iterationCount}: fetching via proxy...`);
+    const proxyUrl = `/api/binance-proxy?${params}`;
+    console.log(`[useVPIN] Fetching from proxy...`);
 
-      const response = await fetch(proxyUrl);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error(`[useVPIN] Proxy error: ${response.status}`, errorData);
-        throw new Error(`Proxy error: ${response.status} ${errorData.message || response.statusText}`);
-      }
-      
-      const trades = await response.json() as AggTrade[];
-      console.log(`[useVPIN] ✅ Iteration ${iterationCount}: received ${trades.length} trades`);
-
-      if (!trades.length) {
-        console.log(`[useVPIN] No more trades at iteration ${iterationCount}`);
-        break;
-      }
-      
-      allTrades.push(...trades);
-      
-      const lastTradeTime = trades[trades.length - 1].T;
-      if (lastTradeTime >= endTime) {
-        console.log(`[useVPIN] Reached end time at iteration ${iterationCount}`);
-        break;
-      }
-      
-      fromId = trades[trades.length - 1].a + 1;
-      
-      // Small delay to avoid rate limits
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    const filteredTrades = allTrades.filter(trade => trade.T >= startTime && trade.T <= endTime);
-    console.log(`[useVPIN] ✅ Fetched ${allTrades.length} trades total, ${filteredTrades.length} after filtering`);
+    const response = await fetch(proxyUrl);
     
-    return filteredTrades;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`[useVPIN] Proxy error: ${response.status}`, errorData);
+      throw new Error(`Proxy error: ${response.status} ${errorData.message || response.statusText}`);
+    }
+    
+    const trades = await response.json() as AggTrade[];
+    console.log(`[useVPIN] ✅ Received ${trades.length} synthetic trades`);
+
+    if (!trades.length) {
+      throw new Error('No trades received from data provider');
+    }
+    
+    return trades;
   } catch (error) {
     console.error('[useVPIN] Error fetching trades:', error);
     throw error;
