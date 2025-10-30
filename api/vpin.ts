@@ -94,12 +94,12 @@ async function fetchAggTrades(
   symbol: string,
   hours: number = 24
 ): Promise<AggTrade[]> {
-  // Use SPOT API (less likely to be geo-blocked than Futures)
-  const url = 'https://api.binance.com/api/v3/aggTrades';
+  // Use CORS proxy to bypass geo-blocking (Binance blocks US IPs from Vercel)
+  const baseUrl = 'https://api.binance.com/api/v3/aggTrades';
   const endTime = Date.now();
   const startTime = endTime - hours * 60 * 60 * 1000;
   
-  console.log(`[binanceAPI] Fetching aggTrades for ${symbol} (last ${hours}h) from SPOT`);
+  console.log(`[binanceAPI] Fetching aggTrades for ${symbol} (last ${hours}h) via proxy`);
   
   const allTrades: AggTrade[] = [];
   let fromId: number | null = null;
@@ -121,7 +121,11 @@ async function fetchAggTrades(
         params.append('fromId', fromId.toString());
       }
 
-      const response = await fetch(`${url}?${params}`, {
+      // Use CORS proxy to bypass Binance geo-blocking
+      const binanceUrl = `${baseUrl}?${params}`;
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(binanceUrl)}`;
+
+      const response = await fetch(proxyUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0',
         },
