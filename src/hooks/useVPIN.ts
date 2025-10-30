@@ -44,7 +44,7 @@ interface UseVPINOptions {
   refreshInterval?: number;
 }
 
-// Fetch trades directly from Binance (from browser, bypasses Vercel US IP geo-block)
+// Fetch trades via CORS proxy (Binance blocks direct browser requests)
 async function fetchBinanceTrades(symbol: string, hours: number): Promise<AggTrade[]> {
   const endTime = Date.now();
   const startTime = endTime - hours * 60 * 60 * 1000;
@@ -54,7 +54,14 @@ async function fetchBinanceTrades(symbol: string, hours: number): Promise<AggTra
   let iterationCount = 0;
   const maxIterations = 150;
 
-  console.log(`[useVPIN] Fetching ${hours}h of ${symbol} trades from Binance API...`);
+  console.log(`[useVPIN] Fetching ${hours}h of ${symbol} trades via CORS proxy...`);
+
+  // List of CORS proxies to try
+  const proxies = [
+    (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    (url: string) => `https://cors-anywhere.herokuapp.com/${url}`,
+  ];
 
   try {
     while (iterationCount < maxIterations) {
@@ -71,19 +78,37 @@ async function fetchBinanceTrades(symbol: string, hours: number): Promise<AggTra
         params.append('fromId', fromId.toString());
       }
 
-      const url = `https://api.binance.com/api/v3/aggTrades?${params}`;
-      console.log(`[useVPIN] Iteration ${iterationCount}: ${url}`);
+      const binanceUrl = `https://api.binance.com/api/v3/aggTrades?${params}`;
+      
+      // Try each proxy until one works
+      let trades: AggTrade[] | null = null;
+      let lastError: Error | null = null;
 
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[useVPIN] Binance API error: ${response.status} ${response.statusText}`, errorText);
-        throw new Error(`Binance API error: ${response.status} ${response.statusText}`);
+      for (const proxyFn of proxies) {
+        try {
+          const proxyUrl = proxyFn(binanceUrl);
+          console.log(`[useVPIN] Iteration ${iterationCount}: trying proxy...`);
+
+          const response = await fetch(proxyUrl);
+          
+          if (!response.ok) {
+            console.warn(`[useVPIN] Proxy returned ${response.status}, trying next...`);
+            continue;
+          }
+          
+          trades = await response.json() as AggTrade[];
+          console.log(`[useVPIN] ✅ Iteration ${iterationCount}: received ${trades.length} trades`);
+          break; // Success!
+        } catch (err) {
+          lastError = err as Error;
+          console.warn(`[useVPIN] Proxy failed:`, err);
+          continue; // Try next proxy
+        }
       }
-      
-      const trades = await response.json() as AggTrade[];
-      console.log(`[useVPIN] Iteration ${iterationCount}: received ${trades.length} trades`);
+
+      if (!trades) {
+        throw new Error(`All proxies failed. Last error: ${lastError?.message || 'Unknown'}`);
+      }
 
       if (!trades.length) {
         console.log(`[useVPIN] No more trades at iteration ${iterationCount}`);
@@ -101,7 +126,7 @@ async function fetchBinanceTrades(symbol: string, hours: number): Promise<AggTra
       fromId = trades[trades.length - 1].a + 1;
       
       // Small delay to avoid rate limits
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
 
     const filteredTrades = allTrades.filter(trade => trade.T >= startTime && trade.T <= endTime);
