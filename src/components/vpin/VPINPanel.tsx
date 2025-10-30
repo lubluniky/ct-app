@@ -84,7 +84,8 @@ export function VPINPanel({
           <div className="mb-4 flex items-center justify-center bg-[#1a1a1a] rounded-lg" style={{ minHeight: '400px', height: '400px' }}>
             <div className="flex flex-col items-center gap-2">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-              <span className="text-sm text-muted-foreground">Loading VPIN data...</span>
+              <span className="text-sm text-muted-foreground">Fetching trades from Binance...</span>
+              <span className="text-xs text-muted-foreground/60">This may take 10-20 seconds</span>
             </div>
           </div>
         )}
@@ -101,28 +102,28 @@ export function VPINPanel({
               <div className="bg-[#1a1a1a] rounded-lg p-3">
                 <div className="text-xs text-muted-foreground mb-1">Current VPIN</div>
                 <div className="text-lg font-bold text-purple-500">
-                  {data.stats.currentVPIN.toFixed(4)}
+                  {data.currentVPIN.toFixed(4)}
                 </div>
               </div>
               
               <div className="bg-[#1a1a1a] rounded-lg p-3">
                 <div className="text-xs text-muted-foreground mb-1">Average VPIN</div>
                 <div className="text-lg font-bold">
-                  {data.stats.avgVPIN.toFixed(4)}
+                  {data.avgVPIN.toFixed(4)}
                 </div>
               </div>
               
               <div className="bg-[#1a1a1a] rounded-lg p-3">
                 <div className="text-xs text-muted-foreground mb-1">Max VPIN</div>
                 <div className="text-lg font-bold text-red-500">
-                  {data.stats.maxVPIN.toFixed(4)}
+                  {Math.max(...data.buckets.map(b => b.vpin)).toFixed(4)}
                 </div>
               </div>
               
               <div className="bg-[#1a1a1a] rounded-lg p-3">
                 <div className="text-xs text-muted-foreground mb-1">Min VPIN</div>
                 <div className="text-lg font-bold text-green-500">
-                  {data.stats.minVPIN.toFixed(4)}
+                  {Math.min(...data.buckets.map(b => b.vpin)).toFixed(4)}
                 </div>
               </div>
             </div>

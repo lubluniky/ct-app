@@ -4,7 +4,27 @@
  */
 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
-import type { VPINData } from '@/lib/vpin/calculateVPIN';
+
+interface VPINBucket {
+  timestamp: number;
+  vpin: number;
+  buyVolume: number;
+  sellVolume: number;
+  totalVolume: number;
+  imbalance: number;
+  trades: number;
+}
+
+interface VPINData {
+  symbol: string;
+  timeframe: string;
+  timestamp: number;
+  currentVPIN: number;
+  avgVPIN: number;
+  buckets: VPINBucket[];
+  totalTrades: number;
+  hours: number;
+}
 
 interface VPINChartProps {
   data: VPINData;
@@ -14,12 +34,12 @@ interface VPINChartProps {
 export function VPINChart({ data, height = 400 }: VPINChartProps) {
   // Prepare chart data
   const chartData = data.buckets.map((bucket) => ({
-    time: new Date(bucket.time).toLocaleTimeString('en-US', {
+    time: new Date(bucket.timestamp).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
     }),
-    timestamp: bucket.time,
+    timestamp: bucket.timestamp,
     vpin: bucket.vpin,
     buyVolume: bucket.buyVolume,
     sellVolume: bucket.sellVolume,
