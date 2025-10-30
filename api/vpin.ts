@@ -94,11 +94,12 @@ async function fetchAggTrades(
   symbol: string,
   hours: number = 24
 ): Promise<AggTrade[]> {
-  const url = 'https://fapi.binance.com/fapi/v1/aggTrades';
+  // Use SPOT API (less likely to be geo-blocked than Futures)
+  const url = 'https://api.binance.com/api/v3/aggTrades';
   const endTime = Date.now();
   const startTime = endTime - hours * 60 * 60 * 1000;
   
-  console.log(`[binanceAPI] Fetching aggTrades for ${symbol} (last ${hours}h)`);
+  console.log(`[binanceAPI] Fetching aggTrades for ${symbol} (last ${hours}h) from SPOT`);
   
   const allTrades: AggTrade[] = [];
   let fromId: number | null = null;
@@ -120,7 +121,11 @@ async function fetchAggTrades(
         params.append('fromId', fromId.toString());
       }
 
-      const response = await fetch(`${url}?${params}`);
+      const response = await fetch(`${url}?${params}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0',
+        },
+      });
       
       if (!response.ok) {
         throw new Error(`Binance API error: ${response.status} ${response.statusText}`);
