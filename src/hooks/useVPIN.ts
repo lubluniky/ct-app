@@ -54,52 +54,64 @@ async function fetchBinanceTrades(symbol: string, hours: number): Promise<AggTra
   let iterationCount = 0;
   const maxIterations = 150;
 
-  console.log(`[useVPIN] Fetching ${hours}h of ${symbol} trades from browser...`);
+  console.log(`[useVPIN] Fetching ${hours}h of ${symbol} trades from Binance API...`);
 
-  while (iterationCount < maxIterations) {
-    iterationCount++;
-    
-    const params = new URLSearchParams({
-      symbol,
-      startTime: startTime.toString(),
-      endTime: endTime.toString(),
-      limit: '1000',
-    });
-    
-    if (fromId !== null) {
-      params.append('fromId', fromId.toString());
+  try {
+    while (iterationCount < maxIterations) {
+      iterationCount++;
+      
+      const params = new URLSearchParams({
+        symbol,
+        startTime: startTime.toString(),
+        endTime: endTime.toString(),
+        limit: '1000',
+      });
+      
+      if (fromId !== null) {
+        params.append('fromId', fromId.toString());
+      }
+
+      const url = `https://api.binance.com/api/v3/aggTrades?${params}`;
+      console.log(`[useVPIN] Iteration ${iterationCount}: ${url}`);
+
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[useVPIN] Binance API error: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Binance API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const trades = await response.json() as AggTrade[];
+      console.log(`[useVPIN] Iteration ${iterationCount}: received ${trades.length} trades`);
+
+      if (!trades.length) {
+        console.log(`[useVPIN] No more trades at iteration ${iterationCount}`);
+        break;
+      }
+      
+      allTrades.push(...trades);
+      
+      const lastTradeTime = trades[trades.length - 1].T;
+      if (lastTradeTime >= endTime) {
+        console.log(`[useVPIN] Reached end time at iteration ${iterationCount}`);
+        break;
+      }
+      
+      fromId = trades[trades.length - 1].a + 1;
+      
+      // Small delay to avoid rate limits
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    const response = await fetch(
-      `https://api.binance.com/api/v3/aggTrades?${params}`
-    );
+    const filteredTrades = allTrades.filter(trade => trade.T >= startTime && trade.T <= endTime);
+    console.log(`[useVPIN] ✅ Fetched ${allTrades.length} trades total, ${filteredTrades.length} after filtering`);
     
-    if (!response.ok) {
-      throw new Error(`Binance API error: ${response.status}`);
-    }
-    
-    const trades = await response.json() as AggTrade[];
-
-    if (!trades.length) {
-      break;
-    }
-    
-    allTrades.push(...trades);
-    
-    const lastTradeTime = trades[trades.length - 1].T;
-    if (lastTradeTime >= endTime) {
-      break;
-    }
-    
-    fromId = trades[trades.length - 1].a + 1;
-    
-    // Small delay to avoid rate limits
-    await new Promise(resolve => setTimeout(resolve, 100));
+    return filteredTrades;
+  } catch (error) {
+    console.error('[useVPIN] Error fetching trades:', error);
+    throw error;
   }
-
-  console.log(`[useVPIN] ✅ Fetched ${allTrades.length} trades in ${iterationCount} iterations`);
-  
-  return allTrades.filter(trade => trade.T >= startTime && trade.T <= endTime);
 }
 
 // Calculate VPIN on server (with Redis caching)
@@ -127,16 +139,32 @@ async function calculateVPIN(
 
 // Combined fetcher: fetch trades from Binance (browser) → calculate on server
 const vpinFetcher = async (url: string): Promise<VPINData> => {
-  const urlObj = new URL(url, window.location.origin);
-  const symbol = urlObj.searchParams.get('symbol') || 'BTCUSDT';
-  const timeframe = urlObj.searchParams.get('tf') || 'm5';
-  const hours = parseInt(urlObj.searchParams.get('hours') || '24', 10);
+  try {
+    const urlObj = new URL(url, window.location.origin);
+    const symbol = urlObj.searchParams.get('symbol') || 'BTCUSDT';
+    const timeframe = urlObj.searchParams.get('tf') || 'm5';
+    const hours = parseInt(urlObj.searchParams.get('hours') || '24', 10);
 
-  // Step 1: Fetch trades from Binance (bypasses Vercel geo-block)
-  const trades = await fetchBinanceTrades(symbol, hours);
-  
-  // Step 2: Send to server for VPIN calculation + Redis caching
-  return calculateVPIN(trades, symbol, timeframe, hours);
+    console.log(`[vpinFetcher] Starting fetch for ${symbol} (${timeframe}, ${hours}h)`);
+
+    // Step 1: Fetch trades from Binance (bypasses Vercel geo-block)
+    const trades = await fetchBinanceTrades(symbol, hours);
+    
+    if (!trades.length) {
+      throw new Error('No trades received from Binance');
+    }
+
+    console.log(`[vpinFetcher] Sending ${trades.length} trades to server for calculation...`);
+    
+    // Step 2: Send to server for VPIN calculation + Redis caching
+    const vpinData = await calculateVPIN(trades, symbol, timeframe, hours);
+    
+    console.log(`[vpinFetcher] ✅ VPIN calculated successfully`);
+    return vpinData;
+  } catch (error) {
+    console.error('[vpinFetcher] Error:', error);
+    throw error;
+  }
 };
 
 export function useVPIN(options: UseVPINOptions = {}) {
