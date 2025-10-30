@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 // Import panels
 import { RvwapPanel } from '@/components/rvwap/RvwapPanel';
 import { MTMPanel } from '@/components/mtm/MTMPanel';
-import { VPINPanel } from '@/components/vpin/VPINPanel';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -160,9 +159,6 @@ const Dashboard = () => {
           
           {/* RVWAP Panel */}
           <RvwapPanel symbol="BTCUSDT" dataSource="spot" />
-          
-          {/* VPIN Panel */}
-          <VPINPanel symbol="BTCUSDT" timeframe="m5" hours={24} />
         </main>
       </div>
     </div>
