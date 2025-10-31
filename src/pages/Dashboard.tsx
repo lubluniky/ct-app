@@ -113,13 +113,13 @@ const Dashboard = () => {
         <Suspense fallback={<div className="w-full h-full bg-black" />}>
           <LiquidEther
             colors={['#5227FF', '#FF9FFC', '#B19EEF']}
-            mouseForce={prefersReducedMotion ? 10 : 20}
-            cursorSize={100}
+            mouseForce={prefersReducedMotion ? 8 : 15}
+            cursorSize={80}
             isViscous={false}
-            viscous={20}
-            iterationsViscous={prefersReducedMotion ? 8 : 16}
-            iterationsPoisson={prefersReducedMotion ? 8 : 16}
-            resolution={prefersReducedMotion ? 0.2 : 0.3}
+            viscous={15}
+            iterationsViscous={prefersReducedMotion ? 4 : 8}
+            iterationsPoisson={prefersReducedMotion ? 4 : 8}
+            resolution={0.25}
             isBounce={false}
             autoDemo={true}
             autoSpeed={prefersReducedMotion ? 0.3 : 0.5}
