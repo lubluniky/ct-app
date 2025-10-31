@@ -1,13 +1,13 @@
-import LiquidEther from '@/components/LiquidEther';
-import LoadingOverlay from '@/components/LoadingOverlay';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 
-// Import panels
-import { RvwapPanel } from '@/components/rvwap/RvwapPanel';
-import { MTMPanel } from '@/components/mtm/MTMPanel';
-import { OEBTCIndicator } from '@/components/OEBTCIndicator';
+// Lazy load heavy components
+const LiquidEther = lazy(() => import('@/components/LiquidEther'));
+const LoadingOverlay = lazy(() => import('@/components/LoadingOverlay'));
+const RvwapPanel = lazy(() => import('@/components/rvwap/RvwapPanel').then(module => ({ default: module.RvwapPanel })));
+const MTMPanel = lazy(() => import('@/components/mtm/MTMPanel').then(module => ({ default: module.MTMPanel })));
+const OEBTCIndicator = lazy(() => import('@/components/OEBTCIndicator').then(module => ({ default: module.OEBTCIndicator })));
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -20,25 +20,37 @@ const Dashboard = () => {
   // Animation will play every time user navigates to dashboard
 
   useEffect(() => {
+    let resizeTimeout: number | null = null;
+
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
+    const debouncedCheckMobile = () => {
+      if (resizeTimeout !== null) {
+        clearTimeout(resizeTimeout);
+      }
+      resizeTimeout = window.setTimeout(checkMobile, 150);
+    };
+
     // Check for reduced motion preference
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     setPrefersReducedMotion(mediaQuery.matches);
-    
+
     const handleChange = (e: MediaQueryListEvent) => {
       setPrefersReducedMotion(e.matches);
     };
-    
+
     mediaQuery.addEventListener('change', handleChange);
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
+    window.addEventListener('resize', debouncedCheckMobile);
+
     return () => {
-      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('resize', debouncedCheckMobile);
       mediaQuery.removeEventListener('change', handleChange);
+      if (resizeTimeout !== null) {
+        clearTimeout(resizeTimeout);
+      }
     };
   }, []);
 
@@ -84,36 +96,40 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background relative">
       {/* Loading Overlay - shows every time dashboard is loaded */}
       {showLoading && (
-        <LoadingOverlay onComplete={handleLoadingComplete} />
+        <Suspense fallback={null}>
+          <LoadingOverlay onComplete={handleLoadingComplete} />
+        </Suspense>
       )}
 
       {/* Liquid Ether Background - lowest z-index, dimmed during loading */}
-      <div 
+      <div
         className="fixed inset-0 z-0 transition-all duration-500"
-        style={{ 
+        style={{
           opacity: showLoading ? 0.2 : 1,
           filter: showLoading ? 'blur(8px)' : 'blur(0px)',
           transitionTimingFunction: 'cubic-bezier(0.4, 0.0, 0.2, 1)'
         }}
       >
-        <LiquidEther
-          colors={['#5227FF', '#FF9FFC', '#B19EEF']}
-          mouseForce={prefersReducedMotion ? 15 : 30}
-          cursorSize={150}
-          isViscous={false}
-          viscous={30}
-          iterationsViscous={prefersReducedMotion ? 16 : 32}
-          iterationsPoisson={prefersReducedMotion ? 16 : 32}
-          resolution={prefersReducedMotion ? 0.3 : 0.5}
-          isBounce={false}
-          autoDemo={true}
-          autoSpeed={prefersReducedMotion ? 0.4 : 0.7}
-          autoIntensity={3.0}
-          takeoverDuration={0.25}
-          autoResumeDelay={3000}
-          autoRampDuration={0.6}
-          style={{ width: '100%', height: '100%' }}
-        />
+        <Suspense fallback={<div className="w-full h-full bg-black" />}>
+          <LiquidEther
+            colors={['#5227FF', '#FF9FFC', '#B19EEF']}
+            mouseForce={prefersReducedMotion ? 10 : 20}
+            cursorSize={100}
+            isViscous={false}
+            viscous={20}
+            iterationsViscous={prefersReducedMotion ? 8 : 16}
+            iterationsPoisson={prefersReducedMotion ? 8 : 16}
+            resolution={prefersReducedMotion ? 0.2 : 0.3}
+            isBounce={false}
+            autoDemo={true}
+            autoSpeed={prefersReducedMotion ? 0.3 : 0.5}
+            autoIntensity={2.0}
+            takeoverDuration={0.25}
+            autoResumeDelay={3000}
+            autoRampDuration={0.6}
+            style={{ width: '100%', height: '100%' }}
+          />
+        </Suspense>
       </div>
 
       {/* Darkening mask for chart readability */}
@@ -156,13 +172,19 @@ const Dashboard = () => {
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
           {/* OE-BTC Indicator */}
-          <OEBTCIndicator />
-          
+          <Suspense fallback={<div className="h-64 bg-card/50 animate-pulse rounded-lg" />}>
+            <OEBTCIndicator />
+          </Suspense>
+
           {/* MTM Panel */}
-          <MTMPanel symbol="BTCUSDT" dataSource="futures" />
-          
+          <Suspense fallback={<div className="h-96 bg-card/50 animate-pulse rounded-lg" />}>
+            <MTMPanel symbol="BTCUSDT" dataSource="futures" />
+          </Suspense>
+
           {/* RVWAP Panel */}
-          <RvwapPanel symbol="BTCUSDT" dataSource="spot" />
+          <Suspense fallback={<div className="h-96 bg-card/50 animate-pulse rounded-lg" />}>
+            <RvwapPanel symbol="BTCUSDT" dataSource="spot" />
+          </Suspense>
         </main>
       </div>
     </div>

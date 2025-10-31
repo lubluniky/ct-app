@@ -85,19 +85,19 @@ interface AnimationConfig {
 // Default configuration - easy to customize
 const DEFAULT_CONFIG: AnimationConfig = {
   pattern: 'star',
-  charSize: 16,              // Larger characters for better visibility
-  density: 300,              // Reduced density - more space between letters
+  charSize: 14,              // Slightly smaller for performance
+  density: 150,              // Reduced density for better performance
   rotationSpeed: 0,          // No rotation - static star
   pulseSpeed: 0.0008,        // Very slow gentle pulse
   pulseAmplitude: 0.05,      // Minimal breathing effect
-  mouseInfluence: 0.1,       // Subtle mouse interaction
-  scrollInfluence: 0.05,     // Minimal scroll effect
-  opacity: 0.9,              // High opacity for clear visibility
-  glowIntensity: 15,         // Strong glow for dramatic effect
-  backgroundStarCount: 80,   // Elegant scatter of small stars
-  animatedSymbolCount: 3,    // Few bitcoin symbols floating
-  shootingStarFrequency: 0.02, // Occasional shooting stars
-  enableConstellations: true // Subtle constellation lines
+  mouseInfluence: 0.08,      // Reduced mouse interaction
+  scrollInfluence: 0.03,     // Reduced scroll effect
+  opacity: 0.85,             // Slightly lower opacity
+  glowIntensity: 12,         // Reduced glow for performance
+  backgroundStarCount: 40,   // Reduced star count
+  animatedSymbolCount: 2,    // Fewer animated symbols
+  shootingStarFrequency: 0.01, // Less frequent shooting stars
+  enableConstellations: false // Disable constellations for performance
 };
 
 /**
@@ -424,7 +424,8 @@ export const AnimatedBackground = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Resize canvas to fill screen
+    // Resize canvas to fill screen with debounce for performance
+    let resizeTimeout: number | null = null;
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -432,8 +433,16 @@ export const AnimatedBackground = () => {
       backgroundStarsRef.current = generateBackgroundStars(canvas.width, canvas.height, config.backgroundStarCount);
       animatedSymbolsRef.current = initAnimatedSymbols(canvas.width, canvas.height, config.animatedSymbolCount);
     };
+
+    const debouncedResize = () => {
+      if (resizeTimeout !== null) {
+        clearTimeout(resizeTimeout);
+      }
+      resizeTimeout = window.setTimeout(resizeCanvas, 150);
+    };
+
     resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', debouncedResize);
 
     // Mouse move handler - track position
     const handleMouseMove = (e: MouseEvent) => {
@@ -708,11 +717,14 @@ export const AnimatedBackground = () => {
 
     // Cleanup
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('resize', debouncedResize);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('scroll', handleScroll);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (resizeTimeout !== null) {
+        clearTimeout(resizeTimeout);
       }
     };
   }, [config]);

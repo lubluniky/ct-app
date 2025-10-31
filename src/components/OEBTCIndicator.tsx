@@ -3,7 +3,7 @@
  * Beautiful, animated gauge-style widget for Risk-On/Risk-Off signal
  */
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, memo } from 'react';
 import useSWR from 'swr';
 import { Card } from '@/components/ui/card';
 import { Activity, TrendingUp, TrendingDown, Info } from 'lucide-react';
@@ -45,13 +45,13 @@ const fetcher = async (url: string): Promise<OEBTCData> => {
 /**
  * Animated mini bar component
  */
-function MiniBar({ 
-  title, 
-  value, 
+const MiniBar = memo(function MiniBar({
+  title,
+  value,
   icon: Icon,
-  tooltip 
-}: { 
-  title: string; 
+  tooltip
+}: {
+  title: string;
   value: number;
   icon: any;
   tooltip: string;
@@ -102,12 +102,12 @@ function MiniBar({
       </div>
     </div>
   );
-}
+});
 
 /**
  * Enhanced Gauge Chart with Animation
  */
-function GaugeChart({ value, isLoading }: { value: number; isLoading: boolean }) {
+const GaugeChart = memo(function GaugeChart({ value, isLoading }: { value: number; isLoading: boolean }) {
   const [animatedValue, setAnimatedValue] = useState(-1);
   
   useEffect(() => {
@@ -229,12 +229,12 @@ function GaugeChart({ value, isLoading }: { value: number; isLoading: boolean })
       </div>
     </div>
   );
-}
+});
 
 /**
  * Main OE-BTC Indicator Component
  */
-export function OEBTCIndicator() {
+export const OEBTCIndicator = memo(function OEBTCIndicator() {
   const { data, error, isLoading } = useSWR<OEBTCData>(
     '/api/oe-btc',
     fetcher,
@@ -457,4 +457,4 @@ export function OEBTCIndicator() {
       </Card>
     </div>
   );
-}
+});

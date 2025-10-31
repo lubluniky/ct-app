@@ -4,8 +4,10 @@ import { Experience } from "@/components/Experience";
 import { Ideas } from "@/components/Ideas";
 import { Models } from "@/components/Models";
 import { Contact } from "@/components/Contact";
-import LiquidEther from "@/components/LiquidEther";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
+
+// Lazy load heavy components
+const LiquidEther = lazy(() => import("@/components/LiquidEther"));
 
 const Index = () => {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -26,24 +28,26 @@ const Index = () => {
     <div className="min-h-screen bg-background relative">
       {/* Liquid Ether Background */}
       <div className="fixed inset-0 z-0">
-        <LiquidEther
-          colors={['#5227FF', '#FF9FFC', '#B19EEF']}
-          mouseForce={prefersReducedMotion ? 15 : 30}
-          cursorSize={150}
-          isViscous={false}
-          viscous={30}
-          iterationsViscous={prefersReducedMotion ? 16 : 32}
-          iterationsPoisson={prefersReducedMotion ? 16 : 32}
-          resolution={prefersReducedMotion ? 0.3 : 0.5}
-          isBounce={false}
-          autoDemo={true}
-          autoSpeed={prefersReducedMotion ? 0.4 : 0.7}
-          autoIntensity={3.0}
-          takeoverDuration={0.25}
-          autoResumeDelay={3000}
-          autoRampDuration={0.6}
-          style={{ width: '100%', height: '100%' }}
-        />
+        <Suspense fallback={<div className="w-full h-full bg-black" />}>
+          <LiquidEther
+            colors={['#5227FF', '#FF9FFC', '#B19EEF']}
+            mouseForce={prefersReducedMotion ? 10 : 20}
+            cursorSize={100}
+            isViscous={false}
+            viscous={20}
+            iterationsViscous={prefersReducedMotion ? 8 : 16}
+            iterationsPoisson={prefersReducedMotion ? 8 : 16}
+            resolution={prefersReducedMotion ? 0.2 : 0.3}
+            isBounce={false}
+            autoDemo={true}
+            autoSpeed={prefersReducedMotion ? 0.3 : 0.5}
+            autoIntensity={2.0}
+            takeoverDuration={0.25}
+            autoResumeDelay={3000}
+            autoRampDuration={0.6}
+            style={{ width: '100%', height: '100%' }}
+          />
+        </Suspense>
       </div>
 
       {/* Subtle darkening for text readability */}
