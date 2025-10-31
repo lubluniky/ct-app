@@ -1,13 +1,12 @@
 /**
  * OE-BTC Indicator Component
- * Gauge-style widget displaying Risk-On/Risk-Off signal
- * Auto-refreshes every 5 minutes
+ * Beautiful, animated gauge-style widget for Risk-On/Risk-Off signal
  */
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { Card } from '@/components/ui/card';
-import { Activity } from 'lucide-react';
+import { Activity, TrendingUp, TrendingDown, Info } from 'lucide-react';
 
 interface OEBTCData {
   oe_btc: number;
@@ -44,107 +43,197 @@ const fetcher = async (url: string): Promise<OEBTCData> => {
 };
 
 /**
- * Mini bar component for displaying sub-components
+ * Animated mini bar component
  */
-function MiniBar({ title, value, color }: { title: string; value: number; color: string }) {
-  const percentage = ((value + 1) / 2) * 100; // Normalize -1..1 to 0..100
+function MiniBar({ 
+  title, 
+  value, 
+  icon: Icon,
+  tooltip 
+}: { 
+  title: string; 
+  value: number;
+  icon: any;
+  tooltip: string;
+}) {
+  const percentage = ((value + 1) / 2) * 100;
+  const isPositive = value > 0;
+  
+  // Determine color
+  let bgColor = 'from-red-600 to-red-400';
+  let textColor = 'text-red-400';
+  if (value > -0.2) {
+    bgColor = 'from-yellow-600 to-yellow-400';
+    textColor = 'text-yellow-400';
+  }
+  if (value > 0.2) {
+    bgColor = 'from-green-600 to-green-400';
+    textColor = 'text-green-400';
+  }
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex justify-between items-center text-xs">
-        <span className="text-muted-foreground font-medium">{title}</span>
-        <span className="text-foreground font-mono font-bold">{value.toFixed(2)}</span>
+    <div className="group">
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex items-center gap-2">
+          <Icon className="w-4 h-4 text-muted-foreground" />
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {title}
+          </span>
+        </div>
+        <span className={`text-sm font-bold ${textColor}`}>
+          {value.toFixed(2)}
+        </span>
       </div>
-      <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+      
+      {/* Bar */}
+      <div className="relative h-2 bg-muted/30 rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all duration-300 ${color}`}
+          className={`absolute top-0 left-0 h-full rounded-full bg-gradient-to-r ${bgColor} transition-all duration-500 ease-out shadow-lg`}
           style={{ width: `${percentage}%` }}
-        />
+        >
+          {/* Shimmer effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-pulse" />
+        </div>
+      </div>
+
+      {/* Tooltip */}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-background border border-border rounded px-2 py-1 text-xs text-muted-foreground whitespace-nowrap z-10">
+        {tooltip}
       </div>
     </div>
   );
 }
 
 /**
- * Gauge chart simulation using CSS
+ * Enhanced Gauge Chart with Animation
  */
-function GaugeChart({ value }: { value: number }) {
-  const percentage = ((value + 1) / 2) * 100; // -1..1 -> 0..100
+function GaugeChart({ value, isLoading }: { value: number; isLoading: boolean }) {
+  const [animatedValue, setAnimatedValue] = useState(-1);
   
-  // Determine color based on value
-  let gaugeColor = '#D32F2F'; // Red (risk-off)
-  if (value > -0.5) gaugeColor = '#FBC02D'; // Yellow (neutral)
-  if (value > 0.5) gaugeColor = '#43A047'; // Green (risk-on)
+  useEffect(() => {
+    if (isLoading) return;
+    
+    // Animate gauge needle
+    const interval = setInterval(() => {
+      setAnimatedValue((prev) => {
+        if (Math.abs(prev - value) < 0.02) {
+          clearInterval(interval);
+          return value;
+        }
+        return prev + (value - prev) * 0.1;
+      });
+    }, 50);
+    
+    return () => clearInterval(interval);
+  }, [value, isLoading]);
 
-  // Angle: -90 to +90 degrees for -1 to +1
+  const percentage = ((animatedValue + 1) / 2) * 100;
+  
+  // Determine colors
+  let needleColor = '#EF4444'; // Red
+  let arcColor1 = '#EF4444';
+  let arcColor2 = '#F59E0B';
+  let arcColor3 = '#10B981';
+  
+  if (animatedValue > -0.5) needleColor = '#F59E0B'; // Yellow
+  if (animatedValue > 0.5) needleColor = '#10B981'; // Green
+
   const angle = -90 + (percentage / 100) * 180;
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      {/* Gauge arc */}
-      <div className="relative w-48 h-24">
-        {/* Background arc */}
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 100">
-          {/* Risk-off (red) */}
+    <div className="flex flex-col items-center gap-6">
+      {/* Gauge SVG */}
+      <div className="relative w-64 h-32">
+        <svg className="absolute inset-0 w-full h-full drop-shadow-lg" viewBox="0 0 240 120">
+          {/* Risk-off arc (red) */}
           <path
-            d="M 20 80 A 60 60 0 0 1 60 20"
-            stroke="#D32F2F"
-            strokeWidth="8"
+            d="M 30 100 A 70 70 0 0 1 80 15"
+            stroke={arcColor1}
+            strokeWidth="12"
             fill="none"
             opacity="0.3"
+            strokeLinecap="round"
           />
-          {/* Neutral (yellow) */}
+          {/* Neutral arc (yellow) */}
           <path
-            d="M 60 20 A 60 60 0 0 1 140 20"
-            stroke="#FBC02D"
-            strokeWidth="8"
+            d="M 80 15 A 70 70 0 0 1 160 15"
+            stroke={arcColor2}
+            strokeWidth="12"
             fill="none"
             opacity="0.3"
+            strokeLinecap="round"
           />
-          {/* Risk-on (green) */}
+          {/* Risk-on arc (green) */}
           <path
-            d="M 140 20 A 60 60 0 0 1 180 80"
-            stroke="#43A047"
-            strokeWidth="8"
+            d="M 160 15 A 70 70 0 0 1 210 100"
+            stroke={arcColor3}
+            strokeWidth="12"
             fill="none"
             opacity="0.3"
-          />
-
-          {/* Needle */}
-          <line
-            x1="100"
-            y1="80"
-            x2={100 + 50 * Math.cos((angle - 90) * (Math.PI / 180))}
-            y2={80 + 50 * Math.sin((angle - 90) * (Math.PI / 180))}
-            stroke={gaugeColor}
-            strokeWidth="3"
             strokeLinecap="round"
           />
 
+          {/* Needle with animation */}
+          <g style={{
+            transform: `rotate(${angle}deg)`,
+            transformOrigin: '120px 100px',
+            transition: 'transform 0.1s ease-out'
+          }}>
+            <line
+              x1="120"
+              y1="100"
+              x2="120"
+              y2="30"
+              stroke={needleColor}
+              strokeWidth="4"
+              strokeLinecap="round"
+              filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
+            />
+          </g>
+
           {/* Center circle */}
-          <circle cx="100" cy="80" r="5" fill={gaugeColor} />
+          <circle 
+            cx="120" 
+            cy="100" 
+            r="8" 
+            fill={needleColor}
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
+          />
+          
+          {/* Glow effect */}
+          <circle 
+            cx="120" 
+            cy="100" 
+            r="12" 
+            fill="none"
+            stroke={needleColor}
+            strokeWidth="1"
+            opacity="0.3"
+          />
         </svg>
 
         {/* Value display */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center mt-4">
-            <div className="text-3xl font-bold" style={{ color: gaugeColor }}>
-              {value.toFixed(2)}
-            </div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className="text-4xl font-black" style={{ color: needleColor }}>
+            {animatedValue.toFixed(2)}
           </div>
+          <div className="text-xs text-muted-foreground mt-1">Risk Signal</div>
         </div>
       </div>
 
       {/* Labels */}
-      <div className="flex justify-between w-full text-xs text-muted-foreground px-8">
-        <span>Risk-Off</span>
-        <span>Neutral</span>
-        <span>Risk-On</span>
+      <div className="flex justify-between w-full text-xs font-semibold text-muted-foreground px-6 tracking-wide">
+        <span>📉 Risk-Off</span>
+        <span>↔️ Neutral</span>
+        <span>📈 Risk-On</span>
       </div>
     </div>
   );
 }
 
+/**
+ * Main OE-BTC Indicator Component
+ */
 export function OEBTCIndicator() {
   const { data, error, isLoading } = useSWR<OEBTCData>(
     '/api/oe-btc',
@@ -157,8 +246,8 @@ export function OEBTCIndicator() {
   );
 
   const statusColor = useMemo(() => {
-    if (error) return 'bg-red-500';
-    if (isLoading) return 'bg-amber-500';
+    if (error) return 'bg-red-600';
+    if (isLoading) return 'bg-yellow-500 animate-pulse';
     if (data) {
       if (data.oe_btc > 0.5) return 'bg-green-500';
       if (data.oe_btc < -0.5) return 'bg-red-500';
@@ -174,104 +263,194 @@ export function OEBTCIndicator() {
     return 'Neutral ↔️';
   }, [data]);
 
+  const signalColor = useMemo(() => {
+    if (!data) return 'text-muted-foreground';
+    if (data.oe_btc > 0.5) return 'text-green-400';
+    if (data.oe_btc < -0.5) return 'text-red-400';
+    return 'text-yellow-400';
+  }, [data]);
+
   return (
     <div className="relative">
-      <Card className="p-6 bg-card border border-border w-full">
+      <Card className="p-8 bg-gradient-to-br from-card to-card/80 border border-border/50 backdrop-blur-sm w-full overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-full blur-3xl -z-10" />
+
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Activity className="h-5 w-5 text-purple-500" />
-            <div>
-              <h3 className="text-xl font-semibold">OE-BTC</h3>
-              <p className="text-xs text-muted-foreground">Order Execution Risk Signal</p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="p-2 bg-purple-500/10 rounded-lg">
+              <Activity className="h-6 w-6 text-purple-500" />
             </div>
-            <div className={`w-2 h-2 rounded-full ${statusColor}`} />
+            <div>
+              <h3 className="text-2xl font-bold">OE-BTC</h3>
+              <p className="text-sm text-muted-foreground">Order Execution Risk Signal</p>
+            </div>
+            <div className={`w-3 h-3 rounded-full ${statusColor}`} />
           </div>
           {data && (
-            <span className="text-xs text-muted-foreground font-mono">
-              Updated: {new Date(data.timestamp).toLocaleTimeString()}
-            </span>
+            <div className="text-right">
+              <div className="text-xs text-muted-foreground font-mono mb-1">
+                Updated {new Date(data.timestamp).toLocaleTimeString()}
+              </div>
+              <div className="flex items-center gap-2 justify-end">
+                <span className={`text-sm font-bold ${signalColor}`}>{signal}</span>
+              </div>
+            </div>
           )}
         </div>
 
         {/* Error state */}
         {error && (
-          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded text-sm text-destructive">
-            Failed to load OE-BTC: {error.message}
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400 flex items-start gap-3">
+            <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold mb-1">Failed to load OE-BTC</p>
+              <p className="text-red-300/80">{error.message}</p>
+            </div>
           </div>
         )}
 
         {/* Loading state */}
         {isLoading && (
-          <div className="flex items-center justify-center" style={{ minHeight: '300px' }}>
-            <div className="flex flex-col items-center gap-2">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+          <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative w-12 h-12">
+                <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-purple-500 border-r-purple-500/50 animate-spin" />
+              </div>
               <span className="text-sm text-muted-foreground">Calculating signal...</span>
             </div>
           </div>
         )}
 
-        {/* Gauge and components */}
-        {data && (
+        {/* Main content */}
+        {data && !error && (
           <>
             {/* Gauge */}
-            <div className="mb-6">
-              <GaugeChart value={data.oe_btc} />
+            <div className="mb-8">
+              <GaugeChart value={data.oe_btc} isLoading={isLoading} />
             </div>
 
-            {/* Signal */}
-            <div className="text-center mb-6">
-              <div className="text-lg font-semibold">{signal}</div>
-            </div>
-
-            {/* Component breakdown */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="space-y-3">
-                <h4 className="font-semibold text-sm">Macro Risk-On</h4>
+            {/* Component breakdown grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+              {/* Macro Risk-On */}
+              <div className="space-y-4 p-4 bg-background/40 rounded-lg border border-border/50 backdrop-blur-sm">
+                <h4 className="font-bold text-lg flex items-center gap-2">
+                  {data.ro_macro > 0 ? (
+                    <TrendingUp className="w-5 h-5 text-green-400" />
+                  ) : (
+                    <TrendingDown className="w-5 h-5 text-red-400" />
+                  )}
+                  Macro Risk-On
+                </h4>
+                
                 <MiniBar
                   title="Value"
                   value={data.ro_macro}
-                  color={data.ro_macro > 0 ? 'bg-green-500' : 'bg-red-500'}
+                  icon={data.ro_macro > 0 ? TrendingUp : TrendingDown}
+                  tooltip={`Macro risk-on component: ${data.ro_macro.toFixed(2)}`}
                 />
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <div>SPY: {data.components.spy_above_sma ? '✓' : '✗'}</div>
-                  <div>JNK: {data.components.jnk_above_sma ? '✓' : '✗'}</div>
-                  <div>EEM: {data.components.eem_above_sma ? '✓' : '✗'}</div>
-                  <div>GLD ↓: {data.components.gld_above_sma ? '✓' : '✗'}</div>
-                  <div>DXY ↓: {data.components.dxy_above_sma ? '✓' : '✗'}</div>
+
+                {/* Asset checklist */}
+                <div className="text-xs space-y-2 pt-2 border-t border-border/30">
+                  <div className={`flex items-center gap-2 ${data.components.spy_above_sma ? 'text-green-400' : 'text-red-400'}`}>
+                    <span>{data.components.spy_above_sma ? '✓' : '✗'}</span>
+                    <span>SPY above SMA</span>
+                  </div>
+                  <div className={`flex items-center gap-2 ${data.components.jnk_above_sma ? 'text-green-400' : 'text-red-400'}`}>
+                    <span>{data.components.jnk_above_sma ? '✓' : '✗'}</span>
+                    <span>JNK above SMA</span>
+                  </div>
+                  <div className={`flex items-center gap-2 ${data.components.eem_above_sma ? 'text-green-400' : 'text-red-400'}`}>
+                    <span>{data.components.eem_above_sma ? '✓' : '✗'}</span>
+                    <span>EEM above SMA</span>
+                  </div>
+                  <div className={`flex items-center gap-2 ${data.components.gld_above_sma ? 'text-green-400' : 'text-red-400'}`}>
+                    <span>{data.components.gld_above_sma ? '✓' : '✗'}</span>
+                    <span>GLD below SMA ↓</span>
+                  </div>
+                  <div className={`flex items-center gap-2 ${data.components.dxy_above_sma ? 'text-green-400' : 'text-red-400'}`}>
+                    <span>{data.components.dxy_above_sma ? '✓' : '✗'}</span>
+                    <span>DXY below SMA ↓</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <h4 className="font-semibold text-sm">ETF Flow</h4>
+              {/* ETF Flow */}
+              <div className="space-y-4 p-4 bg-background/40 rounded-lg border border-border/50 backdrop-blur-sm">
+                <h4 className="font-bold text-lg flex items-center gap-2">
+                  {data.etf_flow > 0 ? (
+                    <TrendingUp className="w-5 h-5 text-green-400" />
+                  ) : (
+                    <TrendingDown className="w-5 h-5 text-red-400" />
+                  )}
+                  ETF Flow
+                </h4>
+
                 <MiniBar
                   title="Value"
                   value={data.etf_flow}
-                  color={data.etf_flow > 0 ? 'bg-green-500' : 'bg-red-500'}
+                  icon={data.etf_flow > 0 ? TrendingUp : TrendingDown}
+                  tooltip={`ETF flow component: ${data.etf_flow.toFixed(2)}`}
                 />
-                <div className="text-xs text-muted-foreground">
-                  <div>Daily Flow: ${(data.components.etf_flow_usd / 1e9).toFixed(2)}B</div>
+
+                <div className="text-xs space-y-2 pt-2 border-t border-border/30 text-muted-foreground">
+                  <div>
+                    <span className="font-semibold">Daily Flow:</span><br />
+                    <span className="text-base font-bold text-foreground">
+                      ${(data.components.etf_flow_usd / 1e9).toFixed(2)}B
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground/70 pt-2">
+                    Net inflow from BTC ETFs. Positive = accumulation.
+                  </p>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <h4 className="font-semibold text-sm">BTC Momentum</h4>
+              {/* BTC Momentum */}
+              <div className="space-y-4 p-4 bg-background/40 rounded-lg border border-border/50 backdrop-blur-sm">
+                <h4 className="font-bold text-lg flex items-center gap-2">
+                  {data.btc_momentum > 0 ? (
+                    <TrendingUp className="w-5 h-5 text-green-400" />
+                  ) : (
+                    <TrendingDown className="w-5 h-5 text-red-400" />
+                  )}
+                  BTC Momentum
+                </h4>
+
                 <MiniBar
                   title="Value"
                   value={data.btc_momentum}
-                  color={data.btc_momentum > 0 ? 'bg-green-500' : 'bg-red-500'}
+                  icon={data.btc_momentum > 0 ? TrendingUp : TrendingDown}
+                  tooltip={`BTC vs SMA15: ${data.btc_momentum > 0 ? 'bullish' : 'bearish'}`}
                 />
-                <div className="text-xs text-muted-foreground">
-                  <div>Price: ${data.components.btc_price.toLocaleString()}</div>
-                  <div>SMA15: ${data.components.btc_sma15.toLocaleString()}</div>
+
+                <div className="text-xs space-y-2 pt-2 border-t border-border/30 text-muted-foreground">
+                  <div>
+                    <span className="font-semibold">Price:</span><br />
+                    <span className="text-base font-bold text-foreground">
+                      ${data.components.btc_price.toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold">SMA15:</span><br />
+                    <span className="text-base font-bold text-foreground">
+                      ${data.components.btc_sma15.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Info */}
-            <div className="text-xs text-muted-foreground bg-muted/30 rounded p-3">
-              <p className="font-semibold mb-1">Formula:</p>
-              <p>OE-BTC = 0.4 × Macro + 0.35 × ETF Flow + 0.25 × BTC Momentum</p>
+            {/* Formula */}
+            <div className="text-xs text-muted-foreground bg-background/60 rounded-lg p-4 border border-border/30 font-mono">
+              <p className="font-semibold mb-2 text-foreground">Formula:</p>
+              <p className="leading-relaxed">
+                OE-BTC = <span className="text-green-400">0.40 × Macro</span> + <span className="text-blue-400">0.35 × ETF</span> + <span className="text-purple-400">0.25 × BTC</span>
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-2">
+                Clamped to [-1, 1]. Positive = Risk-On, Negative = Risk-Off
+              </p>
             </div>
           </>
         )}
