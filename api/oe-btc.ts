@@ -10,6 +10,11 @@ interface PriceData {
   sma: number;
 }
 
+interface BTCData {
+  price: number;
+  ema200: number;
+}
+
 // ==================== BACKUP DATA ====================
 const BACKUP_DATA = {
   macro: {
@@ -19,7 +24,7 @@ const BACKUP_DATA = {
     gld: { symbol: 'GLD', price: 195.5, sma: 192.0 },
     dxy: { symbol: 'DXY', price: 105.2, sma: 104.5 },
   },
-  btc: { price: 42500, sma15: 41800 },
+  btc: { price: 42500, ema200: 41800 },
   etfFlow: { dailyFlow: 500000000, ma5Flow: 480000000 },
 };
 
@@ -68,21 +73,23 @@ async function fetchMacroData() {
   }
 }
 
-async function fetchBTCPrice() {
+async function fetchBTCPrice(): Promise<BTCData> {
   try {
     console.log('[OE-BTC] Fetching BTC price...');
 
     const now = Math.floor(Date.now() / 1000);
     const resp = await fetch(
-      `https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=15&toTs=${now}`
+      `https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=200&toTs=${now}`
     );
     const data = await resp.json();
 
     if (data.Data?.Data && data.Data.Data.length > 0) {
       const closes = data.Data.Data.map((bar: any) => bar.close);
       const price = closes[closes.length - 1];
-      const sma15 = closes.reduce((a: number, b: number) => a + b, 0) / closes.length;
-      return { price, sma15 };
+
+      // Calculate EMA200
+      const ema200 = calculateEMA(closes, 200);
+      return { price, ema200 };
     }
 
     return BACKUP_DATA.btc;
@@ -90,6 +97,32 @@ async function fetchBTCPrice() {
     console.error('[OE-BTC] Error fetching BTC:', err);
     return BACKUP_DATA.btc;
   }
+}
+
+/**
+ * Calculate Exponential Moving Average (EMA)
+ * @param prices - Array of prices
+ * @param period - EMA period (e.g., 200)
+ * @returns EMA value
+ */
+function calculateEMA(prices: number[], period: number): number {
+  if (prices.length < period) {
+    // If not enough data, use SMA as fallback
+    return prices.reduce((a, b) => a + b, 0) / prices.length;
+  }
+
+  const k = 2 / (period + 1); // Smoothing factor
+
+  // Start with SMA of first 'period' prices
+  const sma = prices.slice(0, period).reduce((a, b) => a + b, 0) / period;
+  let ema = sma;
+
+  // Calculate EMA for remaining prices
+  for (let i = period; i < prices.length; i++) {
+    ema = prices[i] * k + ema * (1 - k);
+  }
+
+  return ema;
 }
 
 async function fetchETFFlows() {
@@ -135,9 +168,17 @@ function calculateETFFlow(etfData: any) {
   return { value: clamped, dailyFlow: etfData.dailyFlow };
 }
 
-function calculateBTCMomentum(btcData: any) {
-  const value = btcData.price > btcData.sma15 ? 1 : -1;
-  return { value, price: btcData.price, sma15: btcData.sma15 };
+function calculateBTCMomentum(btcData: BTCData) {
+  // Calculate percentage deviation from EMA200
+  const deviation = ((btcData.price - btcData.ema200) / btcData.ema200) * 100;
+
+  // Normalize to [-1, 1] range using 5% threshold
+  // If BTC is +5% above EMA200 -> value = 1.0
+  // If BTC is -5% below EMA200 -> value = -1.0
+  const threshold = 5.0; // 5% threshold
+  const value = Math.max(-1, Math.min(1, deviation / threshold));
+
+  return { value, price: btcData.price, ema200: btcData.ema200, deviation };
 }
 
 function calculateOEBTC(macroRO: number, etfFlow: number, btcMomentum: number) {
@@ -188,7 +229,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ...macroResult.components,
         etf_flow_usd: etfResult.dailyFlow,
         btc_price: btcResult.price,
-        btc_sma15: btcResult.sma15,
+        btc_ema200: btcResult.ema200,
+        btc_deviation_pct: btcResult.deviation,
       },
     };
 

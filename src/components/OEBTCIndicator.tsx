@@ -22,7 +22,8 @@ interface OEBTCData {
     dxy_above_sma: boolean;
     etf_flow_usd: number;
     btc_price: number;
-    btc_sma15: number;
+    btc_ema200: number;
+    btc_deviation_pct: number;
   };
 }
 
@@ -422,7 +423,7 @@ export const OEBTCIndicator = memo(function OEBTCIndicator() {
                   title="Value"
                   value={data.btc_momentum}
                   icon={data.btc_momentum > 0 ? TrendingUp : TrendingDown}
-                  tooltip={`BTC vs SMA15: ${data.btc_momentum > 0 ? 'bullish' : 'bearish'}`}
+                  tooltip={`BTC vs EMA200: ${data.btc_momentum > 0 ? 'bullish' : 'bearish'} (${data.components.btc_deviation_pct.toFixed(2)}%)`}
                 />
 
                 <div className="text-xs space-y-2 pt-2 border-t border-border/30 text-muted-foreground">
@@ -433,9 +434,18 @@ export const OEBTCIndicator = memo(function OEBTCIndicator() {
                     </span>
                   </div>
                   <div>
-                    <span className="font-semibold">SMA15:</span><br />
+                    <span className="font-semibold">EMA200:</span><br />
                     <span className="text-base font-bold text-foreground">
-                      ${data.components.btc_sma15.toLocaleString()}
+                      ${data.components.btc_ema200.toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-semibold">Deviation:</span><br />
+                    <span className={`text-base font-bold ${
+                      data.components.btc_deviation_pct > 0 ? 'text-green-400' :
+                      data.components.btc_deviation_pct < 0 ? 'text-red-400' : 'text-yellow-400'
+                    }`}>
+                      {data.components.btc_deviation_pct > 0 ? '+' : ''}{data.components.btc_deviation_pct.toFixed(2)}%
                     </span>
                   </div>
                 </div>
