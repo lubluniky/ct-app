@@ -75,9 +75,10 @@ async function fetchMacroData() {
 
 async function fetchBTCPrice(): Promise<BTCData> {
   try {
-    console.log('[OE-BTC] Fetching BTC price...');
+    console.log('[OE-BTC] Fetching BTC price with EMA200...');
 
     const now = Math.floor(Date.now() / 1000);
+    // Fetch 200 days of data for EMA200
     const resp = await fetch(
       `https://min-api.cryptocompare.com/data/v2/histoday?fsym=BTC&tsym=USD&limit=200&toTs=${now}`
     );
@@ -89,13 +90,14 @@ async function fetchBTCPrice(): Promise<BTCData> {
 
       // Calculate EMA200
       const ema200 = calculateEMA(closes, 200);
+      
       return { price, ema200 };
     }
 
-    return BACKUP_DATA.btc;
+    return { price: BACKUP_DATA.btc.price, ema200: BACKUP_DATA.btc.price * 0.95 };
   } catch (err) {
     console.error('[OE-BTC] Error fetching BTC:', err);
-    return BACKUP_DATA.btc;
+    return { price: BACKUP_DATA.btc.price, ema200: BACKUP_DATA.btc.price * 0.95 };
   }
 }
 
@@ -147,7 +149,9 @@ function calculateMacroRiskOn(macroData: any) {
   const dxy = macroData.dxy.price < macroData.dxy.sma; // Inverted
 
   const count = [spy, jnk, eem, gld, dxy].filter(Boolean).length;
-  const value = Math.max(-1, Math.min(1, (count - 2.5) / 5));
+  
+  // More aggressive normalization: -1 to +1
+  const value = Math.max(-1, Math.min(1, (count - 2.5) / 2.5));
 
   return {
     value,
