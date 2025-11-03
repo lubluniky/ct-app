@@ -1,6 +1,7 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Menu, X, Activity, Zap, TrendingUp, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, lazy, Suspense } from 'react';
+import { SignalOverview } from '@/components/SignalOverview';
 
 // Lazy load heavy components
 const LiquidEther = lazy(() => import('@/components/LiquidEther'));
@@ -13,8 +14,18 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [showLoading, setShowLoading] = useState(true); // Always show on mount
+  const [showLoading, setShowLoading] = useState(true);
   const [contentOpacity, setContentOpacity] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeIndicator, setActiveIndicator] = useState<'overview' | 'oe-btc' | 'mtm' | 'rvwap'>('overview');
+
+  // Navigation tabs config
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: AlertCircle },
+    { id: 'oe-btc', label: 'OE-BTC', icon: Activity },
+    { id: 'mtm', label: 'MTM', icon: Zap },
+    { id: 'rvwap', label: 'RVWAP', icon: TrendingUp },
+  ] as const;
 
   // Remove sessionStorage check - always show animation
   // Animation will play every time user navigates to dashboard
@@ -149,42 +160,114 @@ const Dashboard = () => {
       >
         {/* Header */}
         <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="px-4 py-4">
             <div className="flex items-center justify-between">
-              {/* Back Button */}
-              <button
-                onClick={() => navigate('/')}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </button>
+              {/* Left: Menu toggle + Back */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="p-2 hover:bg-muted rounded-lg transition-colors lg:hidden"
+                  title="Toggle sidebar"
+                >
+                  {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </button>
+                <button
+                  onClick={() => navigate('/')}
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </button>
+              </div>
 
-              {/* Title */}
-              <h1 className="text-2xl font-bold">Dashboard</h1>
+              {/* Center: Title */}
+              <h1 className="text-2xl font-bold">Trading Dashboard</h1>
 
-              {/* Spacer */}
+              {/* Right: Spacer */}
               <div className="w-20"></div>
             </div>
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-          {/* OE-BTC Indicator */}
-          <Suspense fallback={<div className="h-64 bg-card/50 animate-pulse rounded-lg" />}>
-            <OEBTCIndicator />
-          </Suspense>
+        {/* Main Content - Sidebar + Grid Layout */}
+        <main className="px-4 py-6 flex gap-6">
+          {/* Sidebar Navigation - Hidden on mobile unless toggled */}
+          <aside
+            className={`
+              fixed lg:static left-0 top-16 bottom-0 z-40 w-48 bg-background/95 backdrop-blur-sm border-r border-border
+              transition-transform duration-300 ease-in-out transform
+              ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+              lg:translate-x-0 lg:w-auto lg:relative lg:top-auto lg:bottom-auto lg:bg-transparent lg:backdrop-blur-none lg:border-r lg:border-border
+              overflow-y-auto
+            `}
+          >
+            <nav className="p-4 space-y-2">
+              {tabs.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => {
+                    setActiveIndicator(id as typeof activeIndicator);
+                    setSidebarOpen(false); // Close sidebar on mobile after selection
+                  }}
+                  className={`
+                    w-full px-4 py-2 rounded-lg flex items-center gap-3 transition-all text-left
+                    ${activeIndicator === id
+                      ? 'bg-blue-500/20 border border-blue-500/30 text-blue-400 font-semibold'
+                      : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground'
+                    }
+                  `}
+                >
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm">{label}</span>
+                </button>
+              ))}
+            </nav>
+          </aside>
 
-          {/* MTM Panel */}
-          <Suspense fallback={<div className="h-96 bg-card/50 animate-pulse rounded-lg" />}>
-            <MTMPanel symbol="BTCUSDT" dataSource="futures" />
-          </Suspense>
+          {/* Close overlay on mobile when sidebar is open */}
+          {sidebarOpen && (
+            <div
+              className="fixed lg:hidden inset-0 z-30 bg-black/20 top-16"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
 
-          {/* RVWAP Panel */}
-          <Suspense fallback={<div className="h-96 bg-card/50 animate-pulse rounded-lg" />}>
-            <RvwapPanel symbol="BTCUSDT" dataSource="spot" />
-          </Suspense>
+          {/* Content Grid */}
+          <div className="flex-1 max-w-7xl mx-auto w-full">
+            <div className="space-y-6">
+              {/* Overview Panel */}
+              {activeIndicator === 'overview' && (
+                <Suspense fallback={<div className="h-40 bg-card/50 animate-pulse rounded-lg" />}>
+                  <SignalOverview
+                    onIndicatorClick={(indicator) => {
+                      setActiveIndicator(indicator as any);
+                    }}
+                  />
+                </Suspense>
+              )}
+
+              {/* OE-BTC Indicator */}
+              {(activeIndicator === 'overview' || activeIndicator === 'oe-btc') && (
+                <Suspense fallback={<div className="h-64 bg-card/50 animate-pulse rounded-lg" />}>
+                  <OEBTCIndicator />
+                </Suspense>
+              )}
+
+              {/* MTM Panel - Two-column layout */}
+              {(activeIndicator === 'overview' || activeIndicator === 'mtm') && (
+                <Suspense fallback={<div className="h-96 bg-card/50 animate-pulse rounded-lg" />}>
+                  <MTMPanel symbol="BTCUSDT" dataSource="futures" />
+                </Suspense>
+              )}
+
+              {/* RVWAP Panel - Two-column layout */}
+              {(activeIndicator === 'overview' || activeIndicator === 'rvwap') && (
+                <Suspense fallback={<div className="h-96 bg-card/50 animate-pulse rounded-lg" />}>
+                  <RvwapPanel symbol="BTCUSDT" dataSource="spot" />
+                </Suspense>
+              )}
+            </div>
+          </div>
         </main>
       </div>
     </div>
