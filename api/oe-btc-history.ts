@@ -133,13 +133,22 @@ async function calculateHistoricalOEBTC(days: number): Promise<HistoricalDataPoi
       const macroCount = [spyBullish, nqBullish, gldBearish, dxyBearish].filter(Boolean).length;
       const ro_macro = Math.max(-1, Math.min(1, (macroCount - 2) / 2));
 
-      // BTC momentum
+      // BTC momentum (using same threshold as current API: 5%)
       const btcPrice = btcPoint.price;
       const btcDeviation = ((btcPrice - btcEMA200) / btcEMA200) * 100;
-      const btc_momentum = Math.max(-1, Math.min(1, btcDeviation / 10));
+      const btc_momentum = Math.max(-1, Math.min(1, btcDeviation / 5));
 
-      // ETF flow (using simplified approximation based on BTC price movement)
-      const etf_flow = i > 0 ? Math.max(-1, Math.min(1, (btcPrice - btcHistory[btcHistory.length - days + i - 1].price) / btcPrice * 10)) : 0;
+      // ETF flow approximation: Use BTC price momentum as proxy
+      // Calculate 1-day return and normalize similar to ETF flow
+      let etf_flow = 0;
+      if (i > 0) {
+        const prevPrice = btcHistory[btcHistory.length - days + i - 1].price;
+        const priceChange = btcPrice - prevPrice;
+        const returnPct = (priceChange / prevPrice) * 100;
+        // Use tanh normalization similar to ETF flow calculation
+        // Normalize by typical daily volatility (~3%)
+        etf_flow = Math.tanh(returnPct / 3);
+      }
 
       // Calculate OE-BTC
       const oe_btc = 0.40 * ro_macro + 0.35 * etf_flow + 0.25 * btc_momentum;
