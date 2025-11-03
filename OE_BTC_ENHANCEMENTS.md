@@ -1,5 +1,26 @@
 # OE-BTC Widget Enhancements
 
+## ⚠️ Important: Demo Mode
+
+**Current Status:** The historical chart and correlation matrix are using **simulated/mock data** for demonstration purposes.
+
+### What's Mock:
+- 📈 **Historical Chart:** Random walk algorithm generates 30 days of fake OE-BTC values
+- 🔗 **Correlation Matrix:** Hardcoded example correlations (not calculated from real data)
+
+### Why Mock Data:
+- Real historical data requires API endpoint implementation
+- Real correlations require 30+ days of stored market data
+- Database storage for daily OE-BTC snapshots not yet implemented
+
+### What's Real:
+- ✅ **Current OE-BTC value:** Real-time calculation from `/api/oe-btc`
+- ✅ **Component breakdown:** Real macro/ETF/BTC values
+- ✅ **Custom weights:** Real calculation with user-defined weights
+- ✅ **Alerts:** Real localStorage persistence (triggers on real values)
+
+**Amber warning labels** clearly mark demo features on the UI.
+
 ## 📊 Overview
 
 The OE-BTC indicator has been upgraded with comprehensive analytical tools to provide deeper insights into risk-on/risk-off market conditions.
@@ -30,6 +51,11 @@ interface HistoricalDataPoint {
   btc_price?: number;
 }
 ```
+
+**⚠️ Current Status:** Using **mock/demo data**. The component generates simulated historical values using a random walk algorithm. Real implementation requires:
+- API endpoint: `/api/oe-btc/history?days=30`
+- Database storage of historical OE-BTC calculations
+- Historical BTC price data from Binance/CoinGecko
 
 ### 2. Alert Configuration Tab 🔔
 **Component:** `OEBTCAlertConfig.tsx`
@@ -89,7 +115,18 @@ interface Alert {
 - SPY-BTC Cross
 - ETF-BTC Cross
 
-**Note:** Currently uses mock data. Real correlation calculation endpoint needed.
+**⚠️ Current Status:** Using **mock/demo data**. Real correlation calculation requires:
+- Historical data storage for all tracked markets (30+ days)
+- Pearson correlation coefficient calculation
+- Rolling 30-day window
+- API endpoint: `/api/oe-btc/correlations`
+
+**Mock Correlations (for demo):**
+```typescript
+{ pair: 'OE-BTC vs SPY', correlation: 0.72 }
+{ pair: 'OE-BTC vs GLD', correlation: -0.34 }
+// ... etc
+```
 
 ### 4. Custom Weights Tab ⚙️
 **Component:** `OEBTCWeightConfigurator.tsx`
@@ -171,12 +208,25 @@ src/components/
 
 ## 📝 TODO / Future Improvements
 
-### High Priority
-- [ ] Create `/api/oe-btc/history?days=30` endpoint for real historical data
-- [ ] Implement real correlation calculation (30-day rolling window)
-- [ ] Add alert notification system (browser notifications / email)
+### High Priority (Required for Production)
+- [ ] **Create `/api/oe-btc/history?days=30` endpoint** 
+  - Store historical OE-BTC calculations in database (daily snapshots)
+  - Include historical BTC price for overlay
+  - Return array of `{ timestamp, oe_btc, btc_price }` objects
+  
+- [ ] **Implement real correlation calculation**
+  - Fetch 30 days of historical data for all markets
+  - Calculate Pearson correlation coefficient
+  - Create `/api/oe-btc/correlations` endpoint
+  - Update on daily basis (cron job)
+
+- [ ] **Replace mock data generators**
+  - Remove `generateMockData()` from OEBTCHistoricalChart
+  - Remove hardcoded correlations from OEBTCCorrelationMatrix
+  - Add proper loading states while fetching real data
 
 ### Medium Priority
+- [ ] Alert notification system (browser notifications / email)
 - [ ] Export historical data to CSV
 - [ ] Alert history log
 - [ ] Multiple custom weight presets
@@ -243,10 +293,17 @@ src/components/
 - Responsive design verified
 - No TypeScript errors
 - Consistent UI/UX across all tabs
+- Mock data generators for demo purposes
 
-⏳ **Pending:**
-- Real historical data integration (needs API endpoint)
-- Real correlation calculation (needs API or client-side impl)
+⚠️ **Demo Mode (Mock Data):**
+- Historical chart uses simulated random walk data
+- Correlation matrix shows hardcoded example values
+- Amber warning labels clearly indicate demo status
+- Full functionality works, but data is not real
+
+⏳ **Pending for Production:**
+- Real historical data integration (needs API endpoint + DB storage)
+- Real correlation calculation (needs 30-day data for all markets)
 - Alert notification system (needs service worker)
 
 ## 📖 References
