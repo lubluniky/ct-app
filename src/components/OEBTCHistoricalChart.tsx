@@ -16,13 +16,52 @@ interface HistoricalDataPoint {
 }
 
 interface OEBTCHistoricalChartProps {
-  data: HistoricalDataPoint[];
+  data?: HistoricalDataPoint[];
   showBTCOverlay?: boolean;
 }
 
-export function OEBTCHistoricalChart({ data, showBTCOverlay = false }: OEBTCHistoricalChartProps) {
+// Generate mock historical data for demo
+function generateMockData(days: number): HistoricalDataPoint[] {
+  const data: HistoricalDataPoint[] = [];
+  const now = Date.now();
+  
+  // Starting values
+  let oe_btc = -0.2 + Math.random() * 0.4; // Random start between -0.2 and 0.2
+  let btc_price = 95000 + Math.random() * 10000; // Random start around 95k-105k
+  
+  for (let i = days; i >= 0; i--) {
+    const timestamp = now - i * 24 * 60 * 60 * 1000;
+    const date = new Date(timestamp);
+    
+    // Random walk with slight upward bias
+    oe_btc += (Math.random() - 0.45) * 0.15;
+    oe_btc = Math.max(-1, Math.min(1, oe_btc)); // Clamp to [-1, 1]
+    
+    // BTC price random walk
+    btc_price += (Math.random() - 0.48) * 3000;
+    btc_price = Math.max(80000, Math.min(110000, btc_price));
+    
+    data.push({
+      timestamp,
+      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      oe_btc: parseFloat(oe_btc.toFixed(3)),
+      btc_price: Math.round(btc_price),
+    });
+  }
+  
+  return data;
+}
+
+export function OEBTCHistoricalChart({ data: providedData, showBTCOverlay = false }: OEBTCHistoricalChartProps) {
   const [timeframe, setTimeframe] = useState<7 | 14 | 30>(14);
   const [overlayEnabled, setOverlayEnabled] = useState(showBTCOverlay);
+  
+  // Use provided data or generate mock data
+  const data = useMemo(() => {
+    return providedData && providedData.length > 0 
+      ? providedData 
+      : generateMockData(30);
+  }, [providedData]);
 
   // Filter data by selected timeframe
   const filteredData = useMemo(() => {
@@ -178,6 +217,11 @@ export function OEBTCHistoricalChart({ data, showBTCOverlay = false }: OEBTCHist
             <span>BTC Price (normalized)</span>
           </div>
         )}
+      </div>
+
+      {/* Demo data warning */}
+      <div className="mt-4 p-2 bg-amber-500/10 border border-amber-500/30 rounded text-xs text-amber-400">
+        <strong>⚠️ Demo Data:</strong> Showing simulated historical data. Real historical OE-BTC data requires API endpoint implementation.
       </div>
     </Card>
   );

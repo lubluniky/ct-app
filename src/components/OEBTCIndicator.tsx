@@ -505,7 +505,7 @@ export const OEBTCIndicator = memo(function OEBTCIndicator() {
 
             {/* History Tab */}
             {activeTab === 'history' && (
-              <OEBTCHistoricalChart data={[]} />
+              <OEBTCHistoricalChart />
             )}
 
             {/* Alerts Tab */}

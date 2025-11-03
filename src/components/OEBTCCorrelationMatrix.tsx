@@ -124,9 +124,8 @@ export function OEBTCCorrelationMatrix({ data = DEFAULT_CORRELATIONS }: OEBTCCor
       </div>
 
       {/* Info */}
-      <div className="mt-4 p-3 bg-blue-500/5 border border-blue-500/20 rounded text-xs text-muted-foreground">
-        <strong className="text-blue-400">Note:</strong> Correlations calculated from 30-day rolling window. 
-        Values closer to ±1 indicate stronger relationship.
+      <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded text-xs text-amber-400">
+        <strong>⚠️ Demo Data:</strong> Showing simulated correlations. Real correlation calculation requires historical market data and proper statistical analysis (30-day rolling window with Pearson coefficient).
       </div>
     </Card>
   );
