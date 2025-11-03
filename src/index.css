@@ -28,41 +28,41 @@
     --popover: 0 0% 12%;
     --popover-foreground: 0 0% 95%;
 
-    /* Purple primary matching Liquid Ether (#A855F7) */
-    --primary: 270 91% 65%;
+    /* Blue primary matching Eye theme (#3B82F6) */
+    --primary: 217 92% 62%;
     --primary-foreground: 0 0% 8%;
 
-    /* Purple secondary variant (#9333EA) */
-    --secondary: 271 91% 55%;
+    /* Cyan secondary variant (#06B6D4) */
+    --secondary: 188 94% 46%;
     --secondary-foreground: 0 0% 95%;
 
     --muted: 0 0% 20%;
     --muted-foreground: 0 0% 60%;
 
-    /* Purple accent matching fluid (#C084FC - hover state) */
-    --accent: 270 95% 75%;
+    /* Cyan accent matching eye (#22D3EE) */
+    --accent: 188 94% 64%;
     --accent-foreground: 0 0% 8%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 95%;
 
-    --border: 0 0% 20%;
+    --border: 217 82% 25%;
     --input: 0 0% 20%;
     
-    /* Purple ring matching primary */
-    --ring: 270 91% 65%;
+    /* Blue ring matching primary */
+    --ring: 217 92% 62%;
 
     --radius: 0.25rem;
 
-    /* Sidebar colors also updated to purple */
+    /* Sidebar colors updated to blue/cyan */
     --sidebar-background: 0 0% 10%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 270 91% 65%;
+    --sidebar-primary: 217 92% 62%;
     --sidebar-primary-foreground: 0 0% 8%;
     --sidebar-accent: 0 0% 15%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 270 91% 65%;
+    --sidebar-border: 217 82% 25%;
+    --sidebar-ring: 217 92% 62%;
   }
 }
 

@@ -66,7 +66,7 @@ export const Hero = () => {
           <p className="text-2xl md:text-3xl text-muted-foreground mb-8 h-12 flex items-center">
             <span className="inline-flex items-center gap-1">
               {displayText}
-              <span className="w-1 h-8 bg-gradient-to-b from-purple-500 to-pink-500 animate-pulse ml-1"></span>
+              <span className="w-1 h-8 bg-gradient-to-b from-blue-500 to-cyan-400 animate-pulse ml-1"></span>
             </span>
           </p>
 
