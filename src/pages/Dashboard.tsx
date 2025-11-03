@@ -1,10 +1,9 @@
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, lazy, Suspense } from 'react';
+import LoadingOverlay from '@/components/LoadingOverlay'; // Not lazy - loads immediately
 
 // Lazy load heavy components
-const LiquidEther = lazy(() => import('@/components/LiquidEther'));
-const LoadingOverlay = lazy(() => import('@/components/LoadingOverlay'));
 const RvwapPanel = lazy(() => import('@/components/rvwap/RvwapPanel').then(module => ({ default: module.RvwapPanel })));
 const MTMPanel = lazy(() => import('@/components/mtm/MTMPanel').then(module => ({ default: module.MTMPanel })));
 const OEBTCIndicator = lazy(() => import('@/components/OEBTCIndicator').then(module => ({ default: module.OEBTCIndicator })));
@@ -12,12 +11,8 @@ const OEBTCIndicator = lazy(() => import('@/components/OEBTCIndicator').then(mod
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [showLoading, setShowLoading] = useState(true); // Always show on mount
+  const [showLoading, setShowLoading] = useState(true);
   const [contentOpacity, setContentOpacity] = useState(0);
-
-  // Remove sessionStorage check - always show animation
-  // Animation will play every time user navigates to dashboard
 
   useEffect(() => {
     let resizeTimeout: number | null = null;
@@ -33,21 +28,11 @@ const Dashboard = () => {
       resizeTimeout = window.setTimeout(checkMobile, 150);
     };
 
-    // Check for reduced motion preference
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
     checkMobile();
     window.addEventListener('resize', debouncedCheckMobile);
 
     return () => {
       window.removeEventListener('resize', debouncedCheckMobile);
-      mediaQuery.removeEventListener('change', handleChange);
       if (resizeTimeout !== null) {
         clearTimeout(resizeTimeout);
       }
@@ -55,9 +40,9 @@ const Dashboard = () => {
   }, []);
 
   const handleLoadingComplete = () => {
-    console.log('📍 Dashboard: анимация завершена, показываем контент');
+    console.log('📍 Dashboard: loading complete, showing content');
     setShowLoading(false);
-    
+
     // Small delay before starting content fade-in for smooth transition
     setTimeout(() => {
       setContentOpacity(1);
@@ -93,55 +78,31 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Loading Overlay - shows every time dashboard is loaded */}
-      {showLoading && (
-        <Suspense fallback={null}>
-          <LoadingOverlay onComplete={handleLoadingComplete} />
-        </Suspense>
-      )}
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Loading Overlay - NOT lazy loaded, shows immediately */}
+      {showLoading && <LoadingOverlay onComplete={handleLoadingComplete} />}
 
-      {/* Liquid Ether Background - lowest z-index, dimmed during loading */}
-      <div
-        className="fixed inset-0 z-0 transition-all duration-500"
-        style={{
-          opacity: showLoading ? 0.2 : 1,
-          filter: showLoading ? 'blur(8px)' : 'blur(0px)',
-          transitionTimingFunction: 'cubic-bezier(0.4, 0.0, 0.2, 1)'
-        }}
-      >
-        <Suspense fallback={<div className="w-full h-full bg-black" />}>
-          <LiquidEther
-            colors={['#5227FF', '#FF9FFC', '#B19EEF']}
-            mouseForce={prefersReducedMotion ? 8 : 15}
-            cursorSize={80}
-            isViscous={false}
-            viscous={15}
-            iterationsViscous={prefersReducedMotion ? 4 : 8}
-            iterationsPoisson={prefersReducedMotion ? 4 : 8}
-            resolution={0.25}
-            isBounce={false}
-            autoDemo={true}
-            autoSpeed={prefersReducedMotion ? 0.3 : 0.5}
-            autoIntensity={2.0}
-            takeoverDuration={0.25}
-            autoResumeDelay={3000}
-            autoRampDuration={0.6}
-            style={{ width: '100%', height: '100%' }}
-          />
-        </Suspense>
+      {/* Beautiful gradient background - no WebGL, super fast */}
+      <div className="fixed inset-0 z-0 bg-gradient-to-br from-purple-950/40 via-background to-blue-950/40">
+        {/* Animated gradient orbs */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl animate-pulse-glow" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-600/10 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '2s' }} />
       </div>
 
-      {/* Darkening mask for chart readability */}
-      <div 
-        className="fixed inset-0 z-[1] bg-black/60" 
-        style={{ pointerEvents: 'none' }}
+      {/* Subtle noise texture overlay */}
+      <div
+        className="fixed inset-0 z-[1] opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\' /%3E%3C/svg%3E")',
+          backgroundRepeat: 'repeat'
+        }}
       />
 
       {/* Content - fades in after loading */}
-      <div 
-        className="relative z-10 min-h-screen transition-opacity duration-[1200ms]"
-        style={{ 
+      <div
+        className="relative z-10 min-h-screen transition-opacity duration-[800ms]"
+        style={{
           pointerEvents: 'auto',
           opacity: contentOpacity,
           transitionTimingFunction: 'cubic-bezier(0.4, 0.0, 0.2, 1)'
