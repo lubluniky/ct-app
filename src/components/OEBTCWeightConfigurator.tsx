@@ -9,29 +9,25 @@ import { Sliders, RotateCcw, Save } from 'lucide-react';
 
 interface WeightConfig {
   macro: number;
-  etf: number;
   btc: number;
 }
 
 interface OEBTCWeightConfiguratorProps {
   roMacro: number;
-  etfFlow: number;
   btcMomentum: number;
   defaultWeights?: WeightConfig;
   onWeightsChange?: (weights: WeightConfig) => void;
 }
 
 const DEFAULT_WEIGHTS: WeightConfig = {
-  macro: 0.40,
-  etf: 0.35,
-  btc: 0.25,
+  macro: 0.60,
+  btc: 0.40,
 };
 
 const STORAGE_KEY = 'oe_btc_custom_weights';
 
 export function OEBTCWeightConfigurator({
   roMacro,
-  etfFlow,
   btcMomentum,
   defaultWeights = DEFAULT_WEIGHTS,
   onWeightsChange,
@@ -51,42 +47,20 @@ export function OEBTCWeightConfigurator({
     }
   }, []);
 
-  // Calculate OE-BTC values
-  const defaultValue = roMacro * defaultWeights.macro + etfFlow * defaultWeights.etf + btcMomentum * defaultWeights.btc;
-  const customValue = roMacro * weights.macro + etfFlow * weights.etf + btcMomentum * weights.btc;
+  // Calculate OE-BTC values (simplified formula: Macro 60% + BTC 40%)
+  const defaultValue = roMacro * defaultWeights.macro + btcMomentum * defaultWeights.btc;
+  const customValue = roMacro * weights.macro + btcMomentum * weights.btc;
   const difference = customValue - defaultValue;
   const percentDiff = ((difference / Math.abs(defaultValue)) * 100);
 
   // Update weight while maintaining sum = 1.0
   const updateWeight = (key: keyof WeightConfig, value: number) => {
     const newWeights = { ...weights };
-    const oldValue = weights[key];
-    const delta = value - oldValue;
     
-    // Distribute the change across other weights
-    const otherKeys = (Object.keys(weights) as Array<keyof WeightConfig>).filter(k => k !== key);
-    const otherSum = otherKeys.reduce((sum, k) => sum + weights[k], 0);
-    
-    if (otherSum > 0) {
-      newWeights[key] = value;
-      otherKeys.forEach(k => {
-        const proportion = weights[k] / otherSum;
-        newWeights[k] = Math.max(0, weights[k] - delta * proportion);
-      });
-    } else {
-      // If others are 0, split evenly
-      newWeights[key] = value;
-      const remaining = 1 - value;
-      otherKeys.forEach(k => {
-        newWeights[k] = remaining / otherKeys.length;
-      });
-    }
-
-    // Normalize to ensure sum = 1
-    const sum = Object.values(newWeights).reduce((a, b) => a + b, 0);
-    Object.keys(newWeights).forEach(k => {
-      newWeights[k as keyof WeightConfig] /= sum;
-    });
+    // With only 2 components, adjust the other one
+    const otherKey = key === 'macro' ? 'btc' : 'macro';
+    newWeights[key] = value;
+    newWeights[otherKey] = 1.0 - value;
 
     setWeights(newWeights);
     onWeightsChange?.(newWeights);
@@ -140,40 +114,20 @@ export function OEBTCWeightConfigurator({
         {/* Macro weight */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium">Macro (SPY, JNK, EEM, GLD, DXY)</label>
+            <label className="text-sm font-medium">Macro (SPY, NQ, GLD, DXY)</label>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Default: {(defaultWeights.macro * 100).toFixed(0)}%</span>
-              <span className="text-sm font-bold text-blue-400">{(weights.macro * 100).toFixed(0)}%</span>
+              <span className="text-sm font-bold text-green-400">{(weights.macro * 100).toFixed(0)}%</span>
             </div>
           </div>
           <input
             type="range"
             min="0"
             max="100"
-            step="1"
+            step="5"
             value={weights.macro * 100}
             onChange={(e) => updateWeight('macro', parseFloat(e.target.value) / 100)}
-            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-blue-500"
-          />
-        </div>
-
-        {/* ETF weight */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium">ETF Flows</label>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Default: {(defaultWeights.etf * 100).toFixed(0)}%</span>
-              <span className="text-sm font-bold text-cyan-400">{(weights.etf * 100).toFixed(0)}%</span>
-            </div>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="1"
-            value={weights.etf * 100}
-            onChange={(e) => updateWeight('etf', parseFloat(e.target.value) / 100)}
-            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-cyan-500"
+            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-green-500"
           />
         </div>
 
@@ -183,17 +137,17 @@ export function OEBTCWeightConfigurator({
             <label className="text-sm font-medium">BTC Momentum</label>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Default: {(defaultWeights.btc * 100).toFixed(0)}%</span>
-              <span className="text-sm font-bold text-purple-400">{(weights.btc * 100).toFixed(0)}%</span>
+              <span className="text-sm font-bold text-cyan-400">{(weights.btc * 100).toFixed(0)}%</span>
             </div>
           </div>
           <input
             type="range"
             min="0"
             max="100"
-            step="1"
+            step="5"
             value={weights.btc * 100}
             onChange={(e) => updateWeight('btc', parseFloat(e.target.value) / 100)}
-            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-purple-500"
+            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-cyan-500"
           />
         </div>
       </div>

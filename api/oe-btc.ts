@@ -212,8 +212,10 @@ function calculateBTCMomentum(btcData: BTCData) {
   return { value, price: btcData.price, ema200: btcData.ema200, deviation };
 }
 
-function calculateOEBTC(macroRO: number, etfFlow: number, btcMomentum: number) {
-  const oe = 0.4 * macroRO + 0.35 * etfFlow + 0.25 * btcMomentum;
+function calculateOEBTC(macroRO: number, btcMomentum: number) {
+  // Simplified formula: Macro 60% + BTC 40%
+  // Removed ETF component for reliability (no good historical data source)
+  const oe = 0.6 * macroRO + 0.4 * btcMomentum;
   return Math.max(-1, Math.min(1, oe));
 }
 
@@ -235,30 +237,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log('[OE-BTC-API] Request received');
 
-    // Fetch all data in parallel
-    const [macroData, btcData, etfFlows] = await Promise.all([
+    // Fetch all data in parallel (removed ETF)
+    const [macroData, btcData] = await Promise.all([
       fetchMacroData(),
       fetchBTCPrice(),
-      fetchETFFlows(),
     ]);
 
     // Calculate components
     const macroResult = calculateMacroRiskOn(macroData);
-    const etfResult = calculateETFFlow(etfFlows);
     const btcResult = calculateBTCMomentum(btcData);
 
-    // Calculate final OE-BTC
-    const oeBTC = calculateOEBTC(macroResult.value, etfResult.value, btcResult.value);
+    // Calculate final OE-BTC (simplified formula)
+    const oeBTC = calculateOEBTC(macroResult.value, btcResult.value);
 
     const response = {
       oe_btc: oeBTC,
       ro_macro: macroResult.value,
-      etf_flow: etfResult.value,
       btc_momentum: btcResult.value,
       timestamp: new Date().toISOString(),
       components: {
         ...macroResult.components,
-        etf_flow_usd: etfResult.dailyFlow,
         btc_price: btcResult.price,
         btc_ema200: btcResult.ema200,
         btc_deviation_pct: btcResult.deviation,

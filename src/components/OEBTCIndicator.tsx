@@ -15,7 +15,6 @@ import { OEBTCWeightConfigurator } from '@/components/OEBTCWeightConfigurator';
 interface OEBTCData {
   oe_btc: number;
   ro_macro: number;
-  etf_flow: number;
   btc_momentum: number;
   timestamp: string;
   components: {
@@ -23,7 +22,6 @@ interface OEBTCData {
     nq_above_sma: boolean;
     gld_above_sma: boolean;
     dxy_above_sma: boolean;
-    etf_flow_usd: number;
     btc_price: number;
     btc_ema200: number;
     btc_deviation_pct: number;
@@ -370,7 +368,7 @@ export const OEBTCIndicator = memo(function OEBTCIndicator() {
                 </div>
 
                 {/* Component breakdown grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                   {/* Macro Risk-On */}
                   <div className="space-y-4 p-4 bg-background/40 rounded-lg border border-border/50 backdrop-blur-sm">
                     <h4 className="font-bold text-lg flex items-center gap-2">
@@ -407,37 +405,6 @@ export const OEBTCIndicator = memo(function OEBTCIndicator() {
                         <span>{data.components.dxy_above_sma ? '✓' : '✗'}</span>
                         <span>DXY below SMA ↓</span>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* ETF Flow */}
-                  <div className="space-y-4 p-4 bg-background/40 rounded-lg border border-border/50 backdrop-blur-sm">
-                    <h4 className="font-bold text-lg flex items-center gap-2">
-                      {data.etf_flow > 0 ? (
-                        <TrendingUp className="w-5 h-5 text-green-400" />
-                      ) : (
-                        <TrendingDown className="w-5 h-5 text-red-400" />
-                      )}
-                      ETF Flow
-                    </h4>
-
-                    <MiniBar
-                      title="Value"
-                      value={data.etf_flow}
-                      icon={data.etf_flow > 0 ? TrendingUp : TrendingDown}
-                      tooltip={`ETF flow component: ${data.etf_flow.toFixed(2)}`}
-                    />
-
-                    <div className="text-xs space-y-2 pt-2 border-t border-border/30 text-muted-foreground">
-                      <div>
-                        <span className="font-semibold">Daily Flow:</span><br />
-                        <span className="text-base font-bold text-foreground">
-                          ${(data.components.etf_flow_usd / 1e9).toFixed(2)}B
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground/70 pt-2">
-                        Net inflow from BTC ETFs. Positive = accumulation.
-                      </p>
                     </div>
                   </div>
 
@@ -489,10 +456,13 @@ export const OEBTCIndicator = memo(function OEBTCIndicator() {
                 <div className="text-xs text-muted-foreground bg-background/60 rounded-lg p-4 border border-border/30 font-mono">
                   <p className="font-semibold mb-2 text-foreground">Formula:</p>
                   <p className="leading-relaxed">
-                    OE-BTC = <span className="text-green-400">0.40 × Macro</span> + <span className="text-blue-400">0.35 × ETF</span> + <span className="text-cyan-400">0.25 × BTC</span>
+                    OE-BTC = <span className="text-green-400">0.60 × Macro</span> + <span className="text-cyan-400">0.40 × BTC</span>
                   </p>
                   <p className="text-xs text-muted-foreground/70 mt-2">
                     Clamped to [-1, 1]. Positive = Risk-On, Negative = Risk-Off
+                  </p>
+                  <p className="text-xs text-emerald-400/70 mt-2">
+                    ✓ Simplified formula using only reliable data sources (Macro + BTC)
                   </p>
                 </div>
               </>
@@ -517,7 +487,6 @@ export const OEBTCIndicator = memo(function OEBTCIndicator() {
             {activeTab === 'customize' && (
               <OEBTCWeightConfigurator
                 roMacro={data.ro_macro}
-                etfFlow={data.etf_flow}
                 btcMomentum={data.btc_momentum}
               />
             )}

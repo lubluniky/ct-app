@@ -140,32 +140,8 @@ async function calculateHistoricalOEBTC(days: number): Promise<HistoricalDataPoi
       const btcDeviation = ((btcPrice - btcEMA200) / btcEMA200) * 100;
       const btc_momentum = Math.max(-1, Math.min(1, btcDeviation / 5));
 
-      // ETF flow approximation: Improved model using price + volume
-      // ETF buyers tend to correlate with: price increase + high volume
-      let etf_flow = 0;
-      if (i > 0) {
-        const prevPoint = btcHistory[btcHistory.length - days + i - 1];
-        const prevPrice = prevPoint.price;
-        const prevVolume = prevPoint.volume;
-        
-        // Price momentum component
-        const priceChange = btcPrice - prevPrice;
-        const returnPct = (priceChange / prevPrice) * 100;
-        
-        // Volume component (relative to average)
-        const volumeRatio = prevVolume > 0 ? btcVolume / prevVolume : 1;
-        const volumeSignal = Math.log(volumeRatio) / Math.log(2); // Log scale: 2x volume = +1
-        
-        // Combined signal: price momentum weighted by volume
-        // Higher volume amplifies the signal
-        const combinedSignal = returnPct * (1 + Math.min(volumeSignal, 1) * 0.5);
-        
-        // Normalize using tanh (similar to real ETF flow calculation)
-        etf_flow = Math.tanh(combinedSignal / 3);
-      }
-
-      // Calculate OE-BTC
-      const oe_btc = 0.40 * ro_macro + 0.35 * etf_flow + 0.25 * btc_momentum;
+      // Calculate OE-BTC (simplified formula: Macro 60% + BTC 40%)
+      const oe_btc = 0.60 * ro_macro + 0.40 * btc_momentum;
       const oe_btc_clamped = Math.max(-1, Math.min(1, oe_btc));
 
       result.push({
