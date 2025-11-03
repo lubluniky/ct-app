@@ -18,6 +18,17 @@ interface CorrelationsAPIResponse {
   days: number;
   timestamp: string;
   correlations: CorrelationPair[];
+  debug?: {
+    dataLengths?: {
+      spy?: number;
+      nq?: number;
+      gld?: number;
+      dxy?: number;
+      btc?: number;
+      oebtc?: number;
+    };
+    hasFinnhubKey?: boolean;
+  };
 }
 
 // Fetcher for SWR
@@ -26,11 +37,22 @@ const fetcher = async (url: string): Promise<CorrelationsAPIResponse> => {
   const baseUrl = isDev ? 'https://borkiss-site.vercel.app' : '';
   const fullUrl = `${baseUrl}${url}`;
   
+  console.log('[OEBTCCorrelationMatrix] Fetching from:', fullUrl);
+  
   const response = await fetch(fullUrl);
   if (!response.ok) {
-    throw new Error('Failed to fetch correlations');
+    console.error('[OEBTCCorrelationMatrix] Fetch failed:', response.status, response.statusText);
+    throw new Error(`Failed to fetch correlations: ${response.status} ${response.statusText}`);
   }
-  return response.json();
+  
+  const data = await response.json();
+  console.log('[OEBTCCorrelationMatrix] Response received:', {
+    success: data.success,
+    correlationsCount: data.correlations?.length,
+    debug: data.debug,
+  });
+  
+  return data;
 };
 
 // Mock data as fallback
@@ -76,6 +98,9 @@ export function OEBTCCorrelationMatrix() {
     return 'Very Weak';
   };
 
+  // Determine if we're using mock data
+  const isFallback = !apiResponse || error || correlations === MOCK_CORRELATIONS;
+
   return (
     <Card className="p-4 bg-card/40 border border-border/50">
       {/* Header */}
@@ -88,7 +113,7 @@ export function OEBTCCorrelationMatrix() {
             <span className="text-xs text-muted-foreground animate-pulse">Loading...</span>
           )}
           {error && !isLoading && (
-            <div className="flex items-center gap-1 text-xs text-amber-400">
+            <div className="flex items-center gap-1 text-xs text-amber-400" title={error.message}>
               <AlertCircle className="w-3 h-3" />
               <span>Fallback mode</span>
             </div>
@@ -98,6 +123,28 @@ export function OEBTCCorrelationMatrix() {
           )}
         </div>
       </div>
+
+      {/* Debug info - show if in fallback mode */}
+      {isFallback && apiResponse?.debug && (
+        <div className="mb-4 p-2 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-300">
+          <div className="font-semibold mb-1">Debug Info:</div>
+          <div className="space-y-0.5 font-mono">
+            {apiResponse.debug.hasFinnhubKey !== undefined && (
+              <div>Finnhub Key: {apiResponse.debug.hasFinnhubKey ? '✓' : '✗'}</div>
+            )}
+            {apiResponse.debug.dataLengths && (
+              <>
+                <div>Data Points:</div>
+                <div className="pl-2">
+                  {Object.entries(apiResponse.debug.dataLengths).map(([key, val]) => (
+                    <div key={key}>{key.toUpperCase()}: {val || 0}</div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Correlation grid */}
       <div className="space-y-2">
