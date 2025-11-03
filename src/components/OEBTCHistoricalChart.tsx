@@ -278,6 +278,9 @@ export function OEBTCHistoricalChart({ data: providedData, showBTCOverlay = fals
       {apiResponse && !error && (
         <div className="mt-4 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded text-xs text-emerald-400">
           <strong>✓ Real Data:</strong> Showing {apiResponse.count} days of calculated historical OE-BTC values using simplified formula (Macro 60% + BTC 40%).
+          <div className="text-emerald-400/70 mt-1">
+            Each point represents the OE-BTC value calculated from that day's closed prices and technical indicators.
+          </div>
         </div>
       )}
     </Card>
