@@ -1,0 +1,5 @@
+# Ignore cached data and results
+historical-data.json
+backtest-results.csv
+*.csv
+*.json
