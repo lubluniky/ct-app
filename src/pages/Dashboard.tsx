@@ -2,6 +2,7 @@ import { ArrowLeft, Menu, X, Activity, Zap, TrendingUp, AlertCircle } from 'luci
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { SignalOverview } from '@/components/SignalOverview';
+import { useDashboardSignals } from '@/hooks/useDashboardSignals';
 
 // Lazy load heavy components
 const LiquidEther = lazy(() => import('@/components/LiquidEther'));
@@ -18,6 +19,9 @@ const Dashboard = () => {
   const [contentOpacity, setContentOpacity] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeIndicator, setActiveIndicator] = useState<'overview' | 'oe-btc' | 'mtm' | 'rvwap'>('overview');
+  
+  // Fetch dashboard signals
+  const signals = useDashboardSignals('BTCUSDT');
 
   // Navigation tabs config
   const tabs = [
@@ -239,6 +243,14 @@ const Dashboard = () => {
               {activeIndicator === 'overview' && (
                 <Suspense fallback={<div className="h-40 bg-card/50 animate-pulse rounded-lg" />}>
                   <SignalOverview
+                    mtmM15Value={signals.mtmM15Value}
+                    mtmM15Status={signals.mtmM15Status}
+                    mtm1hValue={signals.mtm1hValue}
+                    mtm1hStatus={signals.mtm1hStatus}
+                    mtm4hValue={signals.mtm4hValue}
+                    mtm4hStatus={signals.mtm4hStatus}
+                    rvwapStatus={signals.rvwapStatus}
+                    rvwap90d={signals.rvwap90d}
                     onIndicatorClick={(indicator) => {
                       setActiveIndicator(indicator as any);
                     }}

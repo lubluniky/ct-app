@@ -1,12 +1,16 @@
 /**
  * Signal Overview Panel - Displays all indicator statuses at a glance
- * Shows: OE-BTC, MTM Signals, RVWAP Status, VPIN Status with color codes
+ * Shows: OE-BTC, MTM (latest M15/1H/4H), RVWAP Status with color codes
+ * 
+ * Note: VPIN data not included as CryptoCompare proxy may not be fully reliable
+ * Display focuses on confirmed signals: OE-BTC, MTM, RVWAP
  */
 
 import { useEffect, useState } from 'react';
+import useSWR from 'swr';
+import { useKlines } from '@/hooks/useKlines';
 import { Card } from '@/components/ui/card';
 import { TrendingUp, AlertCircle, Zap, Activity, ChevronRight } from 'lucide-react';
-import type { Kline } from '@/lib/binance';
 
 interface SignalStatus {
   name: string;
@@ -14,33 +18,63 @@ interface SignalStatus {
   status: 'bullish' | 'neutral' | 'bearish' | 'loading';
   value?: string | number;
   detail?: string;
+  timeframe?: string;
   color: string;
   bgColor: string;
   borderColor: string;
 }
 
 interface SignalOverviewProps {
-  oeBtcValue?: number;
-  mtmStatus?: 'bullish' | 'neutral' | 'bearish' | 'loading';
-  mtmValue?: number;
+  mtmM15Value?: number;
+  mtmM15Status?: 'bullish' | 'neutral' | 'bearish' | 'loading';
+  mtm1hValue?: number;
+  mtm1hStatus?: 'bullish' | 'neutral' | 'bearish' | 'loading';
+  mtm4hValue?: number;
+  mtm4hStatus?: 'bullish' | 'neutral' | 'bearish' | 'loading';
   rvwapStatus?: 'bullish' | 'neutral' | 'bearish' | 'loading';
   rvwap90d?: number;
-  vpinValue?: number;
-  vpinTrend?: 'increasing' | 'decreasing' | 'stable';
   onIndicatorClick?: (indicator: string) => void;
 }
 
+interface OEBTCData {
+  oe_btc: number;
+  ro_macro: number;
+  etf_flow: number;
+  btc_momentum: number;
+  timestamp: string;
+}
+
+const fetcherOEBTC = async (url: string): Promise<OEBTCData> => {
+  const isDev = import.meta.env.DEV;
+  const baseUrl = isDev ? 'https://borkiss-site.vercel.app' : '';
+  const response = await fetch(`${baseUrl}/api/oe-btc`);
+  if (!response.ok) throw new Error('Failed to fetch OE-BTC');
+  return response.json();
+};
+
 export function SignalOverview({
-  oeBtcValue,
-  mtmStatus = 'loading',
-  mtmValue,
+  mtmM15Value,
+  mtmM15Status = 'loading',
+  mtm1hValue,
+  mtm1hStatus = 'loading',
+  mtm4hValue,
+  mtm4hStatus = 'loading',
   rvwapStatus = 'loading',
   rvwap90d,
-  vpinValue,
-  vpinTrend = 'stable',
   onIndicatorClick,
 }: SignalOverviewProps) {
   const [signals, setSignals] = useState<SignalStatus[]>([]);
+  
+  // Fetch OE-BTC data
+  const { data: oeBtcData, isLoading: oeBtcLoading, error: oeBtcError } = useSWR(
+    '/api/oe-btc',
+    fetcherOEBTC,
+    {
+      refreshInterval: 60000, // 1 minute
+      revalidateOnFocus: false,
+      shouldRetryOnError: true,
+    }
+  );
 
   useEffect(() => {
     const getOEBTCStatus = (value?: number) => {
@@ -79,23 +113,26 @@ export function SignalOverview({
       }
     };
 
-    const oeBtcStatus = getOEBTCStatus(oeBtcValue);
+    const oeBtcValue = oeBtcData?.oe_btc;
+    const oeBtcStatus = oeBtcLoading ? 'loading' : getOEBTCStatus(oeBtcValue);
+
     const newSignals: SignalStatus[] = [
       {
         name: 'OE-BTC',
         icon: <Activity className="w-5 h-5" />,
         status: oeBtcStatus,
         value: oeBtcValue?.toFixed(2),
-        detail: oeBtcStatus === 'bullish' ? '✓ Risk-On' : oeBtcStatus === 'bearish' ? '✗ Risk-Off' : '≈ Neutral',
+        detail: oeBtcStatus === 'bullish' ? '✓ Risk-On' : oeBtcStatus === 'bearish' ? '✗ Risk-Off' : oeBtcStatus === 'loading' ? 'Loading...' : '≈ Neutral',
         ...getStatusStyle(oeBtcStatus),
       },
       {
-        name: 'MTM',
+        name: 'MTM (1H)',
         icon: <Zap className="w-5 h-5" />,
-        status: mtmStatus,
-        value: mtmValue?.toFixed(0),
-        detail: mtmStatus === 'bullish' ? 'Tensioning' : mtmStatus === 'bearish' ? 'Relaxing' : 'Neutral',
-        ...getStatusStyle(mtmStatus),
+        status: mtm1hStatus,
+        value: mtm1hValue?.toFixed(0),
+        timeframe: '1H',
+        detail: mtm1hStatus === 'bullish' ? 'Tensioning' : mtm1hStatus === 'bearish' ? 'Relaxing' : 'Neutral',
+        ...getStatusStyle(mtm1hStatus),
       },
       {
         name: 'RVWAP',
@@ -105,18 +142,10 @@ export function SignalOverview({
         detail: rvwapStatus === 'bullish' ? 'Above 90D' : rvwapStatus === 'bearish' ? 'Below 90D' : 'At 90D',
         ...getStatusStyle(rvwapStatus),
       },
-      {
-        name: 'VPIN',
-        icon: <AlertCircle className="w-5 h-5" />,
-        status: vpinTrend === 'increasing' ? 'bullish' : vpinTrend === 'decreasing' ? 'bearish' : 'neutral',
-        value: vpinValue?.toFixed(4),
-        detail: vpinTrend === 'increasing' ? '↗ Increasing' : vpinTrend === 'decreasing' ? '↘ Decreasing' : '→ Stable',
-        ...getStatusStyle(vpinTrend === 'increasing' ? 'bullish' : vpinTrend === 'decreasing' ? 'bearish' : 'neutral'),
-      },
     ];
 
     setSignals(newSignals);
-  }, [oeBtcValue, mtmStatus, mtmValue, rvwapStatus, rvwap90d, vpinValue, vpinTrend]);
+  }, [oeBtcData, oeBtcLoading, mtm1hStatus, mtm1hValue, rvwapStatus, rvwap90d]);
 
   return (
     <Card className="p-6 bg-gradient-to-br from-card to-card/80 border border-border/50 backdrop-blur-sm">
