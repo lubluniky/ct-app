@@ -5,7 +5,6 @@ import { SignalOverview } from '@/components/SignalOverview';
 import { useDashboardSignals } from '@/hooks/useDashboardSignals';
 
 // Lazy load heavy components
-const LiquidEther = lazy(() => import('@/components/LiquidEther'));
 const LoadingOverlay = lazy(() => import('@/components/LoadingOverlay'));
 const RvwapPanel = lazy(() => import('@/components/rvwap/RvwapPanel').then(module => ({ default: module.RvwapPanel })));
 const MTMPanel = lazy(() => import('@/components/mtm/MTMPanel').then(module => ({ default: module.MTMPanel })));
@@ -116,46 +115,25 @@ const Dashboard = () => {
         </Suspense>
       )}
 
-      {/* Liquid Ether Background - lowest z-index, dimmed during loading */}
+      {/* Simple Gradient Background - no heavy WebGL */}
       <div
-        className="fixed inset-0 z-0 transition-all duration-500"
+        className="fixed inset-0 z-0 bg-gradient-to-br from-slate-950 via-blue-950/20 to-slate-950"
         style={{
-          opacity: showLoading ? 0.2 : 1,
-          filter: showLoading ? 'blur(8px)' : 'blur(0px)',
-          transitionTimingFunction: 'cubic-bezier(0.4, 0.0, 0.2, 1)'
+          pointerEvents: 'none'
         }}
-      >
-        <Suspense fallback={<div className="w-full h-full bg-black" />}>
-          <LiquidEther
-            colors={['#3B82F6', '#22D3EE', '#0EA5E9']}
-            mouseForce={prefersReducedMotion ? 8 : 15}
-            cursorSize={80}
-            isViscous={false}
-            viscous={15}
-            iterationsViscous={prefersReducedMotion ? 4 : 8}
-            iterationsPoisson={prefersReducedMotion ? 4 : 8}
-            resolution={0.25}
-            isBounce={false}
-            autoDemo={true}
-            autoSpeed={prefersReducedMotion ? 0.3 : 0.5}
-            autoIntensity={2.0}
-            takeoverDuration={0.25}
-            autoResumeDelay={3000}
-            autoRampDuration={0.6}
-            style={{ width: '100%', height: '100%' }}
-          />
-        </Suspense>
-      </div>
+      />
 
-      {/* Darkening mask for chart readability */}
-      <div 
-        className="fixed inset-0 z-[1] bg-black/60" 
-        style={{ pointerEvents: 'none' }}
+      {/* Subtle accent gradient overlay */}
+      <div
+        className="fixed inset-0 z-[0.5] bg-gradient-to-t from-blue-500/5 to-transparent"
+        style={{
+          pointerEvents: 'none'
+        }}
       />
 
       {/* Content - fades in after loading */}
       <div 
-        className="relative z-10 min-h-screen transition-opacity duration-[1200ms]"
+        className="relative z-10 min-h-screen transition-opacity duration-500"
         style={{ 
           pointerEvents: 'auto',
           opacity: contentOpacity,

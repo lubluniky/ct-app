@@ -12,9 +12,9 @@ export default function LoadingOverlay({ onComplete }: LoadingOverlayProps) {
   // Check for reduced motion preference
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Timing configuration - much faster without heavy WebGL animation
-  const animationDuration = prefersReducedMotion ? 500 : 1200; // Faster load
-  const fadeOutDuration = 600; // Quick fade out
+  // Timing configuration - ultra fast (just a visual flourish)
+  const animationDuration = prefersReducedMotion ? 300 : 800; // Ultra fast
+  const fadeOutDuration = 400; // Quick fade out
   const totalDuration = animationDuration + fadeOutDuration;
 
   useEffect(() => {
