@@ -7,10 +7,10 @@ import { useMemo, useEffect, useState, memo } from 'react';
 import useSWR from 'swr';
 import { Card } from '@/components/ui/card';
 import { Activity, TrendingUp, TrendingDown, Info, Gauge, TrendingUp as ChartIcon, Bell, Grid3x3, Sliders } from 'lucide-react';
-import { OEBTCHistoricalChart } from './OEBTCHistoricalChart';
-import { OEBTCAlertConfig } from './OEBTCAlertConfig';
-import { OEBTCCorrelationMatrix } from './OEBTCCorrelationMatrix';
-import { OEBTCWeightConfigurator } from './OEBTCWeightConfigurator';
+import { OEBTCHistoricalChart } from '@/components/OEBTCHistoricalChart';
+import { OEBTCAlertConfig } from '@/components/OEBTCAlertConfig';
+import { OEBTCCorrelationMatrix } from '@/components/OEBTCCorrelationMatrix';
+import { OEBTCWeightConfigurator } from '@/components/OEBTCWeightConfigurator';
 
 interface OEBTCData {
   oe_btc: number;
