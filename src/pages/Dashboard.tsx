@@ -24,7 +24,7 @@ const Dashboard = () => {
 
         {/* Dashboard Grid */}
         <div className="flex-1 p-4 overflow-y-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-4 grid-rows-[500px_400px] gap-4 h-full min-h-[900px]">
+          <div className="grid grid-cols-1 lg:grid-cols-4 grid-rows-[500px_1fr] gap-4 h-full min-h-[900px]">
             
             {/* Main Chart Area (Top Left - 3 cols) */}
             <div className="lg:col-span-3 row-span-1">
