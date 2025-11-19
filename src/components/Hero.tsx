@@ -1,15 +1,12 @@
 import { ArrowRight, BookOpen, Terminal } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import HeroAnimation from './HeroAnimation';
 
 export const Hero = () => {
   return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-background">
-      {/* Background Animation */}
+    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+      {/* Background Gradient for text readability */}
       <div className="absolute inset-0 z-0">
-        <HeroAnimation />
-        {/* Gradient overlay to fade out animation on the left for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/50 to-transparent pointer-events-none" />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">

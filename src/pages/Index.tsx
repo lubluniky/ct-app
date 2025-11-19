@@ -6,13 +6,22 @@ import { Models } from "@/components/Models";
 import { ToolsOverview } from "@/components/ToolsOverview";
 import { Contact } from "@/components/Contact";
 import { StickyNavbar } from "@/components/StickyNavbar";
+import { Suspense, lazy } from "react";
+
+const PixelBackground = lazy(() => import("@/components/PixelBackground"));
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background relative selection:bg-primary/20 selection:text-primary">
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <Suspense fallback={null}>
+          <PixelBackground />
+        </Suspense>
+      </div>
+
       <StickyNavbar />
 
-      <main>
+      <main className="relative z-10">
         <Hero />
         
         <div id="philosophy">
@@ -37,7 +46,7 @@ const Index = () => {
         </div>
       </main>
         
-      <footer className="border-t border-border py-12 bg-secondary/10">
+      <footer className="relative z-10 border-t border-border py-12 bg-secondary/10">
         <div className="container mx-auto px-6 text-center">
           <p className="text-sm text-muted-foreground font-mono">
             BORKISS.TRADE — QUANT RESEARCH LAB
