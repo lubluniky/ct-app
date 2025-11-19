@@ -137,20 +137,53 @@ export function useKlines({
     setError(null);
 
     try {
-      // Calculate how many candles we need to cover the lookback period
-      const totalCandles = calculateTotalCandles(lookbackDays, interval);
-      
-      // Use multi-batch fetch to get the LATEST candles going back enough time
-      // This ensures we always have the most recent data
-      const data = await fetchKlinesMultiBatch(
-        {
-          symbol,
-          interval,
-          dataSource,
-        },
-        totalCandles,
-        abortControllerRef.current.signal
-      );
+      // Check if we have existing data in cache to do an incremental update
+      const cached = klinesCache.get(cacheKey);
+      let data: Kline[] = [];
+
+      if (cached && cached.data.length > 0) {
+        // Incremental update: fetch only new candles since last update
+        // We fetch a bit more overlap to ensure continuity
+        const lastCandleTime = cached.data[cached.data.length - 1].openTime;
+        const newCandles = await fetchKlines(
+          {
+            symbol,
+            interval,
+            startTime: lastCandleTime, // Fetch from last known candle
+            limit: 100, // Should be enough for 5s updates
+            dataSource,
+          },
+          abortControllerRef.current.signal
+        );
+
+        // Merge new candles with cached data
+        // Remove the last candle from cache (it might have been incomplete) and append new ones
+        // Or better: use a Map to dedupe by openTime
+        const dataMap = new Map<number, Kline>();
+        cached.data.forEach(k => dataMap.set(k.openTime, k));
+        newCandles.forEach(k => dataMap.set(k.openTime, k));
+        
+        data = Array.from(dataMap.values()).sort((a, b) => a.openTime - b.openTime);
+        
+        // Trim to lookback period if needed (optional, to keep memory usage stable)
+        const totalCandles = calculateTotalCandles(lookbackDays, interval);
+        if (data.length > totalCandles + 100) {
+             data = data.slice(-totalCandles);
+        }
+
+      } else {
+        // Full fetch
+        const totalCandles = calculateTotalCandles(lookbackDays, interval);
+        data = await fetchKlinesMultiBatch(
+            {
+            symbol,
+            interval,
+            dataSource,
+            },
+            totalCandles,
+            abortControllerRef.current.signal
+        );
+      }
 
       // Update cache
       klinesCache.set(cacheKey, {

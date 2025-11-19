@@ -177,8 +177,21 @@ export function calculateStartTime(daysBack: number): number {
 }
 
 /**
+ * Helper to get interval in milliseconds
+ */
+function getIntervalMs(interval: string): number {
+  const unit = interval.slice(-1);
+  const value = parseInt(interval.slice(0, -1));
+  if (unit === 'm') return value * 60 * 1000;
+  if (unit === 'h') return value * 60 * 60 * 1000;
+  if (unit === 'd') return value * 24 * 60 * 60 * 1000;
+  if (unit === 'w') return value * 7 * 24 * 60 * 60 * 1000;
+  return 0;
+}
+
+/**
  * Fetch klines in multiple batches to overcome 1000-limit
- * Fetches in reverse chronological order (most recent first)
+ * Uses parallel requests for maximum speed
  */
 export async function fetchKlinesMultiBatch(
   params: FetchKlinesParams,
@@ -189,46 +202,62 @@ export async function fetchKlinesMultiBatch(
   
   const batchSize = 1000;
   const batchesNeeded = Math.ceil(totalCandles / batchSize);
+  const intervalMs = getIntervalMs(interval);
   
-  console.log(`[fetchKlinesMultiBatch] Fetching ${totalCandles} candles in ${batchesNeeded} batches`);
+  console.log(`[fetchKlinesMultiBatch] Fetching ${totalCandles} candles in ${batchesNeeded} batches (Parallel)`);
 
-  const allKlines: Kline[] = [];
-  let endTime = Date.now();
+  const now = Date.now();
+  const promises: Promise<Kline[]>[] = [];
 
+  // Generate all requests in parallel
   for (let i = 0; i < batchesNeeded; i++) {
-    console.log(`[fetchKlinesMultiBatch] Batch ${i + 1}/${batchesNeeded}`);
-
-    const batch = await fetchKlines(
-      {
-        symbol,
-        interval,
-        endTime,
-        limit: batchSize,
-        dataSource,
-      },
-      signal
+    // Calculate endTime for this batch
+    // Batch 0: ends at Now
+    // Batch 1: ends at Now - (1000 * interval)
+    // Batch 2: ends at Now - (2000 * interval)
+    const endTime = now - (i * batchSize * intervalMs);
+    
+    promises.push(
+      fetchKlines(
+        {
+          symbol,
+          interval,
+          endTime,
+          limit: batchSize,
+          dataSource,
+        },
+        signal
+      )
     );
-
-    if (batch.length === 0) {
-      console.warn(`[fetchKlinesMultiBatch] Batch ${i + 1} returned 0 candles, stopping`);
-      break;
-    }
-
-    // Add to beginning of array (since we're fetching backwards)
-    allKlines.unshift(...batch);
-
-    // Set next endTime to first candle's openTime - 1ms
-    endTime = batch[0].openTime - 1;
-
-    console.log(`[fetchKlinesMultiBatch] Batch ${i + 1} fetched ${batch.length} candles, total: ${allKlines.length}`);
-
-    // Small delay to avoid rate limits (except for last batch)
-    if (i < batchesNeeded - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 150));
-    }
   }
 
-  console.log(`[fetchKlinesMultiBatch] Total fetched: ${allKlines.length} candles`);
-  return allKlines;
+  try {
+    const results = await Promise.all(promises);
+    
+    // Merge all results
+    const allKlines: Kline[] = [];
+    const seenTimestamps = new Set<number>();
+    
+    // Process results (they might be out of order if we didn't await Promise.all, but Promise.all preserves order of input array)
+    // However, let's be safe and sort everything at the end
+    results.forEach(batch => {
+      batch.forEach(k => {
+        if (!seenTimestamps.has(k.openTime)) {
+          seenTimestamps.add(k.openTime);
+          allKlines.push(k);
+        }
+      });
+    });
+    
+    // Sort by time ascending
+    allKlines.sort((a, b) => a.openTime - b.openTime);
+    
+    console.log(`[fetchKlinesMultiBatch] Total fetched: ${allKlines.length} candles`);
+    return allKlines;
+    
+  } catch (error) {
+    console.error('[fetchKlinesMultiBatch] Error in parallel fetch:', error);
+    throw error;
+  }
 }
 
