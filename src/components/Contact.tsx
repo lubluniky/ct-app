@@ -1,57 +1,57 @@
+import { SectionLayout } from "./ui/SectionLayout";
+import { Mail, MessageSquare, Globe, ArrowUpRight } from "lucide-react";
+
 const contacts = [
   { 
     label: "Ready to level up your trading?", 
     value: "cryptomannn.com", 
-    link: "https://cryptomannn.com" 
+    link: "https://cryptomannn.com",
+    icon: Globe
   },
   { 
     label: "Telegram", 
     value: "@borkiss", 
-    link: "https://t.me/borkiss" 
+    link: "https://t.me/borkiss",
+    icon: MessageSquare
   },
   { 
     label: "Email", 
     value: "contact@borkiss.trade", 
-    link: "mailto:contact@borkiss.trade" 
+    link: "mailto:contact@borkiss.trade",
+    icon: Mail
   },
 ];
 
 export const Contact = () => {
   return (
-    <section className="py-32 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-16">
-          <div className="flex items-center gap-6 mb-6">
-            <span className="text-6xl font-bold text-primary/20">05</span>
-            <h2 className="text-4xl md:text-5xl font-bold">Connect</h2>
-          </div>
-          <div className="w-20 h-1 bg-primary shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
-        </div>
-        
-        <div className="space-y-6">
-          {contacts.map((contact, idx) => (
-            <a
-              key={idx}
-              href={contact.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block border border-border bg-card p-8 hover-lift group transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-muted-foreground mb-2">{contact.label}</div>
-                  <div className="text-xl font-medium group-hover:text-primary transition-colors">
-                    {contact.value}
-                  </div>
-                </div>
-                <div className="w-10 h-10 border border-border flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all">
-                  <span className="text-xl">→</span>
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
+    <SectionLayout number="06" title="Connect" className="bg-secondary/20">
+      <div className="mb-12 text-lg text-muted-foreground max-w-2xl">
+        For research questions, collaborations, or consulting inquiries.
       </div>
-    </section>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {contacts.map((contact, idx) => (
+          <a
+            key={idx}
+            href={contact.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col p-6 bg-card rounded-xl border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-md group"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <contact.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </div>
+            
+            <div className="mt-auto">
+              <div className="text-sm text-muted-foreground mb-1">{contact.label}</div>
+              <div className="text-lg font-medium text-foreground group-hover:text-primary transition-colors">
+                {contact.value}
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+    </SectionLayout>
   );
 };

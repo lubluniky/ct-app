@@ -59,29 +59,29 @@ export function RvwapChart({ data, multiData, klines, height = 400, className = 
           height,
           layout: {
             background: { type: ColorType.Solid, color: 'transparent' },
-            textColor: 'rgba(255, 255, 255, 0.6)',
+            textColor: '#334155', // Slate-700
           },
           grid: {
-            vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
-            horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+            vertLines: { color: 'rgba(0, 0, 0, 0.06)' },
+            horzLines: { color: 'rgba(0, 0, 0, 0.06)' },
           },
           crosshair: {
             mode: 1,
             vertLine: {
-              color: 'rgba(255, 255, 255, 0.3)',
+              color: '#94a3b8', // Slate-400
               width: 1,
               style: 2,
-              labelBackgroundColor: 'rgba(0, 0, 0, 0.8)',
+              labelBackgroundColor: '#1e293b',
             },
             horzLine: {
-              color: 'rgba(255, 255, 255, 0.3)',
+              color: '#94a3b8', // Slate-400
               width: 1,
               style: 2,
-              labelBackgroundColor: 'rgba(0, 0, 0, 0.8)',
+              labelBackgroundColor: '#1e293b',
             },
           },
           timeScale: {
-            borderColor: 'rgba(255, 255, 255, 0.2)',
+            borderColor: 'rgba(0, 0, 0, 0.1)',
             timeVisible: true,
             secondsVisible: false,
             barSpacing: 6,
@@ -90,7 +90,7 @@ export function RvwapChart({ data, multiData, klines, height = 400, className = 
             fixRightEdge: false,
           },
           rightPriceScale: {
-            borderColor: 'rgba(255, 255, 255, 0.2)',
+            borderColor: 'rgba(0, 0, 0, 0.1)',
           },
           handleScroll: true,
           handleScale: true,
@@ -104,12 +104,12 @@ export function RvwapChart({ data, multiData, klines, height = 400, className = 
 
         // Add candlestick series first (background)
         const candlestickSeries = chart.addSeries(CandlestickSeries, {
-          upColor: '#26a69a',
-          downColor: '#ef5350',
-          borderUpColor: '#26a69a',
-          borderDownColor: '#ef5350',
-          wickUpColor: '#26a69a',
-          wickDownColor: '#ef5350',
+          upColor: '#10B981', // Emerald-500
+          downColor: '#EF4444', // Red-500
+          borderUpColor: '#10B981',
+          borderDownColor: '#EF4444',
+          wickUpColor: '#10B981',
+          wickDownColor: '#EF4444',
         });
 
         console.log('[RvwapChart] 🕯️ CandlestickSeries added');
@@ -412,7 +412,7 @@ export function RvwapChart({ data, multiData, klines, height = 400, className = 
         position: 'relative',
         width: '100%',
         height: `${height}px`,
-        background: '#1a1a1a', // Lighter background so chart is visible
+        // background: 'transparent', // Removed dark background
         borderRadius: '8px',
       }}
     >

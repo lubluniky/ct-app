@@ -19,50 +19,50 @@
 
 @layer base {
   :root {
-    --background: 0 0% 8%;
-    --foreground: 0 0% 95%;
+    /* Light Theme - Quant Research Lab */
+    --background: 210 40% 98%; /* Very light gray/paper */
+    --foreground: 222 47% 11%; /* Deep slate, almost black */
 
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 95%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
 
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Blue primary matching Eye theme (#3B82F6) */
-    --primary: 217 92% 62%;
-    --primary-foreground: 0 0% 8%;
+    /* Primary: Deep Slate / Black for high contrast */
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
 
-    /* Cyan secondary variant (#06B6D4) */
-    --secondary: 188 94% 46%;
-    --secondary-foreground: 0 0% 95%;
+    /* Secondary: Subtle gray */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    /* Cyan accent matching eye (#22D3EE) */
-    --accent: 188 94% 64%;
-    --accent-foreground: 0 0% 8%;
+    /* Accent: A subtle technical blue, not neon */
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 95%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 217 82% 25%;
-    --input: 0 0% 20%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
     
-    /* Blue ring matching primary */
-    --ring: 217 92% 62%;
+    --ring: 222 47% 11%;
 
-    --radius: 0.25rem;
+    --radius: 0.5rem;
 
-    /* Sidebar colors updated to blue/cyan */
-    --sidebar-background: 0 0% 10%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 217 92% 62%;
-    --sidebar-primary-foreground: 0 0% 8%;
-    --sidebar-accent: 0 0% 15%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 217 82% 25%;
-    --sidebar-ring: 217 92% 62%;
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217 91% 60%;
   }
 }
 
@@ -79,10 +79,7 @@
 
 @layer utilities {
   .text-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    @apply text-primary;
   }
 
   .grid-pattern {
@@ -90,104 +87,14 @@
       linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
       linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px);
     background-size: 40px 40px;
+    mask-image: linear-gradient(to bottom, transparent, black, transparent);
   }
 
-  .glow-effect {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.1);
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-sm border border-border shadow-sm;
   }
-
-  .hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-  }
-
-  .hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px hsl(var(--primary) / 0.15);
-  }
-
-  @keyframes float {
-    0%, 100% {
-      transform: translateY(0) translateX(0);
-    }
-    25% {
-      transform: translateY(-20px) translateX(10px);
-    }
-    50% {
-      transform: translateY(-10px) translateX(-10px);
-    }
-    75% {
-      transform: translateY(-30px) translateX(5px);
-    }
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% {
-      opacity: 0.3;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.6;
-      transform: scale(1.05);
-    }
-  }
-
-  @keyframes slide-diagonal {
-    0% {
-      transform: translate(-100%, -100%);
-    }
-    100% {
-      transform: translate(100vw, 100vh);
-    }
-  }
-
-  @keyframes slide-up {
-    0% {
-      transform: translateY(100vh);
-      opacity: 0;
-    }
-    10% {
-      opacity: 0.6;
-    }
-    90% {
-      opacity: 0.6;
-    }
-    100% {
-      transform: translateY(-100vh);
-      opacity: 0;
-    }
-  }
-
-  @keyframes draw-chart {
-    0% {
-      stroke-dashoffset: 1000;
-    }
-    100% {
-      stroke-dashoffset: 0;
-    }
-  }
-
-  @keyframes flicker {
-    0%, 100% {
-      opacity: 0.3;
-    }
-    50% {
-      opacity: 0.8;
-    }
-  }
-
-  .animate-float {
-    animation: float 20s ease-in-out infinite;
-  }
-
-  .animate-pulse-glow {
-    animation: pulse-glow 4s ease-in-out infinite;
-  }
-
-  .animate-slide-up {
-    animation: slide-up 15s linear infinite;
-  }
-
-  .animate-flicker {
-    animation: flicker 3s ease-in-out infinite;
+  
+  .subtle-shadow {
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   }
 }

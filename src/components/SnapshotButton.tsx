@@ -53,7 +53,7 @@ export const SnapshotButton: React.FC<SnapshotButtonProps> = ({
       // Capture the chart at 2x scale for retina displays
       const canvas = await html2canvas(containerRef.current, {
         scale: 2,
-        backgroundColor: '#141414', // Match theme background
+        backgroundColor: '#ffffff', // Match theme background
         logging: false,
         useCORS: true,
         allowTaint: true,
@@ -97,10 +97,7 @@ export const SnapshotButton: React.FC<SnapshotButtonProps> = ({
             onClick={captureChart}
             disabled={isCapturing}
             data-snapshot-hide
-            className="h-8 w-8 opacity-40 hover:opacity-100 transition-opacity"
-            style={{
-              color: 'rgba(255, 255, 255, 0.6)',
-            }}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground transition-colors"
           >
             <Camera className="h-[18px] w-[18px]" />
           </Button>

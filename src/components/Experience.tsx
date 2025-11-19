@@ -1,42 +1,44 @@
+import { SectionLayout } from "./ui/SectionLayout";
+import { Briefcase, TrendingUp, Users } from "lucide-react";
+
 const experiences = [
   {
     title: "3 years of trading",
-    description: "Developed and refined a custom trading strategy combining ICT concepts, price action, market profile, and microstructure analysis."
+    description: "Developed and refined a custom trading strategy combining ICT concepts, price action, market profile, and microstructure analysis.",
+    icon: TrendingUp
   },
   {
     title: "Market cycles",
-    description: "Survived multiple bull and bear markets. Each cycle teaches something new about human psychology and market structure."
+    description: "Survived multiple bull and bear markets. Each cycle teaches something new about human psychology and market structure.",
+    icon: Briefcase
   },
   {
     title: "Mentoring",
-    description: "Taught hundreds of traders at cryptomannn.com. The biggest breakthrough isn't teaching strategy—it's helping people unlearn bad habits."
+    description: "Taught hundreds of traders at cryptomannn.com. The biggest breakthrough isn't teaching strategy—it's helping people unlearn bad habits.",
+    icon: Users
   }
 ];
 
 export const Experience = () => {
   return (
-    <section className="py-32 px-4 bg-card/30">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-16">
-          <div className="flex items-center gap-6 mb-6">
-            <span className="text-6xl font-bold text-primary/20">02</span>
-            <h2 className="text-4xl md:text-5xl font-bold">Experience</h2>
-          </div>
-          <div className="w-20 h-1 bg-primary shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
-        </div>
-        
-        <div className="space-y-8">
-          {experiences.map((exp, idx) => (
-            <div
-              key={idx}
-              className="border-l-2 border-border hover:border-primary pl-8 py-4 transition-all duration-300 hover:translate-x-2 hover:shadow-[-4px_0_15px_rgba(168,85,247,0.15)]"
-            >
-              <h3 className="text-2xl font-semibold mb-3">{exp.title}</h3>
-              <p className="text-muted-foreground text-lg">{exp.description}</p>
+    <SectionLayout number="02" title="Experience" className="bg-secondary/20">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {experiences.map((exp, idx) => (
+          <div
+            key={idx}
+            className="relative p-8 bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-all duration-300 group"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform duration-300">
+              <exp.icon className="w-6 h-6" />
             </div>
-          ))}
-        </div>
+            
+            <h3 className="text-xl font-semibold mb-3 text-foreground">{exp.title}</h3>
+            <p className="text-muted-foreground leading-relaxed">{exp.description}</p>
+          </div>
+        ))}
       </div>
-    </section>
+    </SectionLayout>
   );
 };

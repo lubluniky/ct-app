@@ -1,16 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
-import { Menu, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import './StickyNavbar.css';
+import { useState, useEffect } from 'react';
+import { Menu, X, Terminal } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 
-type NavLink = {
-  id: string;
-  label: string;
-  href: string;
-  external?: boolean;
-};
-
-const NAV_LINKS: NavLink[] = [
+const NAV_LINKS = [
   { id: 'philosophy', label: 'Philosophy', href: '#philosophy' },
   { id: 'experience', label: 'Experience', href: '#experience' },
   { id: 'models', label: 'Models', href: '#models' },
@@ -20,200 +12,102 @@ const NAV_LINKS: NavLink[] = [
 interface StickyNavbarProps {
   ctaText?: string;
   ctaHref?: string;
-  onCtaClick?: () => void;
 }
 
 export const StickyNavbar = ({ 
-  ctaText = 'View Dashboard', 
+  ctaText = 'Dashboard', 
   ctaHref = '/dashboard',
-  onCtaClick 
 }: StickyNavbarProps) => {
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [activeSection, setActiveSection] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Handle scroll events
   useEffect(() => {
     const handleScroll = () => {
-      // Calculate scroll progress
-      const windowHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const scrolled = window.scrollY;
-      const progress = windowHeight > 0 ? (scrolled / windowHeight) * 100 : 0;
-      setScrollProgress(progress);
-
-      // Check if page is scrolled
-      setIsScrolled(scrolled > 10);
-
-      // Find active section
-      updateActiveSection();
-
-      // Clear previous timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-
-      // Close mobile menu on scroll
-      if (mobileMenuOpen) {
-        setMobileMenuOpen(false);
-      }
+      setIsScrolled(window.scrollY > 20);
     };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [mobileMenuOpen]);
-
-  const updateActiveSection = () => {
-    const sections = NAV_LINKS.map(link => link.id);
-    
-    for (const sectionId of sections) {
-      const element = document.getElementById(sectionId);
-      if (element) {
-        const rect = element.getBoundingClientRect();
-        // Check if section is in viewport
-        if (rect.top <= window.innerHeight / 2 && rect.bottom >= window.innerHeight / 2) {
-          setActiveSection(sectionId);
-          break;
-        }
-      }
-    }
-  };
-
-  const handleNavClick = (href: string, external?: boolean) => {
+  const handleNavClick = (href: string) => {
     setMobileMenuOpen(false);
-    
-    if (external) {
-      navigate(href);
-    } else {
-      // Smooth scroll to section
-      const sectionId = href.replace('#', '');
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-  };
-
-  const handleCtaClick = () => {
-    setMobileMenuOpen(false);
-    if (onCtaClick) {
-      onCtaClick();
-    } else {
-      navigate(ctaHref);
+    const sectionId = href.replace('#', '');
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   return (
     <>
-      <nav className={`sticky-navbar ${isScrolled ? 'scrolled' : ''}`}>
-        <div className="navbar-container">
-          {/* Left: Logo */}
-          <div className="navbar-logo">
-            <span className="font-bold text-lg">BORKISS</span>
-          </div>
+      <nav 
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${
+          isScrolled 
+            ? 'bg-background/80 backdrop-blur-md border-border py-3' 
+            : 'bg-transparent border-transparent py-5'
+        }`}
+      >
+        <div className="container mx-auto px-6 flex items-center justify-between">
+          <Link to="/" className="text-xl font-bold tracking-tight flex items-center gap-2">
+            BORKISS<span className="text-muted-foreground font-light">.TRADE</span>
+          </Link>
 
-          {/* Center: Desktop Navigation */}
-          <div className="navbar-links-desktop">
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-8">
             {NAV_LINKS.map(link => (
-              <a
+              <button
                 key={link.id}
-                href={link.href}
-                className={`nav-link ${activeSection === link.id ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleNavClick(link.href, link.external);
-                }}
+                onClick={() => handleNavClick(link.href)}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 {link.label}
-              </a>
+              </button>
             ))}
+            
+            <Link
+              to={ctaHref}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              <Terminal className="w-4 h-4" />
+              {ctaText}
+            </Link>
           </div>
 
-          {/* Right: CTA Button + Mobile Menu */}
-          <div className="navbar-right">
-            {/* Desktop CTA Button */}
-            <button
-              onClick={handleCtaClick}
-              className="cta-button"
-            >
-              <span className="cta-text">{ctaText}</span>
-              <span className="glow-effect"></span>
-            </button>
-
-            {/* Mobile Menu Toggle */}
-            <button
-              className="mobile-menu-toggle"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Scroll Progress Bar */}
-        <div className="scroll-progress-bar">
-          <div
-            className="scroll-progress-fill"
-            style={{ width: `${scrollProgress}%` }}
-          ></div>
+          {/* Mobile Toggle */}
+          <button
+            className="md:hidden p-2 text-foreground"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
       </nav>
 
-      {/* Mobile Menu Overlay */}
-      <div className={`mobile-menu-overlay ${mobileMenuOpen ? 'open' : ''}`}>
-        <div className="mobile-menu-content">
-          {/* Close button */}
-          <button
-            className="mobile-menu-close"
-            onClick={() => setMobileMenuOpen(false)}
-            aria-label="Close menu"
-          >
-            <X size={28} />
-          </button>
-
-          {/* Mobile Navigation Links */}
-          <div className="mobile-nav-links">
-            {NAV_LINKS.map((link, index) => (
-              <a
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 bg-background pt-24 px-6 md:hidden">
+          <div className="flex flex-col gap-6">
+            {NAV_LINKS.map(link => (
+              <button
                 key={link.id}
-                href={link.href}
-                className={`mobile-nav-link ${activeSection === link.id ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleNavClick(link.href, link.external);
-                }}
-                style={{
-                  animationDelay: mobileMenuOpen ? `${index * 50}ms` : '0ms',
-                }}
+                onClick={() => handleNavClick(link.href)}
+                className="text-2xl font-medium text-foreground text-left"
               >
                 {link.label}
-              </a>
+              </button>
             ))}
+            <Link
+              to={ctaHref}
+              className="mt-4 inline-flex items-center justify-center gap-2 px-6 py-4 rounded-lg bg-primary text-primary-foreground text-lg font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Terminal className="w-5 h-5" />
+              {ctaText}
+            </Link>
           </div>
-
-          {/* Mobile CTA Button */}
-          <button
-            onClick={handleCtaClick}
-            className="mobile-cta-button"
-            style={{
-              animationDelay: mobileMenuOpen ? `${NAV_LINKS.length * 50}ms` : '0ms',
-            }}
-          >
-            <span className="cta-text">{ctaText}</span>
-            <span className="glow-effect"></span>
-          </button>
         </div>
-      </div>
+      )}
     </>
   );
 };
-
-export default StickyNavbar;
