@@ -1,15 +1,9 @@
-import { ArrowLeft, Activity, BarChart2, LayoutDashboard } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, lazy, Suspense } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Lazy load heavy components
-const RvwapPanel = lazy(() => import('@/components/rvwap/RvwapPanel').then(module => ({ default: module.RvwapPanel })));
-const MTMPanel = lazy(() => import('@/components/mtm/MTMPanel').then(module => ({ default: module.MTMPanel })));
+import { UnifiedChartPanel } from '@/components/charts/UnifiedChartPanel';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("mtm");
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -44,43 +38,18 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="w-full max-w-[2400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="mtm" className="space-y-8" onValueChange={setActiveTab}>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border pb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border pb-6 mb-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight mb-2">
-                {activeTab === 'mtm' ? 'Market Tension Map' : 'Rolling VWAP'}
+                Market Analysis
               </h1>
               <p className="text-muted-foreground max-w-2xl">
-                {activeTab === 'mtm' 
-                  ? 'Multi-timeframe analysis of price extension relative to mean. Identifies potential reversal zones.' 
-                  : 'Volume-Weighted Average Price models adapting to market volatility.'}
+                Advanced technical analysis combining Market Tension Map and Rolling VWAP indicators.
               </p>
             </div>
-            
-            <TabsList className="bg-secondary/50 border border-border p-1">
-              <TabsTrigger value="mtm" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Activity className="w-4 h-4" />
-                Tension Map
-              </TabsTrigger>
-              <TabsTrigger value="rvwap" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <BarChart2 className="w-4 h-4" />
-                Rolling VWAP
-              </TabsTrigger>
-            </TabsList>
           </div>
 
-          <TabsContent value="mtm" className="space-y-6 animate-in fade-in-50 duration-500 slide-in-from-bottom-2">
-            <Suspense fallback={<div className="h-[600px] bg-secondary/20 animate-pulse rounded-xl border border-border" />}>
-              <MTMPanel symbol="BTCUSDT" dataSource="futures" />
-            </Suspense>
-          </TabsContent>
-
-          <TabsContent value="rvwap" className="space-y-6 animate-in fade-in-50 duration-500 slide-in-from-bottom-2">
-            <Suspense fallback={<div className="h-[600px] bg-secondary/20 animate-pulse rounded-xl border border-border" />}>
-              <RvwapPanel symbol="BTCUSDT" dataSource="spot" />
-            </Suspense>
-          </TabsContent>
-        </Tabs>
+          <UnifiedChartPanel />
       </main>
     </div>
   );

@@ -40,12 +40,20 @@ export const QuantChart: React.FC<QuantChartProps> = ({
   const { containerRef, dimensions } = useChartDimensions();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Interaction State
   const [hoverData, setHoverData] = useState<ChartDataPoint | null>(null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const [offset, setOffset] = useState(0); // Bars from right edge
+  const [zoom, setZoom] = useState(1); // Scale factor
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; offset: number } | null>(null);
 
   // Configuration
-  const candleWidth = 5;
-  const gap = 2;
+  const baseCandleWidth = 5;
+  const gapRatio = 0.4;
+  const candleWidth = Math.max(1, baseCandleWidth * zoom);
+  const gap = Math.max(0, candleWidth * gapRatio);
   const totalBarWidth = candleWidth + gap;
 
   // Calculate visible range and scales
@@ -54,11 +62,16 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       return { visibleData: [], minPrice: 0, maxPrice: 0, priceRange: 0, scaleY: 0, startIndex: 0 };
     }
 
-    // Simple "fit to width" or "scrollable" logic?
-    // Let's do "scrollable" but default to showing the latest N candles that fit
     const maxVisibleBars = Math.floor(dimensions.width / totalBarWidth);
-    const startIndex = Math.max(0, data.length - maxVisibleBars);
-    const visibleData = data.slice(startIndex);
+    // offset 0 means we see the last maxVisibleBars
+    // offset > 0 means we shift back
+    const end = data.length - Math.floor(offset);
+    const start = Math.max(0, end - maxVisibleBars);
+    
+    // If we scrolled too far left (start < 0 is handled by max(0)), but if end < 0?
+    // We should clamp offset.
+    
+    const visibleData = data.slice(start, Math.max(start, end));
 
     let min = Infinity;
     let max = -Infinity;
@@ -66,22 +79,17 @@ export const QuantChart: React.FC<QuantChartProps> = ({
     visibleData.forEach((d) => {
       min = Math.min(min, d.low);
       max = Math.max(max, d.high);
-      // Check overlays for min/max too
       overlays.forEach(o => {
         const val = d[o.dataKey];
-        if (typeof val === 'number') {
-           // For histogram, we might want a separate scale, but for now let's assume price scale or normalize
-           // Actually, tension is 0-100 usually, price is 90000. They need separate scales.
-           // For this custom chart, let's assume overlays share price scale UNLESS it's a histogram at the bottom
-           if (o.type !== 'histogram') {
+        if (typeof val === 'number' && o.type !== 'histogram') {
              min = Math.min(min, val);
              max = Math.max(max, val);
-           }
         }
       });
     });
 
-    // Add padding to price range
+    if (min === Infinity) { min = 0; max = 100; }
+
     const range = max - min;
     const paddedMin = min - range * 0.1;
     const paddedMax = max + range * 0.1;
@@ -91,10 +99,10 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       minPrice: paddedMin,
       maxPrice: paddedMax,
       priceRange: paddedMax - paddedMin,
-      scaleY: (dimensions.height - padding.top - padding.bottom) / (paddedMax - paddedMin),
-      startIndex,
+      scaleY: (dimensions.height - padding.top - padding.bottom) / (paddedMax - paddedMin || 1),
+      startIndex: start,
     };
-  }, [data, dimensions.width, dimensions.height, overlays, padding]);
+  }, [data, dimensions.width, dimensions.height, overlays, padding, offset, totalBarWidth]);
 
   // Helper to convert price to Y coordinate
   const getY = (price: number) => {
@@ -104,6 +112,74 @@ export const QuantChart: React.FC<QuantChartProps> = ({
   // Helper to convert index to X coordinate
   const getX = (index: number) => {
     return index * totalBarWidth + totalBarWidth / 2;
+  };
+
+  // Event Handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX, offset });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setDragStart(null);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setMousePos({ x, y });
+
+    // Dragging Logic
+    if (isDragging && dragStart) {
+      const dx = e.clientX - dragStart.x;
+      const barsMoved = dx / totalBarWidth;
+      // Dragging right (dx > 0) -> Move into history -> Increase offset
+      const newOffset = Math.max(0, dragStart.offset + barsMoved);
+      setOffset(newOffset);
+      return; // Skip hover update while dragging for performance?
+    }
+
+    // Hover Logic
+    const index = Math.floor((x) / totalBarWidth);
+    if (index >= 0 && index < visibleData.length) {
+      setHoverData(visibleData[index]);
+    } else {
+      setHoverData(null);
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    // Prevent default page scroll if inside chart
+    // Note: React synthetic events might need passive: false in native listener for preventDefault to work reliably for wheel
+    // But here we just update state.
+    
+    if (Math.abs(e.deltaY) > 0) {
+        const zoomSpeed = 0.001;
+        const scrollSpeed = 0.5;
+
+        if (e.ctrlKey || e.metaKey) {
+            // Zoom
+            const newZoom = Math.max(0.1, Math.min(5, zoom - e.deltaY * zoomSpeed));
+            setZoom(newZoom);
+        } else {
+            // Scroll
+            // deltaY > 0 (scroll down) -> move forward (decrease offset)
+            // deltaY < 0 (scroll up) -> move back (increase offset)
+            const newOffset = Math.max(0, offset - (e.deltaY * scrollSpeed / totalBarWidth));
+            setOffset(newOffset);
+        }
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setMousePos(null);
+    setHoverData(null);
+    setIsDragging(false);
+    setDragStart(null);
   };
 
   // Draw loop
@@ -294,28 +370,6 @@ export const QuantChart: React.FC<QuantChartProps> = ({
     }
   }, [mousePos, hoverData, dimensions, minPrice, scaleY, visibleData]);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    setMousePos({ x, y });
-
-    // Find nearest candle
-    const index = Math.floor((x - totalBarWidth / 2) / totalBarWidth);
-    if (index >= 0 && index < visibleData.length) {
-      setHoverData(visibleData[index]);
-    } else {
-      setHoverData(null);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setMousePos(null);
-    setHoverData(null);
-  };
-
   return (
     <div 
       ref={containerRef} 
@@ -323,6 +377,9 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       style={{ height }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onWheel={handleWheel}
     >
       {/* Main Chart Layer */}
       <canvas
