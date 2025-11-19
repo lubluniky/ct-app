@@ -12,7 +12,7 @@ export interface ChartDataPoint {
 
 export interface Overlay {
   id: string;
-  type: 'line' | 'histogram' | 'area';
+  type: 'line' | 'histogram' | 'area' | 'pulse';
   dataKey: string;
   color: string;
   width?: number;
@@ -26,7 +26,7 @@ interface QuantChartProps {
   height?: number;
   className?: string;
   showGrid?: boolean;
-  padding?: { top: number; bottom: number };
+  padding?: { top: number; bottom: number; right: number };
 }
 
 export const QuantChart: React.FC<QuantChartProps> = ({
@@ -35,7 +35,7 @@ export const QuantChart: React.FC<QuantChartProps> = ({
   height = 400,
   className = '',
   showGrid = true,
-  padding = { top: 20, bottom: 30 },
+  padding = { top: 20, bottom: 30, right: 60 },
 }) => {
   const { containerRef, dimensions } = useChartDimensions();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -62,14 +62,11 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       return { visibleData: [], minPrice: 0, maxPrice: 0, priceRange: 0, scaleY: 0, startIndex: 0 };
     }
 
-    const maxVisibleBars = Math.floor(dimensions.width / totalBarWidth);
+    const maxVisibleBars = Math.floor((dimensions.width - padding.right) / totalBarWidth);
     // offset 0 means we see the last maxVisibleBars
     // offset > 0 means we shift back
     const end = data.length - Math.floor(offset);
     const start = Math.max(0, end - maxVisibleBars);
-    
-    // If we scrolled too far left (start < 0 is handled by max(0)), but if end < 0?
-    // We should clamp offset.
     
     const visibleData = data.slice(start, Math.max(start, end));
 
@@ -79,20 +76,17 @@ export const QuantChart: React.FC<QuantChartProps> = ({
     visibleData.forEach((d) => {
       min = Math.min(min, d.low);
       max = Math.max(max, d.high);
-      overlays.forEach(o => {
-        const val = d[o.dataKey];
-        if (typeof val === 'number' && o.type !== 'histogram') {
-             min = Math.min(min, val);
-             max = Math.max(max, val);
-        }
-      });
+      // Only include overlays in scale if they are NOT 'pulse' (MTM) or explicitly excluded
+      // RVWAP is price-based, so it should technically be on scale, but user asked for it NOT to change scale.
+      // So we ONLY use OHLC for min/max.
     });
 
     if (min === Infinity) { min = 0; max = 100; }
 
     const range = max - min;
-    const paddedMin = min - range * 0.1;
-    const paddedMax = max + range * 0.1;
+    // Add padding to price range (5% top/bottom)
+    const paddedMin = min - range * 0.05;
+    const paddedMax = max + range * 0.05;
 
     return {
       visibleData,
@@ -199,7 +193,7 @@ export const QuantChart: React.FC<QuantChartProps> = ({
 
     // Draw Grid
     if (showGrid) {
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)'; // Darker grid for light theme
       ctx.lineWidth = 1;
       
       // Horizontal lines
@@ -208,9 +202,23 @@ export const QuantChart: React.FC<QuantChartProps> = ({
         const y = padding.top + (i * (dimensions.height - padding.top - padding.bottom)) / gridSteps;
         ctx.beginPath();
         ctx.moveTo(0, y);
-        ctx.lineTo(dimensions.width, y);
+        ctx.lineTo(dimensions.width - padding.right, y);
         ctx.stroke();
+        
+        // Price Labels on Y-Axis
+        const price = maxPrice - (i * (maxPrice - minPrice)) / gridSteps;
+        ctx.fillStyle = '#64748b'; // Slate-500
+        ctx.font = '11px "Inter", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(price.toFixed(2), dimensions.width - padding.right + 5, y + 4);
       }
+      
+      // Vertical Axis Line
+      ctx.beginPath();
+      ctx.moveTo(dimensions.width - padding.right, 0);
+      ctx.lineTo(dimensions.width - padding.right, dimensions.height);
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.stroke();
     }
 
     // Draw Overlays (Lines)
@@ -226,6 +234,12 @@ export const QuantChart: React.FC<QuantChartProps> = ({
         
         const x = getX(i);
         const y = getY(val);
+        
+        // Clip to chart area if RVWAP is way off scale
+        if (y < padding.top || y > dimensions.height - padding.bottom) {
+            // We could break the line or clamp it. 
+            // For now, let canvas handle clipping naturally via path, but maybe we should clip rect?
+        }
         
         if (!started) {
           ctx.moveTo(x, y);
@@ -246,14 +260,22 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       const lowY = getY(d.low);
 
       const isUp = d.close >= d.open;
-      const color = isUp ? '#10B981' : '#EF4444'; // Emerald-500 : Red-500
+      
+      // Bloomberg 2025 Colors
+      // Up: Body #b1b2b7, Border #212223, Wick #212223
+      // Down: Body #68696d, Border #212223, Wick #212223
+      
+      const bodyColor = isUp ? '#b1b2b7' : '#68696d';
+      const borderColor = '#212223';
+      const wickColor = '#212223';
 
-      ctx.fillStyle = color;
-      ctx.strokeStyle = color;
+      ctx.fillStyle = bodyColor;
+      ctx.strokeStyle = borderColor; // Border color
       ctx.lineWidth = 1;
 
       // Wick
       ctx.beginPath();
+      ctx.strokeStyle = wickColor;
       ctx.moveTo(x, highY);
       ctx.lineTo(x, lowY);
       ctx.stroke();
@@ -261,10 +283,116 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       // Body
       const bodyHeight = Math.max(1, Math.abs(closeY - openY));
       const bodyY = Math.min(openY, closeY);
+      
       ctx.fillRect(x - candleWidth / 2, bodyY, candleWidth, bodyHeight);
+      ctx.strokeRect(x - candleWidth / 2, bodyY, candleWidth, bodyHeight);
     });
 
-    // Draw Histograms (Separate scale usually, let's put them at bottom 20% height)
+    // Draw Market Pulse (Pulse Type)
+    overlays.filter(o => o.type === 'pulse').forEach(overlay => {
+      const pulseHeight = dimensions.height * 0.25; // Bottom 25%
+      const pulseBottom = dimensions.height - padding.bottom;
+      
+      // Find max value for scaling (0-100 usually)
+      const maxVal = 100; 
+
+      // Create Gradient
+      const gradient = ctx.createLinearGradient(0, pulseBottom - pulseHeight, 0, pulseBottom);
+      gradient.addColorStop(0, `${overlay.color}40`); // 25% opacity
+      gradient.addColorStop(1, `${overlay.color}05`); // ~0% opacity
+
+      ctx.beginPath();
+      let started = false;
+      
+      visibleData.forEach((d, i) => {
+        const val = d[overlay.dataKey];
+        if (typeof val !== 'number') return;
+
+        const x = getX(i);
+        const y = pulseBottom - (val / maxVal) * pulseHeight;
+        
+        if (!started) {
+          ctx.moveTo(x, pulseBottom); // Start at bottom
+          ctx.lineTo(x, y);
+          started = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      
+      // Close path for fill
+      if (visibleData.length > 0) {
+          const lastX = getX(visibleData.length - 1);
+          ctx.lineTo(lastX, pulseBottom);
+          ctx.closePath();
+          ctx.fillStyle = gradient;
+          ctx.fill();
+      }
+
+      // Draw Line on top
+      ctx.beginPath();
+      started = false;
+      visibleData.forEach((d, i) => {
+        const val = d[overlay.dataKey];
+        if (typeof val !== 'number') return;
+        const x = getX(i);
+        const y = pulseBottom - (val / maxVal) * pulseHeight;
+        
+        // Color change based on deviation (threshold)
+        // We can't easily change stroke color mid-path in 2D canvas without multiple paths.
+        // For simplicity, let's draw segments.
+        
+        if (started) {
+             const prevX = getX(i-1);
+             const prevVal = visibleData[i-1][overlay.dataKey];
+             const prevY = pulseBottom - (prevVal / maxVal) * pulseHeight;
+             
+             ctx.beginPath();
+             ctx.moveTo(prevX, prevY);
+             ctx.lineTo(x, y);
+             
+             // Color logic
+             let strokeColor = overlay.color;
+             if (overlay.threshold && val > overlay.threshold) {
+                 strokeColor = '#ef4444'; // Red for high tension
+             } else if (val < 20) {
+                 strokeColor = '#10b981'; // Green for low tension
+             }
+             
+             ctx.strokeStyle = strokeColor;
+             ctx.lineWidth = 2;
+             ctx.stroke();
+        }
+        started = true;
+      });
+
+      // Draw Pulsating Dot at the end
+      if (visibleData.length > 0) {
+          const lastIdx = visibleData.length - 1;
+          const lastVal = visibleData[lastIdx][overlay.dataKey];
+          if (typeof lastVal === 'number') {
+              const x = getX(lastIdx);
+              const y = pulseBottom - (lastVal / maxVal) * pulseHeight;
+              
+              // Pulse effect (simulated with static rings for now, or use time state for animation)
+              // Since we are in a useEffect that depends on data, we don't have a rAF loop.
+              // We can just draw a static "glow" to imply pulse.
+              
+              ctx.beginPath();
+              ctx.arc(x, y, 4, 0, Math.PI * 2);
+              ctx.fillStyle = overlay.color;
+              if (overlay.threshold && lastVal > overlay.threshold) ctx.fillStyle = '#ef4444';
+              ctx.fill();
+              
+              ctx.beginPath();
+              ctx.arc(x, y, 8, 0, Math.PI * 2);
+              ctx.fillStyle = `${ctx.fillStyle}40`; // Transparent
+              ctx.fill();
+          }
+      }
+    });
+
+    // Draw Histograms (Legacy support)
     overlays.filter(o => o.type === 'histogram').forEach(overlay => {
       const histHeight = dimensions.height * 0.2;
       const histBottom = dimensions.height - padding.bottom;

@@ -4,11 +4,12 @@ import { useKlines } from '@/hooks/useKlines';
 import { useMultiRvwap } from '@/hooks/useMultiRvwap';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Loader2 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Activity, BarChart2 } from 'lucide-react';
 
 export const UnifiedChartPanel = () => {
   const [symbol] = useState('BTCUSDT');
-  const [interval] = useState('1h');
+  const [interval, setInterval] = useState('1h');
   const [selectedOverlays, setSelectedOverlays] = useState<string[]>(['tension', 'rvwap']);
 
   // Fetch Data
@@ -76,10 +77,10 @@ export const UnifiedChartPanel = () => {
     
     if (selectedOverlays.includes('tension')) {
       list.push({
-        id: 'Tension',
-        type: 'histogram',
+        id: 'Market Pulse',
+        type: 'pulse', // New type
         dataKey: 'tension',
-        color: '#F59E0B', // Amber
+        color: '#3b82f6', // Blue base
         opacity: 0.4,
         threshold: 80, // Highlight high tension
       });
@@ -113,15 +114,29 @@ export const UnifiedChartPanel = () => {
   }, [selectedOverlays]);
 
   return (
-    <Card className="w-full border-border/40 bg-card/50 backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between py-4">
-        <CardTitle className="text-lg font-medium">Market Analysis</CardTitle>
+    <Card className="w-full border-border/40 bg-card/50 backdrop-blur-sm shadow-sm">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-4 gap-4">
+        <div className="flex items-center gap-4">
+            <CardTitle className="text-lg font-medium flex items-center gap-2">
+                <Activity className="w-5 h-5 text-primary" />
+                Market Pulse
+            </CardTitle>
+            
+            <Tabs value={interval} onValueChange={setInterval} className="h-8">
+                <TabsList className="h-8 bg-secondary/50">
+                    <TabsTrigger value="15m" className="text-xs h-7 px-3">15m</TabsTrigger>
+                    <TabsTrigger value="1h" className="text-xs h-7 px-3">1h</TabsTrigger>
+                    <TabsTrigger value="4h" className="text-xs h-7 px-3">4h</TabsTrigger>
+                </TabsList>
+            </Tabs>
+        </div>
+
         <div className="flex items-center gap-4">
            <ToggleGroup type="multiple" value={selectedOverlays} onValueChange={setSelectedOverlays} className="bg-muted/50 p-1 rounded-lg">
-              <ToggleGroupItem value="tension" aria-label="Toggle Tension" className="data-[state=on]:bg-background data-[state=on]:text-foreground">
-                 MTM Tension
+              <ToggleGroupItem value="tension" aria-label="Toggle Pulse" className="data-[state=on]:bg-background data-[state=on]:text-foreground text-xs px-3 py-1 h-7">
+                 Pulse
               </ToggleGroupItem>
-              <ToggleGroupItem value="rvwap" aria-label="Toggle RVWAP" className="data-[state=on]:bg-background data-[state=on]:text-foreground">
+              <ToggleGroupItem value="rvwap" aria-label="Toggle RVWAP" className="data-[state=on]:bg-background data-[state=on]:text-foreground text-xs px-3 py-1 h-7">
                  RVWAP
               </ToggleGroupItem>
            </ToggleGroup>

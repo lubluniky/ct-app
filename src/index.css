@@ -19,9 +19,10 @@
 
 @layer base {
   :root {
-    /* Light Theme - Quant Research Lab */
-    --background: 210 40% 98%; /* Very light gray/paper */
-    --foreground: 222 47% 11%; /* Deep slate, almost black */
+    /* Light Theme - Bloomberg 2025 */
+    /* #e7eaf1 converted to HSL approx: 222 20% 92% */
+    --background: 222 20% 92%; 
+    --foreground: 222 47% 11%; /* Deep slate */
 
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
