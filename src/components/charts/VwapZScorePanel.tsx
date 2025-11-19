@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { QuantChart, Overlay } from './QuantChart';
+import { ZScoreChart } from './ZScoreChart';
 import { useVwapZScore } from '@/hooks/useVwapZScore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,44 +11,9 @@ export const VwapZScorePanel = () => {
 
   const { data, isLoading } = useVwapZScore(symbol, interval);
 
-  const overlays: Overlay[] = [
-    {
-      id: 'Z-365',
-      type: 'oscillator',
-      dataKey: 'z365',
-      color: '#1f77b4', // Blue
-      width: 2,
-      domain: [-4, 4],
-    },
-    {
-      id: 'Z-180',
-      type: 'oscillator',
-      dataKey: 'z180',
-      color: '#ff7f0e', // Orange
-      width: 2,
-      domain: [-4, 4],
-    },
-    {
-      id: 'Z-90',
-      type: 'oscillator',
-      dataKey: 'z90',
-      color: '#2ca02c', // Green
-      width: 2,
-      domain: [-4, 4],
-    },
-    {
-      id: 'Z-30',
-      type: 'oscillator',
-      dataKey: 'z30',
-      color: '#d62728', // Red
-      width: 2,
-      domain: [-4, 4],
-    },
-  ];
-
   return (
     <Card className="w-full h-full border-border/40 bg-card/50 backdrop-blur-sm shadow-sm flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between py-3 px-4 gap-4 border-b border-border/40">
+      <CardHeader className="flex flex-row items-center justify-between py-3 px-4 gap-4 border-b border-border/40 shrink-0">
         <div className="flex items-center gap-4">
             <CardTitle className="text-base font-medium flex items-center gap-2">
                 <Activity className="w-4 h-4 text-primary" />
@@ -64,25 +29,39 @@ export const VwapZScorePanel = () => {
                 </TabsList>
             </Tabs>
         </div>
-        <div className="flex gap-2 text-xs">
-            <span className="text-[#1f77b4]">365</span>
-            <span className="text-[#ff7f0e]">180</span>
-            <span className="text-[#2ca02c]">90</span>
-            <span className="text-[#d62728]">30</span>
-        </div>
       </CardHeader>
-      <CardContent className="p-0 flex-1 min-h-0">
+      <CardContent className="p-4 flex-1 min-h-0 overflow-y-auto">
          {isLoading && data.length === 0 ? (
              <div className="h-full flex items-center justify-center">
                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
              </div>
          ) : (
-             <QuantChart 
-                data={data} 
-                overlays={overlays} 
-                height={undefined} 
-                className="h-full w-full"
-             />
+             <div className="flex flex-col gap-4 h-full">
+                <ZScoreChart 
+                  title="Z-Score VWAP 365" 
+                  data={data.map(d => ({ timestamp: d.timestamp, value: d.z365 }))} 
+                  height={120}
+                  className="flex-1 min-h-[100px]"
+                />
+                <ZScoreChart 
+                  title="Z-Score VWAP 180" 
+                  data={data.map(d => ({ timestamp: d.timestamp, value: d.z180 }))} 
+                  height={120}
+                  className="flex-1 min-h-[100px]"
+                />
+                <ZScoreChart 
+                  title="Z-Score VWAP 90" 
+                  data={data.map(d => ({ timestamp: d.timestamp, value: d.z90 }))} 
+                  height={120}
+                  className="flex-1 min-h-[100px]"
+                />
+                <ZScoreChart 
+                  title="Z-Score VWAP 30" 
+                  data={data.map(d => ({ timestamp: d.timestamp, value: d.z30 }))} 
+                  height={120}
+                  className="flex-1 min-h-[100px]"
+                />
+             </div>
          )}
       </CardContent>
     </Card>
