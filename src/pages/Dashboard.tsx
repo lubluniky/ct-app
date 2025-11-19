@@ -23,21 +23,21 @@ const Dashboard = () => {
         </header>
 
         {/* Dashboard Grid */}
-        <div className="flex-1 p-4 overflow-y-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-4 grid-rows-[500px_1fr] gap-4 h-full min-h-[900px]">
+        <div className="flex-1 p-4 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-4 grid-rows-[3fr_2fr] gap-4 h-full min-h-[600px]">
             
             {/* Main Chart Area (Top Left - 3 cols) */}
-            <div className="lg:col-span-3 row-span-1">
+            <div className="lg:col-span-3 row-span-1 min-h-0">
               <UnifiedChartPanel />
             </div>
 
             {/* Alerts Panel (Top Right - 1 col) */}
-            <div className="lg:col-span-1 row-span-1">
+            <div className="lg:col-span-1 row-span-1 min-h-0">
               <MarketPulseAlerts />
             </div>
 
             {/* VWAP Z-Score Mod (Bottom - Full Width) */}
-            <div className="lg:col-span-4 row-span-1">
+            <div className="lg:col-span-4 row-span-1 min-h-0">
               <VwapZScorePanel />
             </div>
 
