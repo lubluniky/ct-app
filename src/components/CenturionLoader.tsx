@@ -58,43 +58,30 @@ export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
          <svg className="w-full h-full" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
            <defs>
              {/* The Dot Pattern - Simulating the dithered look */}
-             <pattern id="dot-pattern" x="0" y="0" width="3" height="3" patternUnits="userSpaceOnUse">
-               <circle cx="1.5" cy="1.5" r="1" className="fill-foreground" />
+             <pattern id="dot-pattern" x="0" y="0" width="2.5" height="2.5" patternUnits="userSpaceOnUse">
+               <circle cx="1.25" cy="1.25" r="1" className="fill-foreground" />
              </pattern>
              
              {/* Front View Mask - Helmet Shape */}
              <mask id="mask-front">
-               <path d="M60,40 Q100,10 140,40 L140,120 Q140,160 100,180 Q60,160 60,120 Z" fill="white" />
+               <path d="M60,40 Q100,10 140,40 L140,120 Q140,160 100,180 Q60,160 60,120 Z" fill="url(#shading-grad)" />
                {/* T-Visor Cutout (Black) */}
                <path d="M95,60 L105,60 L105,100 L95,100 Z" fill="black" />
                <path d="M80,60 L120,60 L120,70 L80,70 Z" fill="black" />
-               {/* Shading Gradient */}
-               <rect x="0" y="0" width="200" height="200" fill="url(#shading-grad)" />
              </mask>
 
              {/* Profile View Mask - Amex Centurion Silhouette */}
              <mask id="mask-profile">
-               {/* Plume */}
-               <path d="M40,40 Q100,10 160,60 L150,140 Q100,100 60,140 Z" fill="white" />
-               {/* Head/Helmet */}
-               <path d="M70,50 L130,50 L130,90 L140,90 L140,100 L130,100 L130,130 L110,150 L90,150 L70,130 Z" fill="white" />
-               {/* Face Detail (Cutouts for nose/mouth to define profile) */}
-               <path d="M130,90 L140,90 L140,110 L130,110 Z" fill="black" /> {/* Eye area */}
-               
                {/* Refined Profile Path */}
-               <path d="M 60 60 C 60 30 100 20 140 40 C 160 50 160 80 150 100 C 150 100 150 140 140 160 C 120 180 80 180 60 160 C 50 140 50 100 60 60 Z" fill="white" />
+               <path d="M 60 60 C 60 30 100 20 140 40 C 160 50 160 80 150 100 C 150 100 150 140 140 160 C 120 180 80 180 60 160 C 50 140 50 100 60 60 Z" fill="url(#shading-grad)" />
                {/* Cutout to shape the face profile on the right */}
                <path d="M 140 40 L 200 40 L 200 200 L 140 200 L 120 150 L 130 130 L 125 125 L 130 110 L 120 110 L 120 90 L 140 90 Z" fill="black" />
-               
-               {/* Shading Gradient */}
-               <rect x="0" y="0" width="200" height="200" fill="url(#shading-grad)" />
              </mask>
 
-             {/* Radial Gradient for 3D Shading Effect */}
+             {/* Radial Gradient for 3D Shading Effect - Adjusted for better visibility */}
              <radialGradient id="shading-grad" cx="0.3" cy="0.3" r="0.8">
                <stop offset="0%" stopColor="white" stopOpacity="1" />
-               <stop offset="80%" stopColor="white" stopOpacity="0.5" />
-               <stop offset="100%" stopColor="black" stopOpacity="0.8" />
+               <stop offset="100%" stopColor="#cccccc" stopOpacity="1" />
              </radialGradient>
            </defs>
 
