@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
   const [isFading, setIsFading] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     const duration = 3500;
@@ -20,6 +21,11 @@ export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
       });
     }, interval);
 
+    // Turn head to profile view at 2.5s
+    const turnTimer = setTimeout(() => {
+      setShowProfile(true);
+    }, 2500);
+
     const fadeTimer = setTimeout(() => {
       setIsFading(true);
     }, duration - 500);
@@ -32,6 +38,7 @@ export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
       clearInterval(timer);
       clearTimeout(fadeTimer);
       clearTimeout(completeTimer);
+      clearTimeout(turnTimer);
     };
   }, [onComplete]);
 
@@ -46,28 +53,40 @@ export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
          }}></div>
        </div>
 
-       {/* Pixel Art Centurion Head (SVG) */}
-       <div className="mb-8 relative w-32 h-32 animate-pulse">
-         <svg viewBox="0 0 16 16" className="w-full h-full" style={{ imageRendering: 'pixelated' }}>
-           {/* Helmet Crest */}
-           <rect x="6" y="1" width="4" height="1" className="fill-foreground/80" />
-           <rect x="5" y="2" width="6" height="1" className="fill-foreground/80" />
-           <rect x="4" y="3" width="8" height="1" className="fill-foreground/80" />
-           
-           {/* Helmet Main */}
-           <rect x="4" y="4" width="8" height="1" className="fill-foreground" />
-           <rect x="3" y="5" width="10" height="1" className="fill-foreground" />
-           <rect x="3" y="6" width="10" height="1" className="fill-foreground" />
-           <rect x="3" y="7" width="2" height="5" className="fill-foreground" />
-           <rect x="11" y="7" width="2" height="5" className="fill-foreground" />
-           <rect x="5" y="7" width="6" height="1" className="fill-foreground" />
-           
-           {/* Face/Eyes area (light/transparent) */}
-           <rect x="5" y="8" width="6" height="4" className="fill-background" />
-           
-           {/* Nose guard */}
-           <rect x="7" y="7" width="2" height="4" className="fill-foreground" />
-         </svg>
+       {/* Helmet Container */}
+       <div className="mb-8 relative w-32 h-32">
+         {/* Front View - Strict/Aggressive Spartan Style */}
+         <div className={`absolute inset-0 transition-all duration-500 transform ${showProfile ? 'opacity-0 scale-90 rotate-y-90' : 'opacity-100 scale-100 rotate-y-0'}`} style={{ backfaceVisibility: 'hidden' }}>
+           <svg viewBox="0 0 16 16" className="w-full h-full" style={{ imageRendering: 'pixelated' }}>
+             {/* Crest */}
+             <rect x="7" y="1" width="2" height="1" className="fill-foreground" />
+             <rect x="6" y="2" width="4" height="1" className="fill-foreground" />
+             <rect x="5" y="3" width="6" height="1" className="fill-foreground" />
+             
+             {/* Helmet Main Shape */}
+             <path d="M4 4h8v9h-1v2h-1v-2h-4v2h-1v-2h-1v-9z" className="fill-foreground" />
+             
+             {/* Eye Slit - T-Shape Visor */}
+             <rect x="5" y="7" width="6" height="1" className="fill-background" />
+             <rect x="7" y="7" width="2" height="5" className="fill-background" />
+           </svg>
+         </div>
+
+         {/* Side View - Profile */}
+         <div className={`absolute inset-0 transition-all duration-500 transform ${showProfile ? 'opacity-100 scale-100 rotate-y-0' : 'opacity-0 scale-90 -rotate-y-90'}`} style={{ backfaceVisibility: 'hidden' }}>
+           <svg viewBox="0 0 16 16" className="w-full h-full" style={{ imageRendering: 'pixelated' }}>
+             {/* Crest Profile */}
+             <rect x="3" y="1" width="8" height="1" className="fill-foreground" />
+             <rect x="2" y="2" width="10" height="1" className="fill-foreground" />
+             <rect x="2" y="3" width="11" height="1" className="fill-foreground" />
+             
+             {/* Helmet Profile */}
+             <path d="M4 4h7v3h1v5h-1v2h-7z" className="fill-foreground" />
+             
+             {/* Eye Slit Profile */}
+             <rect x="8" y="7" width="4" height="1" className="fill-background" />
+           </svg>
+         </div>
        </div>
        
        <div className="relative z-10 text-center flex flex-col items-center gap-1">
