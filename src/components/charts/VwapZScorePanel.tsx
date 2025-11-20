@@ -1,77 +1,127 @@
 import React, { useState } from 'react';
 import { ZScoreChart } from './ZScoreChart';
 import { useVwapZScore } from '@/hooks/useVwapZScore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Activity } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Loader2, Maximize2, X } from 'lucide-react';
+import { OhlcChart } from '@/components/ohlc/OhlcChart';
+import { cn } from '@/lib/utils';
 
 export const VwapZScorePanel = () => {
   const [symbol] = useState('BTCUSDT');
-  const [interval, setInterval] = useState('1h');
+  const [interval] = useState('1d'); // Fixed to Daily as requested for the modal view
+  const [selectedPeriod, setSelectedPeriod] = useState<number | null>(null);
 
   const { data, isLoading } = useVwapZScore(symbol, interval);
 
+  const periods = [
+    { id: 365, label: '365d VWAP', dataKey: 'z365' as const },
+    { id: 180, label: '180d VWAP', dataKey: 'z180' as const },
+    { id: 90, label: '90d VWAP', dataKey: 'z90' as const },
+    { id: 30, label: '30d VWAP', dataKey: 'z30' as const },
+  ];
+
+  const getLastValue = (key: 'z365' | 'z180' | 'z90' | 'z30') => {
+    if (!data || data.length === 0) return 0;
+    return data[data.length - 1][key];
+  };
+
+  const getValueColor = (value: number) => {
+    if (value > 2) return 'text-red-500';
+    if (value < -2) return 'text-green-500';
+    return 'text-foreground';
+  };
+
+  // Prepare OHLC data for the modal
+  const ohlcData = data.map(d => ({
+    openTime: d.timestamp,
+    open: d.open,
+    high: d.high,
+    low: d.low,
+    close: d.close,
+    volume: 0, // Volume not strictly needed for basic OHLC visualization if not used
+    closeTime: d.timestamp, // Approximation
+    quoteVolume: 0,
+    trades: 0,
+    takerBaseVolume: 0,
+    takerQuoteVolume: 0,
+    takerBuyBaseVolume: 0,
+    takerBuyQuoteVolume: 0
+  }));
+
   return (
-    <Card className="w-full h-full border-border/40 bg-card/50 backdrop-blur-sm shadow-sm flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between py-3 px-4 gap-4 border-b border-border/40 shrink-0">
-        <div className="flex items-center gap-4">
-            <CardTitle className="text-base font-medium flex items-center gap-2">
-                <Activity className="w-4 h-4 text-primary" />
-                VWAP Z-Score Mod <span className="text-muted-foreground text-sm font-normal">(Spot)</span>
-            </CardTitle>
-            
-            <Tabs value={interval} onValueChange={setInterval} className="h-7">
-                <TabsList className="h-7 bg-secondary/50">
-                    <TabsTrigger value="15m" className="text-xs h-6 px-3">15m</TabsTrigger>
-                    <TabsTrigger value="1h" className="text-xs h-6 px-3">1h</TabsTrigger>
-                    <TabsTrigger value="4h" className="text-xs h-6 px-3">4h</TabsTrigger>
-                    <TabsTrigger value="1d" className="text-xs h-6 px-3">1d</TabsTrigger>
-                </TabsList>
-            </Tabs>
-        </div>
-      </CardHeader>
-      <CardContent className="p-0 flex-1 min-h-0 overflow-hidden">
-         {isLoading && data.length === 0 ? (
-             <div className="h-full flex items-center justify-center">
-                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-             </div>
-         ) : (
-             <div className="flex flex-col h-full divide-y divide-border/40">
-                <div className="flex-1 min-h-0 p-2">
-                    <ZScoreChart 
-                    title="Z-Score VWAP 365" 
-                    data={data.map(d => ({ timestamp: d.timestamp, value: d.z365 }))} 
-                    height={undefined}
-                    className="h-full"
-                    />
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-full">
+        {periods.map((period) => {
+          const value = getLastValue(period.dataKey);
+          return (
+            <Card 
+              key={period.id}
+              className="relative group cursor-pointer hover:bg-secondary/50 transition-colors border-border/40 bg-card/50 backdrop-blur-sm flex flex-col items-center justify-center p-4"
+              onClick={() => setSelectedPeriod(period.id)}
+            >
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Maximize2 className="w-4 h-4 text-muted-foreground" />
+              </div>
+              
+              <div className="text-sm font-medium text-muted-foreground mb-2">
+                {period.label}
+              </div>
+              
+              {isLoading ? (
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              ) : (
+                <div className={cn("text-2xl font-bold font-mono", getValueColor(value))}>
+                  {value.toFixed(2)}
                 </div>
-                <div className="flex-1 min-h-0 p-2">
-                    <ZScoreChart 
-                    title="Z-Score VWAP 180" 
-                    data={data.map(d => ({ timestamp: d.timestamp, value: d.z180 }))} 
-                    height={undefined}
-                    className="h-full"
-                    />
-                </div>
-                <div className="flex-1 min-h-0 p-2">
-                    <ZScoreChart 
-                    title="Z-Score VWAP 90" 
-                    data={data.map(d => ({ timestamp: d.timestamp, value: d.z90 }))} 
-                    height={undefined}
-                    className="h-full"
-                    />
-                </div>
-                <div className="flex-1 min-h-0 p-2">
-                    <ZScoreChart 
-                    title="Z-Score VWAP 30" 
-                    data={data.map(d => ({ timestamp: d.timestamp, value: d.z30 }))} 
-                    height={undefined}
-                    className="h-full"
-                    />
-                </div>
-             </div>
-         )}
-      </CardContent>
-    </Card>
+              )}
+              
+              <div className="text-xs text-muted-foreground mt-1">
+                Z-Score Deviation
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
+      <Dialog open={selectedPeriod !== null} onOpenChange={(open) => !open && setSelectedPeriod(null)}>
+        <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] flex flex-col p-0 gap-0 bg-background/95 backdrop-blur-xl border-border/50">
+          <DialogHeader className="px-6 py-4 border-b border-border/40 flex flex-row items-center justify-between shrink-0">
+            <DialogTitle className="text-xl font-mono flex items-center gap-4">
+              <span>{symbol} 1D</span>
+              <span className="text-muted-foreground">|</span>
+              <span>{periods.find(p => p.id === selectedPeriod)?.label} Analysis</span>
+            </DialogTitle>
+            {/* Close button is handled by Dialog primitive usually, but we can add custom actions if needed */}
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden flex flex-col p-4 gap-4">
+            {/* Top: OHLC Chart */}
+            <div className="flex-1 min-h-0 border border-border/20 rounded-lg overflow-hidden bg-card/30">
+               <OhlcChart 
+                 klines={ohlcData} 
+                 height={undefined} 
+                 className="h-full w-full"
+               />
+            </div>
+
+            {/* Bottom: Selected VWAP Z-Score */}
+            <div className="h-[30%] min-h-[200px] border border-border/20 rounded-lg overflow-hidden bg-card/30 p-2">
+              {selectedPeriod && (
+                <ZScoreChart 
+                  title={`Z-Score VWAP ${selectedPeriod}`}
+                  data={data.map(d => ({ 
+                    timestamp: d.timestamp, 
+                    value: d[`z${selectedPeriod}` as keyof typeof d] as number 
+                  }))}
+                  height={undefined}
+                  className="h-full w-full"
+                />
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
