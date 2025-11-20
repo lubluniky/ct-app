@@ -84,11 +84,9 @@ export const FeeComparisonChart = () => {
               />
               <Legend wrapperStyle={{ paddingTop: '20px' }} />
               
-              <Line type="monotone" dataKey="Binance" stroke="#F3BA2F" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="Bybit" stroke="#9ca3af" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="OKX" stroke="#000000" strokeWidth={2} dot={false} /> 
-              {/* OKX Black/White depending on theme, let's use a visible color like Blue */}
-              <Line type="monotone" dataKey="OKX" stroke="#3b82f6" strokeWidth={2} dot={false} name="OKX Standard" />
+              <Line type="monotone" dataKey="Binance" stroke="#F3BA2F" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="Bybit" stroke="#9ca3af" strokeWidth={3} dot={false} strokeDasharray="4 4" />
+              <Line type="monotone" dataKey="OKX" stroke="#3b82f6" strokeWidth={3} dot={false} name="OKX Standard" />
               
               <Line 
                 type="monotone" 
