@@ -13,7 +13,8 @@ const bonuses = [
     title: "Scope360",
     description: "Advanced trading journal and analytics platform for conscious performance tracking.",
     link: "/bonus#scope360",
-    icon: BarChart2
+    icon: BarChart2,
+    logo: "/scope360io_logo.png"
   },
   {
     title: "OKX",
@@ -38,7 +39,11 @@ export const Bonus = () => {
             </div>
 
             <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform duration-300 border border-border">
-              <bonus.icon className="w-8 h-8" />
+              {'logo' in bonus && bonus.logo ? (
+                <img src={bonus.logo} alt={bonus.title} className="w-12 h-auto object-contain" />
+              ) : (
+                <bonus.icon className="w-8 h-8" />
+              )}
             </div>
             
             <h3 className="text-xl font-semibold mb-3 text-foreground flex items-center gap-2">

@@ -36,6 +36,7 @@ const partners = [
     ],
     link: "#",
     icon: BarChart2,
+    logo: "/scope360io_logo.png",
     color: "text-purple-500"
   },
   {
@@ -96,7 +97,11 @@ const BonusPage = () => {
               >
                 <div className="flex flex-col md:flex-row gap-8 items-start">
                   <div className={`p-4 rounded-xl bg-secondary/50 ${partner.color} border border-border`}>
-                    <partner.icon className="w-12 h-12" />
+                    {'logo' in partner && partner.logo ? (
+                      <img src={partner.logo} alt={partner.name} className="h-12 w-auto object-contain" />
+                    ) : (
+                      <partner.icon className="w-12 h-12" />
+                    )}
                   </div>
                   
                   <div className="flex-1">
