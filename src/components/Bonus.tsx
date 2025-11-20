@@ -1,6 +1,7 @@
 import { SectionLayout } from "./ui/SectionLayout";
 import { Gift, ExternalLink, GraduationCap, BarChart2, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import scopeLogo from "@/assets/scope360io_logo.png";
 
 const bonuses = [
   {
@@ -14,7 +15,7 @@ const bonuses = [
     description: "Advanced trading journal and analytics platform for conscious performance tracking.",
     link: "/bonus#scope360",
     icon: BarChart2,
-    logo: "/scope360io_logo.png"
+    logo: scopeLogo
   },
   {
     title: "OKX",

@@ -4,6 +4,7 @@ import { ExternalLink, ShieldCheck, GraduationCap, BarChart2 } from "lucide-reac
 import { Suspense, lazy, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { FeeComparisonChart } from "@/components/charts/FeeComparisonChart";
+import scopeLogo from "@/assets/scope360io_logo.png";
 
 const PixelBackground = lazy(() => import("@/components/PixelBackground"));
 
@@ -36,7 +37,7 @@ const partners = [
     ],
     link: "#",
     icon: BarChart2,
-    logo: "/scope360io_logo.png",
+    logo: scopeLogo,
     color: "text-purple-500"
   },
   {
