@@ -11,7 +11,7 @@ const bonuses = [
   },
   {
     title: "Scope360",
-    description: "Advanced trading journal and analytics platform with automatic trade import and behavioral analysis.",
+    description: "Advanced trading journal and analytics platform for conscious performance tracking.",
     link: "/bonus#scope360",
     icon: BarChart2
   },
