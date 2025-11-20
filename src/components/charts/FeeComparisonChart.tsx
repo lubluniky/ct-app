@@ -1,14 +1,30 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
+// Simple debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 export const FeeComparisonChart = () => {
   const [tradeSize, setTradeSize] = useState([10000]);
+  // Debounce the chart data update to prevent jitter
+  const debouncedTradeSize = useDebounce(tradeSize, 100);
 
   const data = useMemo(() => {
     const points = [];
-    const size = tradeSize[0];
+    const size = debouncedTradeSize[0];
     
     // Fee Rates (Spot Taker)
     const binanceRate = 0.001; // 0.1%
@@ -26,9 +42,15 @@ export const FeeComparisonChart = () => {
       });
     }
     return points;
-  }, [tradeSize]);
+  }, [debouncedTradeSize]);
 
-  const totalSavings = data[data.length - 1].Binance - data[data.length - 1]['OKX + Rebate'];
+  // Calculate savings based on real-time value for the text display
+  const currentSavings = useMemo(() => {
+      const size = tradeSize[0];
+      const binanceFee = 100 * size * 0.001;
+      const okxRebateFee = 100 * size * (0.0008 * 0.85);
+      return Math.round(binanceFee - okxRebateFee);
+  }, [tradeSize]);
 
   return (
     <Card className="w-full bg-card/50 backdrop-blur-sm border-border">
@@ -54,7 +76,7 @@ export const FeeComparisonChart = () => {
           />
           <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 text-center">
             <span className="text-muted-foreground text-sm">Potential Savings: </span>
-            <span className="text-xl font-bold text-primary ml-2">${totalSavings.toLocaleString()}</span>
+            <span className="text-xl font-bold text-primary ml-2">${currentSavings.toLocaleString()}</span>
           </div>
         </div>
 
@@ -76,6 +98,8 @@ export const FeeComparisonChart = () => {
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(value) => `$${value}`}
+                // Use animation to smooth axis transitions
+                allowDataOverflow={false}
               />
               <Tooltip 
                 contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#f8fafc' }}
@@ -84,17 +108,47 @@ export const FeeComparisonChart = () => {
               />
               <Legend wrapperStyle={{ paddingTop: '20px' }} />
               
-              <Line type="monotone" dataKey="Binance" stroke="#F3BA2F" strokeWidth={3} dot={false} />
-              <Line type="monotone" dataKey="Bybit" stroke="#9ca3af" strokeWidth={3} dot={false} strokeDasharray="4 4" />
-              <Line type="monotone" dataKey="OKX" stroke="#3b82f6" strokeWidth={3} dot={false} name="OKX Standard" />
+              {/* Binance: Rose (High Fees) */}
+              <Line 
+                type="monotone" 
+                dataKey="Binance" 
+                stroke="#e11d48" 
+                strokeWidth={3} 
+                dot={false} 
+                animationDuration={300}
+              />
               
+              {/* Bybit: Slate (Neutral/Competitor) */}
+              <Line 
+                type="monotone" 
+                dataKey="Bybit" 
+                stroke="#64748b" 
+                strokeWidth={3} 
+                dot={false} 
+                strokeDasharray="4 4" 
+                animationDuration={300}
+              />
+              
+              {/* OKX Standard: Darker Cyan/Slate */}
+              <Line 
+                type="monotone" 
+                dataKey="OKX" 
+                stroke="#334155" 
+                strokeWidth={3} 
+                dot={false} 
+                name="OKX Standard" 
+                animationDuration={300}
+              />
+              
+              {/* OKX + Rebate: Cyan (Best/Accent) */}
               <Line 
                 type="monotone" 
                 dataKey="OKX + Rebate" 
-                stroke="#22c55e" 
+                stroke="#0891b2" 
                 strokeWidth={4} 
-                dot={{ r: 4, fill: '#22c55e' }}
+                dot={{ r: 4, fill: '#0891b2' }}
                 activeDot={{ r: 6 }}
+                animationDuration={300}
               />
             </LineChart>
           </ResponsiveContainer>
