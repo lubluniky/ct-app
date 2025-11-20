@@ -3,11 +3,11 @@ import { useState, useEffect } from 'react';
 export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
   const [isFading, setIsFading] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
+  const [statusText, setStatusText] = useState('INITIALIZING KERNEL');
 
   useEffect(() => {
-    const duration = 4000;
-    const interval = 50;
+    const duration = 3500;
+    const interval = 30;
     const steps = duration / interval;
     const increment = 100 / steps;
 
@@ -21,10 +21,11 @@ export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
       });
     }, interval);
 
-    // Turn head to profile view at 1.5s
-    const turnTimer = setTimeout(() => {
-      setShowProfile(true);
-    }, 1500);
+    // Status text sequence
+    setTimeout(() => setStatusText('LOADING MODULES'), 800);
+    setTimeout(() => setStatusText('VERIFYING INTEGRITY'), 1600);
+    setTimeout(() => setStatusText('ESTABLISHING UPLINK'), 2400);
+    setTimeout(() => setStatusText('SYSTEM READY'), 3200);
 
     const fadeTimer = setTimeout(() => {
       setIsFading(true);
@@ -38,100 +39,91 @@ export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
       clearInterval(timer);
       clearTimeout(fadeTimer);
       clearTimeout(completeTimer);
-      clearTimeout(turnTimer);
     };
   }, [onComplete]);
 
   return (
-    <div className={`fixed inset-0 z-[9999] bg-background flex flex-col items-center justify-center transition-opacity duration-500 ${isFading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-       {/* Dot Matrix Background Effect */}
-       <div className="absolute inset-0 opacity-5 pointer-events-none">
-         <div className="w-full h-full" style={{ 
-           backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', 
-           backgroundSize: '30px 30px',
-           color: 'var(--foreground)'
-         }}></div>
-       </div>
-
-       {/* Centurion Container */}
-       <div className="mb-12 relative w-64 h-64 md:w-80 md:h-80">
-         <svg className="w-full h-full" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-           <defs>
-             {/* The Dot Pattern - Simulating the dithered look */}
-             <pattern id="dot-pattern" x="0" y="0" width="2.5" height="2.5" patternUnits="userSpaceOnUse">
-               <circle cx="1.25" cy="1.25" r="1" className="fill-foreground" />
-             </pattern>
-             
-             {/* Front View Mask - Helmet Shape */}
-             <mask id="mask-front">
-               <path d="M60,40 Q100,10 140,40 L140,120 Q140,160 100,180 Q60,160 60,120 Z" fill="url(#shading-grad)" />
-               {/* T-Visor Cutout (Black) */}
-               <path d="M95,60 L105,60 L105,100 L95,100 Z" fill="black" />
-               <path d="M80,60 L120,60 L120,70 L80,70 Z" fill="black" />
-             </mask>
-
-             {/* Profile View Mask - Amex Centurion Silhouette */}
-             <mask id="mask-profile">
-               {/* Refined Profile Path */}
-               <path d="M 60 60 C 60 30 100 20 140 40 C 160 50 160 80 150 100 C 150 100 150 140 140 160 C 120 180 80 180 60 160 C 50 140 50 100 60 60 Z" fill="url(#shading-grad)" />
-               {/* Cutout to shape the face profile on the right */}
-               <path d="M 140 40 L 200 40 L 200 200 L 140 200 L 120 150 L 130 130 L 125 125 L 130 110 L 120 110 L 120 90 L 140 90 Z" fill="black" />
-             </mask>
-
-             {/* Radial Gradient for 3D Shading Effect - Adjusted for better visibility */}
-             <radialGradient id="shading-grad" cx="0.3" cy="0.3" r="0.8">
-               <stop offset="0%" stopColor="white" stopOpacity="1" />
-               <stop offset="100%" stopColor="#cccccc" stopOpacity="1" />
-             </radialGradient>
-           </defs>
-
-           {/* The Rendered Object */}
-           <g className={`transition-all duration-1000 ease-in-out transform ${showProfile ? 'opacity-0 scale-x-0' : 'opacity-100 scale-x-100'}`} style={{ transformOrigin: 'center' }}>
-             <rect width="200" height="200" fill="url(#dot-pattern)" mask="url(#mask-front)" />
-           </g>
-
-           <g className={`transition-all duration-1000 ease-in-out transform ${showProfile ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`} style={{ transformOrigin: 'center' }}>
-             <rect width="200" height="200" fill="url(#dot-pattern)" mask="url(#mask-profile)" />
-             {/* Glowing Eye in Profile */}
-             <circle cx="115" cy="95" r="3" className={`fill-primary blur-[1px] transition-opacity duration-1000 ${showProfile ? 'opacity-100' : 'opacity-0'}`} />
-           </g>
-           
-           {/* Scanning Line Effect */}
-           <rect width="200" height="2" className="fill-primary/30 blur-sm animate-[scan_2s_ease-in-out_infinite]" />
-         </svg>
-       </div>
+    <div className={`fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center transition-opacity duration-500 ${isFading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
        
-       <div className="relative z-10 text-center flex flex-col items-center gap-1">
-         <h1 className="text-5xl md:text-7xl font-bold text-foreground font-mono tracking-tighter">
+       {/* Background Grid */}
+       <div className="absolute inset-0 opacity-20 pointer-events-none" 
+            style={{ 
+              backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)', 
+              backgroundSize: '40px 40px' 
+            }}>
+       </div>
+
+       {/* Main Loader Graphic */}
+       <div className="relative w-64 h-64 mb-8">
+         {/* Outer Ring - Dashed */}
+         <div className="absolute inset-0 border border-white/10 rounded-full animate-[spin_10s_linear_infinite]"></div>
+         <div className="absolute inset-2 border border-t-white/40 border-r-transparent border-b-white/40 border-l-transparent rounded-full animate-[spin_3s_linear_infinite]"></div>
+         
+         {/* Inner Ring - Reverse Spin */}
+         <div className="absolute inset-8 border-2 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-[spin_2s_linear_infinite_reverse]"></div>
+         
+         {/* Center Core */}
+         <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-32 h-32 bg-white/5 rounded-full backdrop-blur-sm flex items-center justify-center border border-white/10 relative overflow-hidden">
+                {/* Scanning Line */}
+                <div className="absolute w-full h-[2px] bg-primary/50 blur-[2px] animate-[scan_2s_ease-in-out_infinite]"></div>
+                
+                {/* Central Symbol - Abstract Geometric */}
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white animate-pulse">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" />
+                    <path d="M2 17L12 22L22 17" />
+                    <path d="M2 12L12 17L22 12" />
+                </svg>
+            </div>
+         </div>
+
+         {/* Orbiting Particles */}
+         <div className="absolute inset-0 animate-[spin_4s_linear_infinite]">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]"></div>
+         </div>
+       </div>
+
+       {/* Typography */}
+       <div className="relative z-10 text-center space-y-4">
+         <h1 className="text-4xl md:text-5xl font-bold text-white font-mono tracking-tighter">
            CENTURION
          </h1>
-         <div className="flex items-center gap-3">
-            <span className="text-muted-foreground font-mono text-lg tracking-[0.3em] uppercase">Terminal</span>
-            <div className="px-2 py-0.5 border border-primary/30 rounded bg-primary/5">
-                <span className="text-primary font-mono text-[10px] tracking-wider font-bold">BETA</span>
+         
+         <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-3">
+                <span className="text-white/40 font-mono text-sm tracking-[0.5em] uppercase">TERMINAL</span>
+                <span className="px-1.5 py-0.5 border border-white/20 rounded bg-white/5 text-[10px] font-mono text-white/60">v2.0</span>
+            </div>
+            
+            {/* Dynamic Status Text */}
+            <div className="h-6 flex items-center justify-center">
+                <span className="font-mono text-xs text-primary tracking-widest uppercase animate-pulse">
+                    {`> ${statusText}...`}
+                </span>
             </div>
          </div>
        </div>
-       
+
        {/* Progress Bar */}
-       <div className="mt-12 w-64 h-1 bg-secondary rounded-full overflow-hidden">
+       <div className="mt-8 w-64 h-[2px] bg-white/10 rounded-full overflow-hidden relative">
          <div 
-           className="h-full bg-primary transition-all duration-100 ease-linear"
+           className="absolute top-0 left-0 h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-100 ease-out"
            style={{ width: `${progress}%` }}
          />
        </div>
        
-       <div className="mt-4 text-muted-foreground/60 font-mono text-xs animate-pulse">
-         INITIALIZING SYSTEM...
+       <div className="mt-2 font-mono text-[10px] text-white/30">
+            {Math.round(progress)}%
        </div>
 
        <style>{`
          @keyframes scan {
-           0% { transform: translateY(0); opacity: 0; }
+           0% { transform: translateY(-40px); opacity: 0; }
            50% { opacity: 1; }
-           100% { transform: translateY(200px); opacity: 0; }
+           100% { transform: translateY(40px); opacity: 0; }
          }
        `}</style>
     </div>
   );
 };
+
