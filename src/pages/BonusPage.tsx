@@ -97,9 +97,9 @@ const BonusPage = () => {
                 className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-8 md:p-12 hover:border-primary/30 transition-all duration-300"
               >
                 <div className="flex flex-col md:flex-row gap-8 items-start">
-                  <div className={`p-4 rounded-xl bg-secondary/50 ${partner.color} border border-border`}>
+                  <div className={`rounded-xl bg-secondary/50 ${partner.color} border border-border ${'logo' in partner && partner.logo ? 'p-0 overflow-hidden' : 'p-4'}`}>
                     {'logo' in partner && partner.logo ? (
-                      <img src={partner.logo} alt={partner.name} className="h-12 w-auto object-contain" />
+                      <img src={partner.logo} alt={partner.name} className="w-20 h-20 object-cover" />
                     ) : (
                       <partner.icon className="w-12 h-12" />
                     )}

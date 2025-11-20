@@ -39,9 +39,9 @@ export const Bonus = () => {
               <Gift className="w-24 h-24 -mr-8 -mt-8 rotate-12" />
             </div>
 
-            <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform duration-300 border border-border">
+            <div className={`w-16 h-16 rounded-xl bg-secondary flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform duration-300 border border-border ${'logo' in bonus && bonus.logo ? 'overflow-hidden p-0' : ''}`}>
               {'logo' in bonus && bonus.logo ? (
-                <img src={bonus.logo} alt={bonus.title} className="w-12 h-auto object-contain" />
+                <img src={bonus.logo} alt={bonus.title} className="w-full h-full object-cover" />
               ) : (
                 <bonus.icon className="w-8 h-8" />
               )}
