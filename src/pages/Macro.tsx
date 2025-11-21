@@ -3,7 +3,7 @@ import { Globe, TrendingUp, DollarSign, Activity } from "lucide-react";
 
 const Macro = () => {
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="h-full overflow-y-auto p-8 space-y-6 animate-in fade-in duration-500">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Macro Environment</h2>
         <p className="text-muted-foreground">Global economic indicators and liquidity metrics.</p>

@@ -6,7 +6,7 @@ import { FlaskConical, Play, RotateCcw, Settings2 } from "lucide-react";
 
 const Labs = () => {
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="h-full overflow-y-auto p-8 space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Research Labs</h2>
