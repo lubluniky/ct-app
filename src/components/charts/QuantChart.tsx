@@ -252,7 +252,7 @@ export const QuantChart: React.FC<QuantChartProps> = ({
 
     // Draw Grid
     if (showGrid) {
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.05)'; // Darker grid for light theme
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; // Light grid for dark mode visibility
       ctx.lineWidth = 1;
       
       // Horizontal lines (Main Chart)
@@ -266,7 +266,7 @@ export const QuantChart: React.FC<QuantChartProps> = ({
         
         // Price Labels on Y-Axis
         const price = maxPrice - (i * (maxPrice - minPrice)) / gridSteps;
-        ctx.fillStyle = '#64748b'; // Slate-500
+        ctx.fillStyle = '#94a3b8'; // Slate-400
         ctx.font = '11px "Inter", sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText(price.toFixed(2), dimensions.width - padding.right + 5, y + 4);
@@ -276,7 +276,7 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       ctx.beginPath();
       ctx.moveTo(dimensions.width - padding.right, 0);
       ctx.lineTo(dimensions.width - padding.right, dimensions.height);
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
       ctx.stroke();
 
       // Separator Line if split panel
@@ -284,7 +284,7 @@ export const QuantChart: React.FC<QuantChartProps> = ({
           ctx.beginPath();
           ctx.moveTo(0, mainChartHeight);
           ctx.lineTo(dimensions.width, mainChartHeight);
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
           ctx.lineWidth = 2;
           ctx.stroke();
       }
@@ -330,12 +330,12 @@ export const QuantChart: React.FC<QuantChartProps> = ({
 
       const isUp = d.close >= d.open;
       
-      // Terminal Colors (Dark Mode Optimized)
-      // Up: Emerald-400, Down: Rose-400
+      // Toxic Terminal Colors
+      // Up: Neon Green (#00FF9D), Down: Neon Red (#FF2E54)
       
-      const bodyColor = isUp ? '#34d399' : '#f87171';
-      const borderColor = isUp ? '#34d399' : '#f87171';
-      const wickColor = isUp ? '#34d399' : '#f87171';
+      const bodyColor = isUp ? '#00FF9D' : '#FF2E54';
+      const borderColor = isUp ? '#00FF9D' : '#FF2E54';
+      const wickColor = isUp ? '#00FF9D' : '#FF2E54';
 
       ctx.fillStyle = bodyColor;
       ctx.strokeStyle = borderColor; // Border color
@@ -607,12 +607,12 @@ export const QuantChart: React.FC<QuantChartProps> = ({
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
             
-            // Color Logic
-            let color = '#cbd5e1'; // Slate-300
-            if (val1 < -2) color = '#22d3ee'; // Cyan-400
-            else if (val1 > 2) color = '#fb7185'; // Rose-400
-            else if (val1 < -0.5) color = '#67e8f9'; // Cyan-300
-            else if (val1 > 0.5) color = '#fda4af'; // Rose-300
+            // Toxic/Terminal Logic
+            let color = '#a1a1aa'; // Zinc-400 (Neutral)
+            if (val1 < -2) color = '#00FFFF'; // Neon Cyan
+            else if (val1 > 2) color = '#FF00FF'; // Neon Magenta
+            else if (val1 < -0.5) color = '#00BFFF'; // Deep Sky Blue
+            else if (val1 > 0.5) color = '#FF1493'; // Deep Pink
             
             ctx.strokeStyle = color;
             ctx.stroke();
