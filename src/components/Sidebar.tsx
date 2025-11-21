@@ -1,11 +1,13 @@
 import React from 'react';
-import { LayoutDashboard, Terminal, Settings, FileText, LogOut, LogIn, User } from 'lucide-react';
+import { LayoutDashboard, Terminal, Settings, FileText, LogOut, LogIn, User, Moon, Sun } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export const Sidebar = () => {
   const { user, profile, signInWithGoogle, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   return (
     <div className="h-screen w-64 bg-card border-r border-border flex flex-col p-4">
@@ -48,6 +50,22 @@ export const Sidebar = () => {
       </nav>
 
       <div className="mt-auto pt-4 border-t border-border space-y-4">
+        <div className="flex items-center justify-between px-2">
+          <span className="text-xs text-muted-foreground font-medium">Theme</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? (
+              <Moon size={16} className="text-primary" />
+            ) : (
+              <Sun size={16} className="text-primary" />
+            )}
+          </Button>
+        </div>
+
         {user ? (
           <div className="space-y-3">
             <div className="flex items-center gap-3 px-2">
