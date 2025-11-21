@@ -1,13 +1,18 @@
 import React from 'react';
-import { LayoutDashboard, Terminal, Settings, FileText, LogOut, LogIn, User, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, LogOut, LogIn, User, Moon, Sun, Globe, FlaskConical } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const Sidebar = () => {
   const { user, profile, signInWithGoogle, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <div className="h-screen w-64 bg-card border-r border-border flex flex-col p-4">
@@ -28,24 +33,40 @@ export const Sidebar = () => {
       </div>
 
       <nav className="flex-1 space-y-2">
-        <div className="flex items-center gap-3 px-3 py-2 bg-primary/5 text-primary rounded-md cursor-pointer">
+        <div 
+          onClick={() => navigate('/dashboard')}
+          className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
+            isActive('/dashboard') 
+              ? 'bg-primary/5 text-primary' 
+              : 'text-muted-foreground hover:bg-muted/50'
+          }`}
+        >
           <LayoutDashboard size={18} />
           <span className="text-sm font-medium">Dashboard</span>
         </div>
         
-        <div className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:bg-muted/50 rounded-md cursor-pointer transition-colors">
-          <Terminal size={18} />
-          <span className="text-sm font-medium">Trade</span>
+        <div 
+          onClick={() => navigate('/dashboard/macro')}
+          className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
+            isActive('/dashboard/macro') 
+              ? 'bg-primary/5 text-primary' 
+              : 'text-muted-foreground hover:bg-muted/50'
+          }`}
+        >
+          <Globe size={18} />
+          <span className="text-sm font-medium">Macro</span>
         </div>
 
-        <div className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:bg-muted/50 rounded-md cursor-pointer transition-colors">
-          <FileText size={18} />
-          <span className="text-sm font-medium">Trading Journal</span>
-        </div>
-
-        <div className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:bg-muted/50 rounded-md cursor-pointer transition-colors">
-          <Settings size={18} />
-          <span className="text-sm font-medium">Settings</span>
+        <div 
+          onClick={() => navigate('/dashboard/labs')}
+          className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
+            isActive('/dashboard/labs') 
+              ? 'bg-primary/5 text-primary' 
+              : 'text-muted-foreground hover:bg-muted/50'
+          }`}
+        >
+          <FlaskConical size={18} />
+          <span className="text-sm font-medium">Labs</span>
         </div>
       </nav>
 

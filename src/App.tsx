@@ -10,8 +10,22 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import BonusPage from "./pages/BonusPage";
 import NotFound from "./pages/NotFound";
+import Macro from "./pages/Macro";
+import Labs from "./pages/Labs";
+import { Sidebar } from "./components/Sidebar";
 
 const queryClient = new QueryClient();
+
+const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="flex h-screen bg-background">
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto p-8">
+        {children}
+      </main>
+    </div>
+  );
+};
 
 const App = () => {
   // Log analytics initialization on mount
@@ -29,7 +43,24 @@ const App = () => {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                
+                {/* Dashboard Routes */}
+                <Route path="/dashboard" element={
+                  <DashboardLayout>
+                    <Dashboard />
+                  </DashboardLayout>
+                } />
+                <Route path="/dashboard/macro" element={
+                  <DashboardLayout>
+                    <Macro />
+                  </DashboardLayout>
+                } />
+                <Route path="/dashboard/labs" element={
+                  <DashboardLayout>
+                    <Labs />
+                  </DashboardLayout>
+                } />
+
                 <Route path="/bonus" element={<BonusPage />} />
                 
                 {/* Redirect old routes to new dashboard */}
