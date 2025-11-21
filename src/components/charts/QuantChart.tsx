@@ -560,27 +560,34 @@ export const QuantChart: React.FC<QuantChartProps> = ({
         return dimensions.height - padding.bottom - (val - minVal) * scale;
       };
 
-      // Draw Zero Line
+      // Draw Zero Line and Grid
       if (showGrid) {
-        const y0 = getOscY(0);
-        ctx.beginPath();
-        ctx.setLineDash([2, 2]);
-        ctx.moveTo(0, y0);
-        ctx.lineTo(dimensions.width - padding.right, y0);
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Threshold lines (-2, 2)
-        [-2, 2].forEach(t => {
-            if (t > minVal && t < maxVal) {
-                const yt = getOscY(t);
+        const gridValues = [3, 2, 1, 0, -1, -2, -3];
+        
+        gridValues.forEach(val => {
+            if (val >= minVal && val <= maxVal) {
+                const y = getOscY(val);
+                
+                // Draw Line
                 ctx.beginPath();
-                ctx.setLineDash([1, 1]);
-                ctx.moveTo(0, yt);
-                ctx.lineTo(dimensions.width - padding.right, yt);
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                if (val === 0) {
+                    ctx.setLineDash([2, 2]);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                } else {
+                    ctx.setLineDash([1, 1]);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                }
+                
+                ctx.moveTo(0, y);
+                ctx.lineTo(dimensions.width - padding.right, y);
                 ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Draw Label
+                ctx.fillStyle = '#94a3b8'; // Slate-400
+                ctx.font = '10px "Inter", sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(val.toString(), dimensions.width - padding.right + 5, y + 3);
             }
         });
       }
