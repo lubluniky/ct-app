@@ -329,6 +329,8 @@ export const CrossPairAnalyzer = () => {
               data={chartData} 
               height="100%" 
               className="w-full h-full"
+              chartType="area"
+              panelRatio={0.5}
               overlays={[
                 {
                   id: 'correlation',

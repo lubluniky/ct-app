@@ -28,6 +28,8 @@ interface QuantChartProps {
   className?: string;
   showGrid?: boolean;
   padding?: { top: number; bottom: number; right: number };
+  chartType?: 'candle' | 'line' | 'area';
+  panelRatio?: number;
 }
 
 export const QuantChart: React.FC<QuantChartProps> = ({
@@ -37,6 +39,8 @@ export const QuantChart: React.FC<QuantChartProps> = ({
   className = '',
   showGrid = true,
   padding = { top: 20, bottom: 30, right: 60 },
+  chartType = 'candle',
+  panelRatio = 0.3,
 }) => {
   const { containerRef, dimensions } = useChartDimensions();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -64,8 +68,9 @@ export const QuantChart: React.FC<QuantChartProps> = ({
     }
 
     const hasBottomPanel = overlays.some(o => o.type === 'pulse' || o.type === 'oscillator' || o.type === 'z-score');
-    const mainChartHeight = hasBottomPanel ? dimensions.height * 0.7 : dimensions.height;
-    const indicatorHeight = hasBottomPanel ? dimensions.height * 0.3 : 0;
+    const ratio = panelRatio;
+    const mainChartHeight = hasBottomPanel ? dimensions.height * (1 - ratio) : dimensions.height;
+    const indicatorHeight = hasBottomPanel ? dimensions.height * ratio : 0;
 
     const maxVisibleBars = Math.floor((dimensions.width - padding.right) / totalBarWidth);
     // offset 0 means we see the last maxVisibleBars
@@ -320,42 +325,92 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       ctx.stroke();
     });
 
-    // Draw Candles
-    visibleData.forEach((d, i) => {
-      const x = getX(i + xShift);
-      const openY = getY(d.open);
-      const closeY = getY(d.close);
-      const highY = getY(d.high);
-      const lowY = getY(d.low);
+    // Draw Main Chart (Candles or Line/Area)
+    if (chartType === 'candle') {
+      visibleData.forEach((d, i) => {
+        const x = getX(i + xShift);
+        const openY = getY(d.open);
+        const closeY = getY(d.close);
+        const highY = getY(d.high);
+        const lowY = getY(d.low);
 
-      const isUp = d.close >= d.open;
+        const isUp = d.close >= d.open;
+        
+        // Toxic Terminal Colors
+        // Up: Neon Green (#00FF9D), Down: Neon Red (#FF2E54)
+        
+        const bodyColor = isUp ? '#00FF9D' : '#FF2E54';
+        const borderColor = isUp ? '#00FF9D' : '#FF2E54';
+        const wickColor = isUp ? '#00FF9D' : '#FF2E54';
+
+        ctx.fillStyle = bodyColor;
+        ctx.strokeStyle = borderColor; // Border color
+        ctx.lineWidth = 1;
+
+        // Wick
+        ctx.beginPath();
+        ctx.strokeStyle = wickColor;
+        ctx.moveTo(x, highY);
+        ctx.lineTo(x, lowY);
+        ctx.stroke();
+
+        // Body
+        const bodyHeight = Math.max(1, Math.abs(closeY - openY));
+        const bodyY = Math.min(openY, closeY);
+        
+        // Fill for both (Solid candles)
+        ctx.fillRect(x - candleWidth / 2, bodyY, candleWidth, bodyHeight);
+        // ctx.strokeRect(x - candleWidth / 2, bodyY, candleWidth, bodyHeight); // Optional border
+      });
+    } else {
+      // Draw Line / Area
+      const lineColor = '#00FF9D';
       
-      // Toxic Terminal Colors
-      // Up: Neon Green (#00FF9D), Down: Neon Red (#FF2E54)
-      
-      const bodyColor = isUp ? '#00FF9D' : '#FF2E54';
-      const borderColor = isUp ? '#00FF9D' : '#FF2E54';
-      const wickColor = isUp ? '#00FF9D' : '#FF2E54';
+      // 1. Draw Area (Fill) first so line is on top
+      if (chartType === 'area' && visibleData.length > 0) {
+        ctx.beginPath();
+        let started = false;
+        visibleData.forEach((d, i) => {
+          const x = getX(i + xShift);
+          const y = getY(d.close);
+          if (!started) {
+            ctx.moveTo(x, mainChartHeight - padding.bottom); // Start at bottom
+            ctx.lineTo(x, y);
+            started = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+        // Close path to bottom right
+        const lastX = getX(visibleData.length - 1 + xShift);
+        ctx.lineTo(lastX, mainChartHeight - padding.bottom);
+        ctx.closePath();
 
-      ctx.fillStyle = bodyColor;
-      ctx.strokeStyle = borderColor; // Border color
-      ctx.lineWidth = 1;
+        const gradient = ctx.createLinearGradient(0, padding.top, 0, mainChartHeight - padding.bottom);
+        gradient.addColorStop(0, 'rgba(0, 255, 157, 0.2)');
+        gradient.addColorStop(1, 'rgba(0, 255, 157, 0.0)');
+        ctx.fillStyle = gradient;
+        ctx.fill();
+      }
 
-      // Wick
+      // 2. Draw Line
       ctx.beginPath();
-      ctx.strokeStyle = wickColor;
-      ctx.moveTo(x, highY);
-      ctx.lineTo(x, lowY);
-      ctx.stroke();
-
-      // Body
-      const bodyHeight = Math.max(1, Math.abs(closeY - openY));
-      const bodyY = Math.min(openY, closeY);
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 2;
       
-      // Fill for both (Solid candles)
-      ctx.fillRect(x - candleWidth / 2, bodyY, candleWidth, bodyHeight);
-      // ctx.strokeRect(x - candleWidth / 2, bodyY, candleWidth, bodyHeight); // Optional border
-    });
+      let started = false;
+      visibleData.forEach((d, i) => {
+        const x = getX(i + xShift);
+        const y = getY(d.close);
+        if (!started) {
+          ctx.moveTo(x, y);
+          started = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      ctx.stroke();
+    }
 
     // Draw Market Pulse (Pulse Type)
     overlays.filter(o => o.type === 'pulse').forEach(overlay => {
