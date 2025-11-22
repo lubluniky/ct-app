@@ -11,9 +11,20 @@ interface ShareChartDialogProps {
   title: string;
   trigger?: React.ReactNode;
   tags?: string[];
+  symbol?: string;
+  timeframe?: string;
+  indicator?: string;
 }
 
-export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({ targetRef, title, trigger, tags = ['QUANT'] }) => {
+export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({ 
+  targetRef, 
+  title, 
+  trigger, 
+  tags = ['QUANT'],
+  symbol,
+  timeframe,
+  indicator
+}) => {
   const { user, profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -147,12 +158,31 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({ targetRef, t
             <div className="flex justify-between items-end font-mono text-zinc-300 pt-2">
               {/* Left Side */}
               <div className="flex flex-col gap-1">
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold tracking-tight text-white uppercase">
                     Centurion
                   </h1>
                   <span className="text-lg text-zinc-500 uppercase tracking-widest">Terminal</span>
                 </div>
+
+                {(symbol || timeframe || indicator) && (
+                   <div className="flex items-center gap-2 text-xs font-mono text-zinc-400 uppercase tracking-wider my-0.5">
+                      {symbol && <span className="text-white font-bold">{symbol}</span>}
+                      {timeframe && (
+                        <>
+                          <span className="text-zinc-700">/</span>
+                          <span>{timeframe}</span>
+                        </>
+                      )}
+                      {indicator && (
+                        <>
+                          <span className="text-zinc-700">/</span>
+                          <span className="text-yellow-500">{indicator}</span>
+                        </>
+                      )}
+                   </div>
+                )}
+
                 <p className="text-[10px] text-zinc-600 tracking-wider uppercase">available at borkiss.trade</p>
               </div>
 

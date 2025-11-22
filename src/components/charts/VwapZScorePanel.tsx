@@ -160,6 +160,9 @@ export const VwapZScorePanel = () => {
             <ShareChartDialog 
               targetRef={chartRef} 
               title={`${symbol} ${periods.find(p => p.id === selectedPeriod)?.label}`} 
+              symbol={symbol}
+              timeframe={interval}
+              indicator={periods.find(p => p.id === selectedPeriod)?.label}
             />
           </DialogHeader>
           

@@ -79,7 +79,13 @@ export const UnifiedChartPanel = () => {
                 </TabsList>
             </Tabs>
         </div>
-        <ShareChartDialog targetRef={chartRef} title={`${symbol} Market Pulse`} />
+        <ShareChartDialog 
+          targetRef={chartRef} 
+          title={`${symbol} Market Pulse`} 
+          symbol={symbol}
+          timeframe={interval}
+          indicator="Market Pulse"
+        />
       </CardHeader>
       <CardContent className="p-0 flex-1 min-h-0">
          {loadingKlines && chartData.length === 0 ? (
