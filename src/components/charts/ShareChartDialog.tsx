@@ -130,13 +130,13 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({ targetRef, t
           {/* The Card Preview Area */}
           <div className="relative bg-black p-4 border-2 border-zinc-800 max-w-full overflow-hidden" ref={cardRef}>
             {/* Chart Image */}
-            <div className="relative border-2 border-zinc-800 bg-black overflow-hidden mb-4 min-h-[400px] min-w-[800px] flex items-center justify-center">
+            <div className="relative border-2 border-zinc-800 bg-black overflow-hidden mb-4">
               {isCapturing ? (
-                <div className="text-zinc-500 font-mono animate-pulse">Acquiring Signal...</div>
+                <div className="h-[400px] flex items-center justify-center text-zinc-500 font-mono animate-pulse">Acquiring Signal...</div>
               ) : previewUrl ? (
-                <img src={previewUrl} alt="Chart Analysis" className="w-full h-auto object-contain block" />
+                <img src={previewUrl} alt="Chart Analysis" className="w-full h-auto block" />
               ) : (
-                <div className="text-red-500 font-mono">Signal Lost</div>
+                <div className="h-[400px] flex items-center justify-center text-red-500 font-mono">Signal Lost</div>
               )}
             </div>
 
