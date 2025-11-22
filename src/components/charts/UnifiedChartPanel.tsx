@@ -56,7 +56,7 @@ export const UnifiedChartPanel = () => {
       id: 'Market Pulse',
       type: 'pulse',
       dataKey: 'tension',
-      color: '#FACC15', // Yellow-400 (High visibility on dark)
+      color: '#f43f5e', // Pulse Hot (Singularity v6)
       opacity: 0.4,
       threshold: getRecommendedThreshold(interval), // Highlight high tension
     }];

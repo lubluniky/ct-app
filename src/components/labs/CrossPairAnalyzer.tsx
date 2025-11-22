@@ -416,7 +416,7 @@ export const CrossPairAnalyzer = () => {
                     label: 'Correlation (20p)',
                     type: 'oscillator',
                     dataKey: 'correlation',
-                    color: '#fbbf24', // Amber
+                    color: '#f59e0b', // Amber (Chart-3)
                     domain: [-1, 1],
                     width: 2
                   },
@@ -426,7 +426,7 @@ export const CrossPairAnalyzer = () => {
                       label: symbolA,
                       type: 'line' as const,
                       dataKey: 'priceA',
-                      color: '#22d3ee', // Cyan
+                      color: '#3b82f6', // Blue (Chart-1)
                       width: 1,
                       yAxisId: 'left-A'
                     },
@@ -435,7 +435,7 @@ export const CrossPairAnalyzer = () => {
                       label: symbolB,
                       type: 'line' as const,
                       dataKey: 'priceB',
-                      color: '#f472b6', // Pink
+                      color: '#8b5cf6', // Purple (Chart-2)
                       width: 1,
                       yAxisId: 'left-B'
                     }

@@ -57,10 +57,10 @@ export const VwapZScorePanel = () => {
   };
 
   const getStatus = (value: number) => {
-    if (value > 2) return { label: 'Overbought', color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: TrendingUp };
-    if (value < -2) return { label: 'Oversold', color: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500/20', icon: TrendingDown };
-    if (value > 1) return { label: 'Elevated', color: 'text-rose-400', bg: 'bg-rose-400/10', border: 'border-rose-400/20', icon: TrendingUp };
-    if (value < -1) return { label: 'Depressed', color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20', icon: TrendingDown };
+    if (value > 2) return { label: 'Overbought', color: 'text-z-expensive', bg: 'bg-z-expensive/10', border: 'border-z-expensive/20', icon: TrendingUp };
+    if (value < -2) return { label: 'Oversold', color: 'text-z-cheap', bg: 'bg-z-cheap/10', border: 'border-z-cheap/20', icon: TrendingDown };
+    if (value > 1) return { label: 'Elevated', color: 'text-pulse-hot', bg: 'bg-pulse-hot/10', border: 'border-pulse-hot/20', icon: TrendingUp };
+    if (value < -1) return { label: 'Depressed', color: 'text-pulse-cold', bg: 'bg-pulse-cold/10', border: 'border-pulse-cold/20', icon: TrendingDown };
     return { label: 'Neutral', color: 'text-muted-foreground', bg: 'bg-secondary/50', border: 'border-border/40', icon: Minus };
   };
 
@@ -142,7 +142,7 @@ export const VwapZScorePanel = () => {
                  {/* Gradient Fade for Sparkline */}
                  <div className={cn("absolute inset-0 bg-gradient-to-t from-background/10 to-transparent z-0")} />
                  <div className="px-4">
-                    <Sparkline data={sparkData} color={value > 0 ? '#fb7185' : '#22d3ee'} />
+                    <Sparkline data={sparkData} color={value > 0 ? '#ff4500' : '#00e396'} />
                  </div>
               </div>
             </Card>

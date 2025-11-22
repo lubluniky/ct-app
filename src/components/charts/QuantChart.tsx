@@ -455,12 +455,12 @@ export const QuantChart: React.FC<QuantChartProps> = ({
 
         const isUp = d.close >= d.open;
         
-        // Toxic Terminal Colors
-        // Up: Neon Green (#00FF9D), Down: Neon Red (#FF2E54)
+        // Singularity v6 Palette
+        // Up: Bullish (#10b981), Down: Bearish (#ef4444)
         
-        const bodyColor = isUp ? '#00FF9D' : '#FF2E54';
-        const borderColor = isUp ? '#00FF9D' : '#FF2E54';
-        const wickColor = isUp ? '#00FF9D' : '#FF2E54';
+        const bodyColor = isUp ? '#10b981' : '#ef4444';
+        const borderColor = isUp ? '#10b981' : '#ef4444';
+        const wickColor = isUp ? '#10b981' : '#ef4444';
 
         ctx.fillStyle = bodyColor;
         ctx.strokeStyle = borderColor; // Border color
@@ -483,7 +483,7 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       });
     } else {
       // Draw Line / Area
-      const lineColor = '#00FF9D';
+      const lineColor = '#10b981'; // Bullish Green
       
       // 1. Draw Area (Fill) first so line is on top
       if (chartType === 'area' && visibleData.length > 0) {
@@ -506,8 +506,8 @@ export const QuantChart: React.FC<QuantChartProps> = ({
         ctx.closePath();
 
         const gradient = ctx.createLinearGradient(0, padding.top, 0, mainChartHeight - padding.bottom);
-        gradient.addColorStop(0, 'rgba(0, 255, 157, 0.2)');
-        gradient.addColorStop(1, 'rgba(0, 255, 157, 0.0)');
+        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.2)'); // Bullish Green 20%
+        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
         ctx.fillStyle = gradient;
         ctx.fill();
       }
