@@ -6,7 +6,7 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import { useKlines } from '@/hooks/useKlines';
 import { OhlcChart } from '@/components/ohlc/OhlcChart';
-import { SnapshotButton } from '@/components/SnapshotButton';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 import { getRecommendedThreshold } from '@/lib/tension';
 import type { DataSource } from '@/lib/binance';
 import { Activity, RefreshCw } from 'lucide-react';
@@ -73,10 +73,9 @@ const SinglePanel = memo(function SinglePanel({ timeframe, symbol, dataSource }:
           </div>
         </div>
 
-        <SnapshotButton 
-          containerRef={containerRef} 
-          symbol={symbol}
-          timeframe={timeframe.label}
+        <ShareChartDialog 
+          targetRef={containerRef} 
+          title={`${symbol} ${timeframe.label} Analysis`}
         />
       </div>
 

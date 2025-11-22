@@ -2,11 +2,12 @@
  * OHLC candlestick chart using custom QuantChart
  */
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import type { Kline } from '@/lib/binance';
 import type { TensionDataPoint } from '@/lib/tension';
 import { QuantChart, type ChartDataPoint, type Overlay } from '@/components/charts/QuantChart';
 import { Watermark } from '@/components/Watermark';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 
 export interface OhlcChartProps {
   klines: Kline[];
@@ -17,6 +18,7 @@ export interface OhlcChartProps {
 }
 
 export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, className = '' }: OhlcChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null);
   
   const chartData = useMemo<ChartDataPoint[]>(() => {
     return klines.map((k, i) => ({
@@ -45,13 +47,18 @@ export function OhlcChart({ klines, tensionData, threshold = 0, height = 300, cl
 
   return (
     <div className="relative w-full" style={{ height }}>
-      <QuantChart 
-        data={chartData} 
-        overlays={overlays} 
-        height={height} 
-        className={className}
-      />
-      <Watermark visible={true} />
+      <div className="absolute top-2 right-12 z-20">
+        <ShareChartDialog targetRef={chartRef} title="OHLC Analysis" />
+      </div>
+      <div ref={chartRef} className="w-full h-full bg-background">
+        <QuantChart 
+          data={chartData} 
+          overlays={overlays} 
+          height={height} 
+          className={className}
+        />
+        <Watermark visible={true} />
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@
 
 import { useEffect, useRef } from 'react';
 import type { TensionDataPoint } from '@/lib/tension';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 
 export interface TensionHistogramProps {
   data: TensionDataPoint[];
@@ -106,25 +107,15 @@ export function TensionHistogram({
 
     resizeObserver.observe(container);
 
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []);
+    return () => resizeObserver.disconnect();
+  }, [data]);
 
   return (
-    <div
-      ref={containerRef}
-      className={className}
-      style={{ position: 'relative', width: '100%', height: `${height}px` }}
-    >
-      <canvas
-        ref={canvasRef}
-        style={{
-          display: 'block',
-          width: '100%',
-          height: '100%',
-        }}
-      />
+    <div ref={containerRef} className={`relative w-full ${className}`} style={{ height }}>
+      <div className="absolute top-1 right-1 z-10" data-html2canvas-ignore>
+        <ShareChartDialog targetRef={containerRef} title="Tension Histogram" />
+      </div>
+      <canvas ref={canvasRef} />
     </div>
   );
 }

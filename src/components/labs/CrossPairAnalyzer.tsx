@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 
 // Helper to calculate GARCH(1,1) volatility
 const calculateGARCH = (klines: any[]) => {
@@ -92,8 +93,6 @@ const calculateCorrelation = (klinesA: any[], klinesB: any[], period: number = 2
 
 import { Checkbox } from '@/components/ui/checkbox';
 
-// ...existing code...
-
 export const CrossPairAnalyzer = () => {
   const [symbolA, setSymbolA] = useState('BTCUSDT');
   const [symbolB, setSymbolB] = useState('ETHUSDT');
@@ -105,6 +104,7 @@ export const CrossPairAnalyzer = () => {
   const [showRawPrices, setShowRawPrices] = useState(false);
   const [openA, setOpenA] = useState(false);
   const [openB, setOpenB] = useState(false);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   // Fetch available symbols on mount
   useEffect(() => {
@@ -336,54 +336,60 @@ export const CrossPairAnalyzer = () => {
       </Alert>
 
       <Card className="h-[calc(100vh-16rem)] min-h-[600px] border-border/40 bg-card/50 backdrop-blur-sm">
-        <CardHeader className="py-3 border-b border-border/40">
+        <CardHeader className="py-3 border-b border-border/40 flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             {symbolA} / {symbolB} <span className="text-muted-foreground text-xs font-normal">(Vol Adjusted, {interval})</span>
           </CardTitle>
+          <ShareChartDialog 
+            targetRef={chartRef} 
+            title={`${symbolA}/${symbolB} Analysis`} 
+          />
         </CardHeader>
         <CardContent className="p-0 h-[calc(100%-3.5rem)]">
-          {chartData.length > 0 ? (
-            <QuantChart 
-              data={chartData} 
-              height="100%" 
-              className="w-full h-full"
-              chartType="area"
-              panelRatio={0.5}
-              padding={{ top: 20, bottom: 30, right: 60, left: showRawPrices ? 100 : 0 }}
-              overlays={[
-                {
-                  id: 'correlation',
-                  type: 'oscillator',
-                  dataKey: 'correlation',
-                  color: '#fbbf24', // Amber
-                  domain: [-1, 1],
-                  width: 2
-                },
-                ...(showRawPrices ? [
+          <div ref={chartRef} className="w-full h-full bg-background/50">
+            {chartData.length > 0 ? (
+              <QuantChart 
+                data={chartData} 
+                height="100%" 
+                className="w-full h-full"
+                chartType="area"
+                panelRatio={0.5}
+                padding={{ top: 20, bottom: 30, right: 60, left: showRawPrices ? 100 : 0 }}
+                overlays={[
                   {
-                    id: 'priceA',
-                    type: 'line' as const,
-                    dataKey: 'priceA',
-                    color: '#22d3ee', // Cyan
-                    width: 1,
-                    yAxisId: 'left-A'
+                    id: 'correlation',
+                    type: 'oscillator',
+                    dataKey: 'correlation',
+                    color: '#fbbf24', // Amber
+                    domain: [-1, 1],
+                    width: 2
                   },
-                  {
-                    id: 'priceB',
-                    type: 'line' as const,
-                    dataKey: 'priceB',
-                    color: '#f472b6', // Pink
-                    width: 1,
-                    yAxisId: 'left-B'
-                  }
-                ] : [])
-              ]}
-            />
-          ) : (
-            <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-              {isLoading ? 'Loading market data...' : 'Select symbols and click "Analyze Pair" to view the cross pair chart'}
-            </div>
-          )}
+                  ...(showRawPrices ? [
+                    {
+                      id: 'priceA',
+                      type: 'line' as const,
+                      dataKey: 'priceA',
+                      color: '#22d3ee', // Cyan
+                      width: 1,
+                      yAxisId: 'left-A'
+                    },
+                    {
+                      id: 'priceB',
+                      type: 'line' as const,
+                      dataKey: 'priceB',
+                      color: '#f472b6', // Pink
+                      width: 1,
+                      yAxisId: 'left-B'
+                    }
+                  ] : [])
+                ]}
+              />
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                {isLoading ? 'Loading market data...' : 'Select symbols and click "Analyze Pair" to view the cross pair chart'}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

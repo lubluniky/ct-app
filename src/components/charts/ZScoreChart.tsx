@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { useChartDimensions } from './useChartDimensions';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 
 interface ZScoreDataPoint {
   timestamp: number;
@@ -21,6 +22,7 @@ export const ZScoreChart: React.FC<ZScoreChartProps> = ({
 }) => {
   const { containerRef, dimensions } = useChartDimensions();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const captureRef = useRef<HTMLDivElement>(null);
   const [hoverData, setHoverData] = useState<ZScoreDataPoint | null>(null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
 
@@ -192,9 +194,14 @@ export const ZScoreChart: React.FC<ZScoreChartProps> = ({
   };
 
   return (
-    <div className={`flex flex-col ${className}`}>
+    <div ref={captureRef} className={`flex flex-col ${className} bg-background relative`}>
       <div className="flex justify-between items-center px-2 mb-1 shrink-0">
-        <span className="text-xs font-medium text-muted-foreground">{title}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">{title}</span>
+          <div data-html2canvas-ignore>
+            <ShareChartDialog targetRef={captureRef} title={title} />
+          </div>
+        </div>
         {hoverData && (
           <div className="flex gap-2 text-xs font-mono">
             <span className="text-muted-foreground">

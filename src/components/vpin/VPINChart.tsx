@@ -4,6 +4,8 @@
  */
 
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts';
+import { useRef } from 'react';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 
 interface VPINBucket {
   timestamp: number;
@@ -32,6 +34,8 @@ interface VPINChartProps {
 }
 
 export function VPINChart({ data, height = 400 }: VPINChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null);
+
   // Prepare chart data
   const chartData = data.buckets.map((bucket) => ({
     time: new Date(bucket.timestamp).toLocaleTimeString('en-US', {
@@ -87,58 +91,63 @@ export function VPINChart({ data, height = 400 }: VPINChartProps) {
   };
 
   return (
-    <div className="w-full" style={{ height }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={chartData}
-          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.3} />
-          
-          <XAxis
-            dataKey="time"
-            stroke="#888"
-            tick={{ fill: '#888', fontSize: 11 }}
-            tickLine={{ stroke: '#888' }}
-            interval="preserveStartEnd"
-            minTickGap={50}
-          />
-          
-          <YAxis
-            stroke="#888"
-            tick={{ fill: '#888', fontSize: 11 }}
-            tickLine={{ stroke: '#888' }}
-            domain={[0, 1]}
-            ticks={[0, 0.25, 0.5, 0.75, 1]}
-            tickFormatter={(value) => value.toFixed(2)}
-          />
-          
-          <Tooltip content={<CustomTooltip />} />
-          
-          {/* Reference lines for VPIN thresholds */}
-          <ReferenceLine
-            y={0.5}
-            stroke="#fbbf24"
-            strokeDasharray="5 5"
-            label={{ value: 'High', position: 'right', fill: '#fbbf24', fontSize: 10 }}
-          />
-          <ReferenceLine
-            y={0.75}
-            stroke="#ef4444"
-            strokeDasharray="5 5"
-            label={{ value: 'Critical', position: 'right', fill: '#ef4444', fontSize: 10 }}
-          />
-          
-          <Line
-            type="monotone"
-            dataKey="vpin"
-            stroke="#22D3EE"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4, fill: '#22D3EE' }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+    <div className="w-full relative" style={{ height }}>
+      <div className="absolute top-2 right-12 z-20">
+        <ShareChartDialog targetRef={chartRef} title={`VPIN Analysis - ${data.symbol}`} />
+      </div>
+      <div ref={chartRef} className="w-full h-full bg-background">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={chartData}
+            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.3} />
+            
+            <XAxis
+              dataKey="time"
+              stroke="#888"
+              tick={{ fill: '#888', fontSize: 11 }}
+              tickLine={{ stroke: '#888' }}
+              interval="preserveStartEnd"
+              minTickGap={50}
+            />
+            
+            <YAxis
+              stroke="#888"
+              tick={{ fill: '#888', fontSize: 11 }}
+              tickLine={{ stroke: '#888' }}
+              domain={[0, 1]}
+              ticks={[0, 0.25, 0.5, 0.75, 1]}
+              tickFormatter={(value) => value.toFixed(2)}
+            />
+            
+            <Tooltip content={<CustomTooltip />} />
+            
+            {/* Reference lines for VPIN thresholds */}
+            <ReferenceLine
+              y={0.5}
+              stroke="#fbbf24"
+              strokeDasharray="5 5"
+              label={{ value: 'High', position: 'right', fill: '#fbbf24', fontSize: 10 }}
+            />
+            <ReferenceLine
+              y={0.75}
+              stroke="#ef4444"
+              strokeDasharray="5 5"
+              label={{ value: 'Critical', position: 'right', fill: '#ef4444', fontSize: 10 }}
+            />
+            
+            <Line
+              type="monotone"
+              dataKey="vpin"
+              stroke="#22D3EE"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, fill: '#22D3EE' }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,8 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 
 // Simple debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -52,13 +53,18 @@ export const FeeComparisonChart = () => {
       return Math.round(binanceFee - okxRebateFee);
   }, [tradeSize]);
 
+  const chartRef = useRef<HTMLDivElement>(null);
+
   return (
     <Card className="w-full bg-card/50 backdrop-blur-sm border-border">
-      <CardHeader>
-        <CardTitle>Fee Comparison (100 Trades)</CardTitle>
-        <CardDescription>
-          Cumulative fees based on trade volume. See how much you save with OKX + Rebate.
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="space-y-1">
+          <CardTitle>Fee Comparison (100 Trades)</CardTitle>
+          <CardDescription>
+            Cumulative fees based on trade volume. See how much you save with OKX + Rebate.
+          </CardDescription>
+        </div>
+        <ShareChartDialog targetRef={chartRef} title="Fee Comparison" />
       </CardHeader>
       <CardContent>
         <div className="mb-8 space-y-4">
@@ -80,7 +86,7 @@ export const FeeComparisonChart = () => {
           </div>
         </div>
 
-        <div className="h-[300px] w-full">
+        <div ref={chartRef} className="h-[300px] w-full bg-background">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />

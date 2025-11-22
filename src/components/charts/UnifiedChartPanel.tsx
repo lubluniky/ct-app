@@ -5,10 +5,12 @@ import { getRecommendedThreshold } from '@/lib/tension';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Activity } from 'lucide-react';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 
 export const UnifiedChartPanel = () => {
   const [symbol] = useState('BTCUSDT');
   const [interval, setInterval] = useState('1h');
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   // Fetch Data
   // Primary source for candles: Futures (matches MTM Tension)
@@ -77,6 +79,7 @@ export const UnifiedChartPanel = () => {
                 </TabsList>
             </Tabs>
         </div>
+        <ShareChartDialog targetRef={chartRef} title={`${symbol} Market Pulse`} />
       </CardHeader>
       <CardContent className="p-0 flex-1 min-h-0">
          {loadingKlines && chartData.length === 0 ? (
@@ -84,12 +87,14 @@ export const UnifiedChartPanel = () => {
                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
              </div>
          ) : (
-             <QuantChart 
-                data={chartData} 
-                overlays={overlays} 
-                height="100%" // Let it fill container
-                className="h-full w-full"
-             />
+             <div ref={chartRef} className="w-full h-full bg-background">
+               <QuantChart 
+                  data={chartData} 
+                  overlays={overlays} 
+                  height="100%" // Let it fill container
+                  className="h-full w-full"
+               />
+             </div>
          )}
       </CardContent>
     </Card>

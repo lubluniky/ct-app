@@ -2,12 +2,13 @@
  * RVWAP Chart Component using custom QuantChart
  */
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import type { RvwapDataPoint } from '@/lib/rvwap';
 import type { Kline } from '@/lib/binance';
 import type { MultiRvwapData } from '@/hooks/useMultiRvwap';
 import { QuantChart, type ChartDataPoint, type Overlay } from '@/components/charts/QuantChart';
 import { Watermark } from '@/components/Watermark';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 
 export interface RvwapChartProps {
   data?: RvwapDataPoint[]; // Single period (legacy)
@@ -18,6 +19,7 @@ export interface RvwapChartProps {
 }
 
 export function RvwapChart({ data, multiData, klines, height = 400, className = '' }: RvwapChartProps) {
+  const chartRef = useRef<HTMLDivElement>(null);
   
   const chartData = useMemo<ChartDataPoint[]>(() => {
     if (klines.length === 0) return [];
@@ -62,13 +64,18 @@ export function RvwapChart({ data, multiData, klines, height = 400, className = 
 
   return (
     <div className="relative w-full" style={{ height }}>
-      <QuantChart 
-        data={chartData} 
-        overlays={overlays} 
-        height={height} 
-        className={className}
-      />
-      <Watermark visible={true} />
+      <div className="absolute top-2 right-12 z-20">
+        <ShareChartDialog targetRef={chartRef} title="RVWAP Analysis" />
+      </div>
+      <div ref={chartRef} className="w-full h-full bg-background">
+        <QuantChart 
+          data={chartData} 
+          overlays={overlays} 
+          height={height} 
+          className={className}
+        />
+        <Watermark visible={true} />
+      </div>
     </div>
   );
 }

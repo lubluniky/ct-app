@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Loader2, Maximize2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { QuantChart, type Overlay } from '@/components/charts/QuantChart';
 import { cn } from '@/lib/utils';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 
 const Sparkline = ({ data, color }: { data: number[], color: string }) => {
   if (data.length < 2) return null;
@@ -33,6 +34,7 @@ export const VwapZScorePanel = () => {
   const [symbol] = useState('BTCUSDT');
   const [interval] = useState('1d'); // Fixed to Daily as requested for the modal view
   const [selectedPeriod, setSelectedPeriod] = useState<number | null>(null);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useVwapZScore(symbol, interval);
 
@@ -149,16 +151,20 @@ export const VwapZScorePanel = () => {
 
       <Dialog open={selectedPeriod !== null} onOpenChange={(open) => !open && setSelectedPeriod(null)}>
         <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] flex flex-col p-0 gap-0 bg-background/95 backdrop-blur-xl border-border/50">
-          <DialogHeader className="px-6 py-4 border-b border-border/40 flex flex-row items-center justify-between shrink-0">
+          <DialogHeader className="px-6 py-4 border-b border-border/40 flex flex-row items-center justify-between shrink-0 space-y-0">
             <DialogTitle className="text-xl font-mono flex items-center gap-4">
               <span>{symbol} 1D</span>
               <span className="text-muted-foreground">|</span>
               <span>{periods.find(p => p.id === selectedPeriod)?.label} Analysis</span>
             </DialogTitle>
+            <ShareChartDialog 
+              targetRef={chartRef} 
+              title={`${symbol} ${periods.find(p => p.id === selectedPeriod)?.label}`} 
+            />
           </DialogHeader>
           
           <div className="flex-1 overflow-hidden p-4 bg-card/30">
-            <div className="w-full h-full border border-border/20 rounded-lg overflow-hidden">
+            <div ref={chartRef} className="w-full h-full border border-border/20 rounded-lg overflow-hidden bg-background">
                <QuantChart 
                  data={chartData} 
                  overlays={overlays}
