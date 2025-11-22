@@ -317,13 +317,13 @@ export const CrossPairAnalyzer = () => {
         </AlertDescription>
       </Alert>
 
-      <Card className="h-[500px] border-border/40 bg-card/50 backdrop-blur-sm">
+      <Card className="h-[calc(100vh-16rem)] min-h-[600px] border-border/40 bg-card/50 backdrop-blur-sm">
         <CardHeader className="py-3 border-b border-border/40">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             {symbolA} / {symbolB} <span className="text-muted-foreground text-xs font-normal">(Vol Adjusted, {interval})</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0 h-[450px]">
+        <CardContent className="p-0 h-[calc(100%-3.5rem)]">
           {chartData.length > 0 ? (
             <QuantChart 
               data={chartData} 
