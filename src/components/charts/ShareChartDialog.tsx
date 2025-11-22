@@ -29,9 +29,19 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({ targetRef, t
       // Capture the chart
       const canvas = await html2canvas(targetRef.current, {
         backgroundColor: '#09090b', // zinc-950
-        scale: 2, // Higher quality
+        scale: 4, // Ultra High Quality (4x scale for 4K-like resolution)
         logging: false,
         useCORS: true,
+        allowTaint: true,
+        onclone: (clonedDoc) => {
+          // Ensure cloned canvas elements have high DPI
+          const canvases = clonedDoc.getElementsByTagName('canvas');
+          for (let i = 0; i < canvases.length; i++) {
+            const canvas = canvases[i];
+            // We can try to force high quality rendering here if needed
+            // But usually scale: 4 does the job for the container
+          }
+        }
       });
       
       setPreviewUrl(canvas.toDataURL('image/png'));
@@ -48,7 +58,7 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({ targetRef, t
     try {
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: '#000000',
-        scale: 2,
+        scale: 4, // 4x Scale for high resolution output
         logging: false,
       });
 
@@ -75,7 +85,7 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({ targetRef, t
     try {
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: '#000000',
-        scale: 2,
+        scale: 4, // 4x Scale for high resolution output
         logging: false,
       });
 
