@@ -11,42 +11,41 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { computeGarchVolatility } from '@/lib/garch';
 
-// Helper to calculate ATR
-const calculateATR = (klines: any[], period: number = 14) => {
-  if (klines.length < period + 1) return new Array(klines.length).fill(1); // Fallback
+// Helper to calculate GARCH(1,1) volatility
+const calculateGARCH = (klines: any[]) => {
+  if (klines.length < 2) return new Array(klines.length).fill(0.01);
 
-  const trs = klines.map((k, i) => {
-    if (i === 0) return k.high - k.low;
-    const prevClose = klines[i - 1].close;
-    return Math.max(
-      k.high - k.low,
-      Math.abs(k.high - prevClose),
-      Math.abs(k.low - prevClose)
-    );
-  });
-
-  const atrs = [];
-  let sum = 0;
-  // Initial SMA
-  for (let i = 0; i < period; i++) {
-    sum += trs[i];
-    atrs.push(sum / (i + 1)); // Approximate for start
+  const returns = [];
+  for (let i = 1; i < klines.length; i++) {
+    returns.push(Math.log(klines[i].close / klines[i - 1].close));
   }
+
+  // GARCH(1,1) parameters
+  const omega = 0.000002;
+  const alpha = 0.05;
+  const beta = 0.90;
+
+  const vars = [];
+  // Initial variance estimate (first 30)
+  let sumSq = 0;
+  const initN = Math.min(returns.length, 30);
+  for (let i = 0; i < initN; i++) sumSq += returns[i] * returns[i];
+  let currentVar = sumSq / initN;
   
-  // Wilder's Smoothing
-  let prevATR = sum / period;
-  atrs[period - 1] = prevATR; // Correct the last one
+  vars.push(currentVar);
 
-  for (let i = period; i < klines.length; i++) {
-    const currentTR = trs[i];
-    const currentATR = (prevATR * (period - 1) + currentTR) / period;
-    atrs.push(currentATR);
-    prevATR = currentATR;
+  for (let i = 1; i < returns.length; i++) {
+    const r = returns[i - 1];
+    currentVar = omega + alpha * (r * r) + beta * currentVar;
+    vars.push(currentVar);
   }
 
-  return atrs;
+  // Map back to klines length
+  return klines.map((_, i) => {
+    if (i === 0) return Math.sqrt(vars[0]);
+    return Math.sqrt(vars[i - 1]);
+  });
 };
 
 export const CrossPairAnalyzer = () => {
@@ -106,24 +105,23 @@ export const CrossPairAnalyzer = () => {
         return;
       }
 
-      // Calculate volatility using GARCH(1,1) on full price series
-      const pricesA = klinesA.map(k => k.close);
-      const pricesB = klinesB.map(k => k.close);
-
-      // Use coarse fit to adapt parameters per asset
-      const sigmaA_full = computeGarchVolatility(pricesA, { fit: true });
-      const sigmaB_full = computeGarchVolatility(pricesB, { fit: true });
-
-      const sigmaA_map = new Map(klinesA.map((k, i) => [k.openTime, sigmaA_full[i] || 1e-8]));
-      const sigmaB_map = new Map(klinesB.map((k, i) => [k.openTime, sigmaB_full[i] || 1e-8]));
+      // Calculate GARCH sigmas
+      const sigmaA = calculateGARCH(klinesA);
+      const sigmaB = calculateGARCH(klinesB);
+      const sigmaA_map = new Map(klinesA.map((k, i) => [k.openTime, sigmaA[i]]));
+      const sigmaB_map = new Map(klinesB.map((k, i) => [k.openTime, sigmaB[i]]));
 
       const combined: ChartDataPoint[] = [];
 
       commonTimestamps.forEach(timestamp => {
         const kA = mapA.get(timestamp)!;
         const kB = mapB.get(timestamp)!;
-        const volA = sigmaA_map.get(timestamp) || 1e-8;
-        const volB = sigmaB_map.get(timestamp) || 1e-8;
+        const sA = sigmaA_map.get(timestamp) || 0.01;
+        const sB = sigmaB_map.get(timestamp) || 0.01;
+
+        // Normalize by volatility in price units (Price * Sigma)
+        const volA = kA.close * sA;
+        const volB = kB.close * sB;
 
         if (volA === 0 || volB === 0 || kB.close === 0) return;
 
