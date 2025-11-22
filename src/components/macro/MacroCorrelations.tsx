@@ -1,9 +1,10 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, RefreshCw, TrendingUp, TrendingDown, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 
 interface HistoryPoint {
   date: string;
@@ -61,6 +62,16 @@ const CorrelationChart = ({ data, assetName }: { data: HistoryPoint[], assetName
   const btcPath = normalized.map((d, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(d.btc)}`).join(' ');
   const assetPath = normalized.map((d, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(d.asset)}`).join(' ');
 
+  // Generate dynamic ticks
+  const tickCount = 6;
+  const ticks = useMemo(() => {
+    const step = yRange / tickCount;
+    return Array.from({ length: tickCount + 1 }, (_, i) => {
+        const val = yMin + i * step;
+        return Math.round(val * 10) / 10; // Round to 1 decimal
+    });
+  }, [yMin, yRange]);
+
   return (
     <div className="w-full h-full flex flex-col">
       <div className="flex items-center justify-center gap-6 mb-4 text-sm">
@@ -77,8 +88,7 @@ const CorrelationChart = ({ data, assetName }: { data: HistoryPoint[], assetName
       <div className="flex-1 relative min-h-[300px]">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
           {/* Grid Lines */}
-          {[-10, -5, 0, 5, 10, 15, 20].map(val => {
-             if (val < yMin || val > yMax) return null;
+          {ticks.map(val => {
              const y = getY(val);
              return (
                <g key={val}>
@@ -112,6 +122,7 @@ export const MacroCorrelations = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<CorrelationData | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -229,34 +240,43 @@ export const MacroCorrelations = () => {
 
       <Dialog open={!!selectedAsset} onOpenChange={(open) => !open && setSelectedAsset(null)}>
         <DialogContent className="max-w-3xl bg-zinc-950 border-zinc-800">
-          <DialogHeader>
+          <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <DialogTitle className="flex items-center gap-2">
               <span>BTC vs {selectedAsset?.name}</span>
               <span className={cn("text-sm font-mono px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800", getCorrelationColor(selectedAsset?.correlation || 0))}>
                 Correlation: {selectedAsset?.correlation.toFixed(2)}
               </span>
             </DialogTitle>
+            <ShareChartDialog 
+                targetRef={chartRef} 
+                title={`BTC vs ${selectedAsset?.name}`}
+                symbol="BTC"
+                timeframe="30D"
+                indicator={`Correlation: ${selectedAsset?.correlation.toFixed(2)}`}
+            />
           </DialogHeader>
           
-          <div className="py-4">
-            {selectedAsset && (
-              <CorrelationChart data={selectedAsset.history} assetName={selectedAsset.name} />
-            )}
-          </div>
+          <div ref={chartRef} className="bg-zinc-950 p-4 rounded-lg">
+            <div className="py-4">
+                {selectedAsset && (
+                <CorrelationChart data={selectedAsset.history} assetName={selectedAsset.name} />
+                )}
+            </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-4 border-t border-zinc-800 pt-4">
-             <div className="flex flex-col gap-1">
-                <span className="text-xs text-zinc-500 uppercase">Bitcoin Price</span>
-                <span className="text-lg font-mono text-orange-500 font-bold">
-                    ${data?.btcPrice.toLocaleString()}
-                </span>
-             </div>
-             <div className="flex flex-col gap-1 items-end">
-                <span className="text-xs text-zinc-500 uppercase">{selectedAsset?.name} Price</span>
-                <span className="text-lg font-mono text-blue-500 font-bold">
-                    {selectedAsset?.lastPrice.toLocaleString()}
-                </span>
-             </div>
+            <div className="grid grid-cols-2 gap-4 mt-4 border-t border-zinc-800 pt-4">
+                <div className="flex flex-col gap-1">
+                    <span className="text-xs text-zinc-500 uppercase">Bitcoin Price</span>
+                    <span className="text-lg font-mono text-orange-500 font-bold">
+                        ${data?.btcPrice.toLocaleString()}
+                    </span>
+                </div>
+                <div className="flex flex-col gap-1 items-end">
+                    <span className="text-xs text-zinc-500 uppercase">{selectedAsset?.name} Price</span>
+                    <span className="text-lg font-mono text-blue-500 font-bold">
+                        {selectedAsset?.lastPrice.toLocaleString()}
+                    </span>
+                </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
