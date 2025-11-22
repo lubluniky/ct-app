@@ -141,29 +141,44 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({ targetRef, t
             </div>
 
             {/* Card Footer */}
-            <div className="flex justify-between items-end font-mono text-zinc-300">
+            <div className="flex justify-between items-end font-mono text-zinc-300 pt-2">
               {/* Left Side */}
-              <div className="flex flex-col">
-                <h1 className="text-3xl font-bold tracking-tighter leading-none mb-1 text-white">
-                  Centurion <span className="font-normal text-zinc-500">terminal</span>
-                </h1>
-                <p className="text-xs text-zinc-600">available at borkiss.trade</p>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-baseline gap-2">
+                  <h1 className="text-2xl font-bold tracking-tight text-white uppercase">
+                    Centurion
+                  </h1>
+                  <span className="text-lg text-zinc-500 uppercase tracking-widest">Terminal</span>
+                </div>
+                <p className="text-[10px] text-zinc-600 tracking-wider uppercase">available at borkiss.trade</p>
               </div>
 
               {/* Right Side */}
-              <div className="flex flex-col items-end">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs text-zinc-600">user</span>
-                  <span className="text-lg font-bold text-white">{user?.email?.split('@')[0] || 'Anonymous'}</span>
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[10px] text-zinc-600 uppercase tracking-wider">user</span>
+                  <span className={cn(
+                    "text-lg font-bold",
+                    user?.user_metadata?.tier === 'ultra' 
+                      ? "text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500" 
+                      : "text-white"
+                  )}>
+                    {user?.email?.split('@')[0] || 'Anonymous'}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                   <div className="w-4 h-4 bg-zinc-800 rounded-sm flex items-center justify-center">
-                      <div className="w-2 h-2 bg-zinc-600 rounded-full" />
-                   </div>
-                   <span className="text-xs text-zinc-500 uppercase font-bold tracking-wider">
-                      {user?.user_metadata?.tier || 'PRO'}
-                   </span>
-                </div>
+                
+                {user && (
+                  <div className="flex items-center gap-2">
+                     <span className={cn(
+                        "text-xs font-bold tracking-widest uppercase px-1.5 py-0.5 rounded",
+                        user?.user_metadata?.tier === 'ultra' 
+                          ? "bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-yellow-500 border border-yellow-500/30" 
+                          : "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                     )}>
+                        {user?.user_metadata?.tier === 'ultra' ? 'ULTRA' : 'PRO'}
+                     </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
