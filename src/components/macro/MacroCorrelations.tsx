@@ -76,11 +76,11 @@ const CorrelationChart = ({ data, assetName }: { data: HistoryPoint[], assetName
     <div className="w-full h-full flex flex-col">
       <div className="flex items-center justify-center gap-6 mb-4 text-sm">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-orange-500" />
+          <div className="w-3 h-3 rounded-full bg-[#f59e0b]" />
           <span className="text-zinc-300">Bitcoin</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-500" />
+          <div className="w-3 h-3 rounded-full bg-[#3b82f6]" />
           <span className="text-zinc-300">{assetName}</span>
         </div>
       </div>
@@ -92,19 +92,19 @@ const CorrelationChart = ({ data, assetName }: { data: HistoryPoint[], assetName
              const y = getY(val);
              return (
                <g key={val}>
-                 <line x1={paddingX} y1={y} x2={width - paddingX} y2={y} stroke="#333" strokeDasharray="4 4" />
-                 <text x={paddingX - 5} y={y + 4} textAnchor="end" fill="#666" fontSize="10">{val}%</text>
+                 <line x1={paddingX} y1={y} x2={width - paddingX} y2={y} stroke="#27272a" strokeDasharray="4 4" />
+                 <text x={paddingX - 5} y={y + 4} textAnchor="end" fill="#a1a1aa" fontSize="10">{val}%</text>
                </g>
              );
           })}
 
           {/* Zero Line */}
           {yMin < 0 && yMax > 0 && (
-            <line x1={paddingX} y1={getY(0)} x2={width - paddingX} y2={getY(0)} stroke="#666" strokeWidth="1" />
+            <line x1={paddingX} y1={getY(0)} x2={width - paddingX} y2={getY(0)} stroke="#a1a1aa" strokeWidth="1" />
           )}
 
           {/* Paths */}
-          <path d={btcPath} fill="none" stroke="#f97316" strokeWidth="2" />
+          <path d={btcPath} fill="none" stroke="#f59e0b" strokeWidth="2" />
           <path d={assetPath} fill="none" stroke="#3b82f6" strokeWidth="2" />
         </svg>
       </div>
@@ -145,8 +145,8 @@ export const MacroCorrelations = () => {
   }, []);
 
   const getCorrelationColor = (val: number) => {
-    if (val > 0.5) return 'text-emerald-400';
-    if (val < -0.5) return 'text-rose-400';
+    if (val > 0.5) return 'text-[#10b981]'; // Bull (Emerald-500)
+    if (val < -0.5) return 'text-[#ef4444]'; // Bear (Red-500)
     return 'text-zinc-400';
   };
 
