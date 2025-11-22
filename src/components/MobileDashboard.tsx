@@ -1,10 +1,8 @@
 import { ArrowLeft, Settings, RotateCw, Bell, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDashboardSignals } from '@/hooks/useDashboardSignals';
-
-// Lazy load components
-const LoadingOverlay = lazy(() => import('@/components/LoadingOverlay'));
+import { CenturionLoader } from '@/components/CenturionLoader';
 
 const MobileDashboard = () => {
   const navigate = useNavigate();
@@ -82,9 +80,7 @@ const MobileDashboard = () => {
     >
       {/* Loading Overlay */}
       {showLoading && (
-        <Suspense fallback={null}>
-          <LoadingOverlay onComplete={handleLoadingComplete} />
-        </Suspense>
+        <CenturionLoader onComplete={handleLoadingComplete} />
       )}
 
       {/* Background */}
