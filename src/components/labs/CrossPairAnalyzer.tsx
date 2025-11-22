@@ -254,8 +254,8 @@ export const CrossPairAnalyzer = () => {
       <Alert className="bg-secondary/20 border-primary/20">
         <AlertCircle className="h-4 w-4 text-primary" />
         <AlertDescription className="text-xs text-muted-foreground">
-          Displaying <strong>Volatility Adjusted Ratio</strong>: (Price A / ATR A) ÷ (Price B / ATR B). 
-          This normalizes the spread by the volatility of each asset. Data is trimmed to the shorter asset's history.
+          Displaying <strong>Volatility Adjusted Ratio</strong>: Normalized using GARCH(1,1) volatility model. 
+          This normalizes the spread by the conditional volatility of each asset. Data is trimmed to the shorter asset's history.
         </AlertDescription>
       </Alert>
 
