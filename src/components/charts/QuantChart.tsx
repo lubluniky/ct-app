@@ -547,6 +547,26 @@ export const QuantChart: React.FC<QuantChartProps> = ({
           return dimensions.height - padding.bottom - (val - minVal) * pulseScaleY;
       };
 
+      // Draw High Tension Zones (Vertical Highlights)
+      if (overlay.threshold) {
+          // Create gradient for the zone (fading up)
+          const zoneGradient = ctx.createLinearGradient(0, dimensions.height - padding.bottom, 0, padding.top);
+          zoneGradient.addColorStop(0, 'rgba(244, 63, 94, 0.25)'); // Bottom (Pulse area) - visible
+          zoneGradient.addColorStop(0.7, 'rgba(244, 63, 94, 0.05)'); // Mid-upper - faint
+          zoneGradient.addColorStop(1, 'rgba(244, 63, 94, 0.0)'); // Top - transparent
+
+          ctx.fillStyle = zoneGradient;
+          visibleData.forEach((d, i) => {
+              const val = d[overlay.dataKey];
+              if (typeof val === 'number' && val > overlay.threshold!) {
+                  const x = getX(i + xShift);
+                  // Draw full height strip covering both Main Chart and Pulse Panel
+                  // Use totalBarWidth to ensure continuous zone without gaps
+                  ctx.fillRect(x - totalBarWidth / 2, padding.top, totalBarWidth + 0.5, dimensions.height - padding.bottom - padding.top);
+              }
+          });
+      }
+
       // Draw Pulse Grid/Axis
       if (showGrid) {
           // 50 line
