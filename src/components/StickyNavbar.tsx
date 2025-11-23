@@ -50,7 +50,7 @@ export const StickyNavbar = ({
       >
         <div className="container mx-auto px-6 flex items-center justify-between">
           <Link to="/" className="text-xl font-bold tracking-tight flex items-center gap-2">
-            BORKISS<span className="text-muted-foreground font-light">.TRADE</span>
+            <span className="text-black">BORKISS</span><span className="text-muted-foreground font-light">.TRADE</span>
           </Link>
 
           {/* Desktop Nav */}
