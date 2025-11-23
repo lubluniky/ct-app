@@ -81,13 +81,13 @@ const MobileDashboard = () => {
           )}
 
           {activeTab === 'macro' && (
-            <div className="h-full w-full overflow-y-auto">
+            <div className="w-full pb-4">
               <MacroCorrelations />
             </div>
           )}
 
           {activeTab === 'labs' && (
-            <div className="h-full w-full overflow-y-auto">
+            <div className="w-full pb-4">
               <CrossPairAnalyzer />
             </div>
           )}

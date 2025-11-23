@@ -981,7 +981,7 @@ export const QuantChart: React.FC<QuantChartProps> = ({
     <div 
       ref={containerRef} 
       className={`relative ${className}`} 
-      style={{ height }}
+      style={{ height, touchAction: 'pan-y' }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onMouseDown={handleMouseDown}
