@@ -74,16 +74,6 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({
         backgroundColor: '#000000',
         scale: 4, // 4x Scale for high resolution output
         logging: false,
-        onclone: (clonedDoc) => {
-          const ultraText = clonedDoc.querySelector('[data-ultra-text="true"]') as HTMLElement;
-          if (ultraText) {
-            // Fix for html2canvas bg-clip-text bug: use solid color for export
-            ultraText.style.background = 'none';
-            ultraText.style.webkitTextFillColor = 'initial';
-            ultraText.style.color = '#e2e8f0'; // Platinum color
-            ultraText.style.textShadow = '0 0 10px rgba(255,255,255,0.5)';
-          }
-        }
       });
 
       canvas.toBlob(async (blob) => {
@@ -111,16 +101,6 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({
         backgroundColor: '#000000',
         scale: 4, // 4x Scale for high resolution output
         logging: false,
-        onclone: (clonedDoc) => {
-          const ultraText = clonedDoc.querySelector('[data-ultra-text="true"]') as HTMLElement;
-          if (ultraText) {
-            // Fix for html2canvas bg-clip-text bug: use solid color for export
-            ultraText.style.background = 'none';
-            ultraText.style.webkitTextFillColor = 'initial';
-            ultraText.style.color = '#e2e8f0'; // Platinum color
-            ultraText.style.textShadow = '0 0 10px rgba(255,255,255,0.5)';
-          }
-        }
       });
 
       const link = document.createElement('a');
@@ -185,12 +165,26 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({
                     </h1>
                     {user ? (
                       isUltra ? (
-                        <span 
-                          data-ultra-text="true"
-                          className="text-2xl font-bold tracking-tight uppercase bg-gradient-to-r from-zinc-400 via-zinc-100 to-zinc-400 text-transparent bg-clip-text drop-shadow-sm"
-                        >
-                          ULTRA
-                        </span>
+                        <svg width="80" height="32" viewBox="0 0 80 32" className="inline-block -mb-1">
+                          <defs>
+                            <linearGradient id="platinumGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#a1a1aa" />
+                              <stop offset="50%" stopColor="#f4f4f5" />
+                              <stop offset="100%" stopColor="#a1a1aa" />
+                            </linearGradient>
+                          </defs>
+                          <text 
+                            x="0" 
+                            y="24" 
+                            fontFamily="Inter, sans-serif" 
+                            fontWeight="bold" 
+                            fontSize="24" 
+                            fill="url(#platinumGradient)"
+                            style={{ textTransform: 'uppercase', letterSpacing: '-0.025em' }}
+                          >
+                            ULTRA
+                          </text>
+                        </svg>
                       ) : (
                         <span className="text-2xl font-bold tracking-tight text-white uppercase">PRO</span>
                       )
