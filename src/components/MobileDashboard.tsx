@@ -38,7 +38,7 @@ const MobileDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
+    <div className="h-[100dvh] bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden supports-[height:100dvh]:h-[100dvh] min-h-screen">
       {/* Loading Overlay */}
       {showLoading && (
         <CenturionLoader onComplete={handleLoadingComplete} />

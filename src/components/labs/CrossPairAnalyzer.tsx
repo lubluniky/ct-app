@@ -388,7 +388,7 @@ export const CrossPairAnalyzer = () => {
         </AlertDescription>
       </Alert>
 
-      <Card className="h-[500px] md:h-[calc(100vh-16rem)] min-h-[400px] md:min-h-[600px] border-border/40 bg-card/50 backdrop-blur-sm">
+      <Card className="h-[400px] md:h-[calc(100vh-16rem)] min-h-[400px] md:min-h-[600px] border-border/40 bg-card/50 backdrop-blur-sm">
         <CardHeader className="py-3 border-b border-border/40 flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
             {symbolA} / {symbolB} <span className="text-muted-foreground text-xs font-normal">(Vol Adjusted, {interval})</span>
