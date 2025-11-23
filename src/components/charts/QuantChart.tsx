@@ -324,6 +324,43 @@ export const QuantChart: React.FC<QuantChartProps> = ({
     setDragStart(null);
   };
 
+  // Touch Handlers for Mobile Scrolling
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.touches[0].clientX, offset });
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (isDragging && dragStart && e.touches.length === 1) {
+      const dx = e.touches[0].clientX - dragStart.x;
+      const barsMoved = dx / totalBarWidth;
+      
+      // Dragging right (dx > 0) -> Move into history -> Increase offset
+      const maxVisibleBars = Math.floor((dimensions.width - padding.right) / totalBarWidth);
+      const minOffset = -maxVisibleBars / 2;
+      const newOffset = Math.max(minOffset, dragStart.offset + barsMoved);
+      
+      setOffset(newOffset);
+      
+      // Update hover data for touch (optional, maybe too noisy)
+      // const rect = containerRef.current?.getBoundingClientRect();
+      // if (rect) {
+      //    const x = e.touches[0].clientX - rect.left;
+      //    const y = e.touches[0].clientY - rect.top;
+      //    setMousePos({ x, y });
+      // }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    setDragStart(null);
+    setMousePos(null);
+    setHoverData(null);
+  };
+
   // Draw loop
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -950,6 +987,9 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Main Chart Layer */}
       <canvas

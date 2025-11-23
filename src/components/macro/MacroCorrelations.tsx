@@ -161,20 +161,20 @@ export const MacroCorrelations = ({ fixedPeriod }: { fixedPeriod?: string }) => 
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="space-y-4 relative">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 w-full">
             <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-primary" />
             Macro Correlations ({period}D)
             </h2>
             {!fixedPeriod && (
-              <Tabs value={period} onValueChange={setPeriod} className="h-7">
-                  <TabsList className="h-7 bg-secondary/50">
-                      <TabsTrigger value="15" className="text-xs h-6 px-3">15d</TabsTrigger>
-                      <TabsTrigger value="30" className="text-xs h-6 px-3">30d</TabsTrigger>
-                      <TabsTrigger value="60" className="text-xs h-6 px-3">60d</TabsTrigger>
-                      <TabsTrigger value="90" className="text-xs h-6 px-3">90d</TabsTrigger>
+              <Tabs value={period} onValueChange={setPeriod} className="h-7 w-full md:w-auto">
+                  <TabsList className="h-7 bg-secondary/50 w-full md:w-auto justify-between md:justify-start">
+                      <TabsTrigger value="15" className="text-xs h-6 px-3 flex-1 md:flex-none">15d</TabsTrigger>
+                      <TabsTrigger value="30" className="text-xs h-6 px-3 flex-1 md:flex-none">30d</TabsTrigger>
+                      <TabsTrigger value="60" className="text-xs h-6 px-3 flex-1 md:flex-none">60d</TabsTrigger>
+                      <TabsTrigger value="90" className="text-xs h-6 px-3 flex-1 md:flex-none">90d</TabsTrigger>
                   </TabsList>
               </Tabs>
             )}
@@ -184,7 +184,7 @@ export const MacroCorrelations = ({ fixedPeriod }: { fixedPeriod?: string }) => 
           size="sm" 
           onClick={fetchData} 
           disabled={isLoading}
-          className="h-8 w-8 p-0"
+          className="h-8 w-8 p-0 absolute top-0 right-0 md:relative"
         >
           <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
         </Button>
