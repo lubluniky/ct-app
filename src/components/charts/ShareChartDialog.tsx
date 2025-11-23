@@ -163,7 +163,13 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({
                     <h1 className="text-2xl font-bold tracking-tight text-white uppercase">
                       Centurion
                     </h1>
-                    <span className="text-2xl font-bold tracking-tight text-white uppercase">PRO</span>
+                    {isUltra ? (
+                      <span className="text-2xl font-bold tracking-tight uppercase bg-gradient-to-r from-yellow-200 via-yellow-400 to-yellow-700 text-transparent bg-clip-text drop-shadow-sm">
+                        ULTRA
+                      </span>
+                    ) : (
+                      <span className="text-2xl font-bold tracking-tight text-white uppercase">PRO</span>
+                    )}
                   </div>
                   <span className="text-lg text-zinc-500 uppercase tracking-widest">Terminal</span>
                 </div>
@@ -193,25 +199,10 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({
               <div className="flex flex-col items-end gap-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-zinc-600 uppercase tracking-wider">user</span>
-                  <span className={cn(
-                    "text-lg font-bold",
-                    isUltra 
-                      ? "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.3)]" 
-                      : "text-white"
-                  )}>
+                  <span className="text-lg font-bold text-white">
                     {displayName}
                   </span>
                 </div>
-                
-                {user && (
-                  <div className="flex items-center gap-2">
-                     {isUltra && (
-                       <span className="text-xs font-bold tracking-widest uppercase px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-500 border border-yellow-500/30">
-                          ULTRA
-                       </span>
-                     )}
-                  </div>
-                )}
               </div>
             </div>
           </div>
