@@ -118,12 +118,12 @@ const CorrelationChart = ({ data, assetName }: { data: HistoryPoint[], assetName
   );
 };
 
-export const MacroCorrelations = () => {
+export const MacroCorrelations = ({ fixedPeriod }: { fixedPeriod?: string }) => {
   const [data, setData] = useState<MacroData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<CorrelationData | null>(null);
-  const [period, setPeriod] = useState('30');
+  const [period, setPeriod] = useState(fixedPeriod || '30');
   const chartRef = useRef<HTMLDivElement>(null);
 
   const fetchData = async () => {
@@ -168,14 +168,16 @@ export const MacroCorrelations = () => {
             <TrendingUp className="w-5 h-5 text-primary" />
             Macro Correlations ({period}D)
             </h2>
-            <Tabs value={period} onValueChange={setPeriod} className="h-7">
-                <TabsList className="h-7 bg-secondary/50">
-                    <TabsTrigger value="15" className="text-xs h-6 px-3">15d</TabsTrigger>
-                    <TabsTrigger value="30" className="text-xs h-6 px-3">30d</TabsTrigger>
-                    <TabsTrigger value="60" className="text-xs h-6 px-3">60d</TabsTrigger>
-                    <TabsTrigger value="90" className="text-xs h-6 px-3">90d</TabsTrigger>
-                </TabsList>
-            </Tabs>
+            {!fixedPeriod && (
+              <Tabs value={period} onValueChange={setPeriod} className="h-7">
+                  <TabsList className="h-7 bg-secondary/50">
+                      <TabsTrigger value="15" className="text-xs h-6 px-3">15d</TabsTrigger>
+                      <TabsTrigger value="30" className="text-xs h-6 px-3">30d</TabsTrigger>
+                      <TabsTrigger value="60" className="text-xs h-6 px-3">60d</TabsTrigger>
+                      <TabsTrigger value="90" className="text-xs h-6 px-3">90d</TabsTrigger>
+                  </TabsList>
+              </Tabs>
+            )}
         </div>
         <Button 
           variant="ghost" 
