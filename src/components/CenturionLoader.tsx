@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import logo from '../assets/logo228123.jpg';
 
 export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
   const [progress, setProgress] = useState(0);
@@ -6,8 +7,8 @@ export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
   const [statusText, setStatusText] = useState('INITIALIZING KERNEL');
 
   useEffect(() => {
-    const duration = 3500;
-    const interval = 30;
+    const duration = 1000;
+    const interval = 10;
     const steps = duration / interval;
     const increment = 100 / steps;
 
@@ -22,14 +23,14 @@ export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
     }, interval);
 
     // Status text sequence
-    setTimeout(() => setStatusText('LOADING MODULES'), 800);
-    setTimeout(() => setStatusText('VERIFYING INTEGRITY'), 1600);
-    setTimeout(() => setStatusText('ESTABLISHING UPLINK'), 2400);
-    setTimeout(() => setStatusText('SYSTEM READY'), 3200);
+    setTimeout(() => setStatusText('LOADING MODULES'), 200);
+    setTimeout(() => setStatusText('VERIFYING INTEGRITY'), 400);
+    setTimeout(() => setStatusText('ESTABLISHING UPLINK'), 600);
+    setTimeout(() => setStatusText('SYSTEM READY'), 800);
 
     const fadeTimer = setTimeout(() => {
       setIsFading(true);
-    }, duration - 500);
+    }, duration - 200);
 
     const completeTimer = setTimeout(() => {
       onComplete();
@@ -43,7 +44,7 @@ export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
   }, [onComplete]);
 
   return (
-    <div className={`fixed inset-0 z-[9999] bg-zinc-950 flex flex-col items-center justify-center transition-opacity duration-500 ${isFading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+    <div className={`fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center transition-opacity duration-500 ${isFading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
        
        {/* Background Grid */}
        <div className="absolute inset-0 opacity-20 pointer-events-none" 
@@ -54,39 +55,8 @@ export const CenturionLoader = ({ onComplete }: { onComplete: () => void }) => {
        </div>
 
        {/* Main Loader Graphic */}
-       <div className="relative w-64 h-64 mb-8">
-         {/* Outer Ring - Dashed */}
-         <div className="absolute inset-0 border border-white/10 rounded-full animate-[spin_10s_linear_infinite]"></div>
-         <div className="absolute inset-2 border border-t-white/40 border-r-transparent border-b-white/40 border-l-transparent rounded-full animate-[spin_3s_linear_infinite]"></div>
-         
-         {/* Inner Ring - Reverse Spin */}
-         <div className="absolute inset-8 border-2 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-[spin_2s_linear_infinite_reverse]"></div>
-         
-         {/* Center Core */}
-         <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-32 h-32 bg-white/5 rounded-full backdrop-blur-sm flex items-center justify-center border border-white/10 relative overflow-hidden">
-                {/* Scanning Line */}
-                <div className="absolute w-full h-[2px] bg-primary/50 blur-[2px] animate-[scan_2s_ease-in-out_infinite]"></div>
-                
-                {/* Central Symbol - Centurion Helmet */}
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white animate-pulse">
-                    {/* Crest */}
-                    <path d="M12 2L15 7H9L12 2Z" fill="currentColor" className="opacity-20" />
-                    <path d="M12 2L15 7H9L12 2Z" />
-                    {/* Helmet Dome */}
-                    <path d="M5 7C5 7 4 10 4 13C4 17 8 21 12 21C16 21 20 17 20 13C20 10 19 7 19 7H5Z" />
-                    {/* Nose Guard / Center Line */}
-                    <path d="M12 7V21" />
-                    {/* Eye Slit */}
-                    <path d="M4 13H20" />
-                </svg>
-            </div>
-         </div>
-
-         {/* Orbiting Particles */}
-         <div className="absolute inset-0 animate-[spin_4s_linear_infinite]">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]"></div>
-         </div>
+       <div className="relative w-64 h-64 mb-8 flex items-center justify-center">
+         <img src={logo} alt="Loading..." className="w-full h-full object-contain" />
        </div>
 
        {/* Typography */}
