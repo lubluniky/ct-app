@@ -560,9 +560,10 @@ export const QuantChart: React.FC<QuantChartProps> = ({
               const val = d[overlay.dataKey];
               if (typeof val === 'number' && val > overlay.threshold!) {
                   const x = getX(i + xShift);
-                  // Draw full height strip covering both Main Chart and Pulse Panel
-                  // Use totalBarWidth to ensure continuous zone without gaps
-                  ctx.fillRect(x - totalBarWidth / 2, padding.top, totalBarWidth + 0.5, dimensions.height - padding.bottom - padding.top);
+                  const y = getPulseY(val);
+                  // Draw strip from Top of chart down to the Pulse Line (y)
+                  // This ensures the ray starts at the line and goes up, not passing through the area below
+                  ctx.fillRect(x - totalBarWidth / 2, padding.top, totalBarWidth + 0.5, Math.max(0, y - padding.top));
               }
           });
       }
