@@ -66,28 +66,33 @@ const MobileDashboard = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-zinc-950 relative">
-        <div className="min-h-full p-4 pb-24">
+      <main className="flex-1 overflow-hidden bg-zinc-950 relative flex flex-col">
+        <div className="flex-1 flex flex-col p-4 pb-24 h-full">
           {activeTab === 'pulse' && (
-            <div className="h-[60vh] min-h-[400px] w-full">
-              <UnifiedChartPanel />
+            <div className="flex-1 flex flex-col gap-4 h-full">
+              <div className="flex-[3] min-h-0">
+                <UnifiedChartPanel />
+              </div>
+              <div className="flex-[1] min-h-0 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50">
+                <MarketPulseAlerts />
+              </div>
             </div>
           )}
           
           {activeTab === 'vwap' && (
-            <div className="h-full w-full">
+            <div className="h-full w-full overflow-y-auto">
               <VwapZScorePanel />
             </div>
           )}
 
           {activeTab === 'macro' && (
-            <div className="w-full pb-4">
+            <div className="w-full pb-4 overflow-y-auto">
               <MacroCorrelations />
             </div>
           )}
 
           {activeTab === 'labs' && (
-            <div className="w-full pb-4">
+            <div className="w-full pb-4 overflow-y-auto">
               <CrossPairAnalyzer />
             </div>
           )}
