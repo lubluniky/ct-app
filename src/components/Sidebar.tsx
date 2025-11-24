@@ -71,6 +71,25 @@ export const Sidebar = () => {
       </nav>
 
       <div className="mt-auto pt-4 border-t border-border space-y-4">
+        {/* Social Links */}
+        <div className="px-2 pb-2">
+          <p className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-wider mb-3">Community</p>
+          <div className="space-y-2.5">
+            <a href="https://t.me/centurion_terminal" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors group">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500/50 group-hover:bg-blue-500 transition-colors" />
+              Terminal News
+            </a>
+            <a href="https://t.me/alerts_ct" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors group">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 group-hover:bg-emerald-500 transition-colors" />
+              Alerts Channel
+            </a>
+            <a href="https://t.me/borkiss_notes" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors group">
+              <div className="w-1.5 h-1.5 rounded-full bg-purple-500/50 group-hover:bg-purple-500 transition-colors" />
+              Borkiss Notes
+            </a>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between px-2">
           <span className="text-xs text-muted-foreground font-medium">Theme</span>
           <Button
