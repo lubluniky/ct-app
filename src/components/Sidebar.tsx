@@ -72,7 +72,26 @@ export const Sidebar = () => {
 
       <div className="mt-auto pt-4 border-t border-border space-y-4">
         {/* Social Links */}
-        <div className="px-2 pb-2">
+        <div className="px-2 pb-2 relative">
+          {/* Pixel Knight Animation */}
+          <div className="absolute -top-8 right-0 w-8 h-8 animate-bounce duration-1000">
+             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-primary">
+                {/* Helmet */}
+                <path d="M9 4H15V6H17V8H19V12H17V14H15V12H9V14H7V12H5V8H7V6H9V4Z" fill="currentColor" />
+                {/* Plume */}
+                <path d="M11 2H13V4H11V2Z" fill="#ef4444" />
+                <path d="M9 3H11V4H9V3Z" fill="#ef4444" />
+                <path d="M13 3H15V4H13V3Z" fill="#ef4444" />
+                {/* Eyes */}
+                <path d="M11 9H13V10H11V9Z" fill="black" />
+                {/* Body */}
+                <path d="M7 14H17V16H19V20H17V22H15V20H9V22H7V20H5V16H7V14Z" fill="currentColor" opacity="0.8" />
+                {/* Sword */}
+                <path d="M19 12H21V18H19V12Z" fill="#94a3b8" />
+                <path d="M18 16H22V17H18V16Z" fill="#94a3b8" />
+             </svg>
+          </div>
+
           <p className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-wider mb-3">Community</p>
           <div className="space-y-2.5">
             <a href="https://t.me/centurion_terminal" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors group">
