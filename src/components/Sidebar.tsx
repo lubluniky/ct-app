@@ -70,11 +70,19 @@ export const Sidebar = () => {
         </div>
       </nav>
 
-      <div className="mt-auto pt-4 border-t border-border space-y-4">
-        {/* Social Links */}
-        <div className="px-2 pb-2 relative">
-          {/* Pixel Knight Animation */}
-          <div className="absolute -top-8 right-0 w-8 h-8 animate-bounce duration-1000">
+      <div className="mt-auto pt-4 border-t border-border space-y-4 relative">
+        <style>{`
+          @keyframes patrol {
+            0% { left: 0; transform: scaleX(1); }
+            45% { left: calc(100% - 2rem); transform: scaleX(1); }
+            50% { left: calc(100% - 2rem); transform: scaleX(-1); }
+            95% { left: 0; transform: scaleX(-1); }
+            100% { left: 0; transform: scaleX(1); }
+          }
+        `}</style>
+
+        {/* Pixel Knight Animation */}
+        <div className="absolute -top-[20px] w-8 h-8" style={{ animation: 'patrol 10s linear infinite' }}>
              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-primary">
                 {/* Helmet */}
                 <path d="M9 4H15V6H17V8H19V12H17V14H15V12H9V14H7V12H5V8H7V6H9V4Z" fill="currentColor" />
@@ -90,8 +98,10 @@ export const Sidebar = () => {
                 <path d="M19 12H21V18H19V12Z" fill="#94a3b8" />
                 <path d="M18 16H22V17H18V16Z" fill="#94a3b8" />
              </svg>
-          </div>
+        </div>
 
+        {/* Social Links */}
+        <div className="px-2 pb-2">
           <p className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-wider mb-3">Community</p>
           <div className="space-y-2.5">
             <a href="https://t.me/centurion_terminal" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors group">
