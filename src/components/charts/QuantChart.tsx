@@ -13,8 +13,10 @@ export interface ChartDataPoint {
 export interface Overlay {
   id: string;
   label?: string; // Display name for legend
-  type: 'line' | 'histogram' | 'area' | 'pulse' | 'oscillator' | 'z-score';
+  type: 'line' | 'histogram' | 'area' | 'pulse' | 'oscillator' | 'z-score' | 'band';
   dataKey: string;
+  upperDataKey?: string; // For band
+  lowerDataKey?: string; // For band
   color: string;
   width?: number;
   opacity?: number;
@@ -450,6 +452,45 @@ export const QuantChart: React.FC<QuantChartProps> = ({
           ctx.stroke();
       }
     }
+
+    // Draw Bands (Fill between two lines)
+    overlays.filter(o => o.type === 'band').forEach(overlay => {
+        if (!overlay.upperDataKey || !overlay.lowerDataKey) return;
+        
+        ctx.beginPath();
+        let started = false;
+        
+        // Top line (forward)
+        visibleData.forEach((d, i) => {
+            const val = d[overlay.upperDataKey!];
+            if (typeof val !== 'number') return;
+            const x = getX(i + xShift);
+            const y = getY(val, overlay.yAxisId);
+            
+            if (!started) {
+                ctx.moveTo(x, y);
+                started = true;
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+
+        // Bottom line (backward)
+        for (let i = visibleData.length - 1; i >= 0; i--) {
+            const d = visibleData[i];
+            const val = d[overlay.lowerDataKey!];
+            if (typeof val !== 'number') continue;
+            const x = getX(i + xShift);
+            const y = getY(val, overlay.yAxisId);
+            ctx.lineTo(x, y);
+        }
+        
+        ctx.closePath();
+        ctx.fillStyle = overlay.color;
+        ctx.globalAlpha = overlay.opacity || 0.2;
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+    });
 
     // Draw Overlays (Lines)
     overlays.filter(o => o.type === 'line').forEach(overlay => {

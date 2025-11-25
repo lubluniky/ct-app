@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
+import { calculateMoneyNoodle } from '@/lib/indicators';
 
 export const UnifiedChartPanel = () => {
   const [symbol] = useState('BTCUSDT');
@@ -55,8 +56,28 @@ export const UnifiedChartPanel = () => {
       }
     });
 
+    // Calculate Money Noodle if active
+    if (activeIndicators.includes('Money Noodle')) {
+        const closes = futuresKlines.map(k => k.close);
+        const highs = futuresKlines.map(k => k.high);
+        const lows = futuresKlines.map(k => k.low);
+        
+        const noodle = calculateMoneyNoodle(closes, highs, lows);
+        
+        // Merge back into dataMap
+        futuresKlines.forEach((k, i) => {
+            const point = dataMap.get(k.openTime);
+            if (point) {
+                point.mn_ema1 = noodle.emaFast[i];
+                point.mn_ema2 = noodle.emaMedium[i];
+                point.mn_upper = noodle.upperBand[i];
+                point.mn_lower = noodle.lowerBand[i];
+            }
+        });
+    }
+
     return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
-  }, [futuresKlines, tensionData]);
+  }, [futuresKlines, tensionData, activeIndicators]);
 
   // Define Overlays
   const overlays: Overlay[] = useMemo(() => {
@@ -71,6 +92,57 @@ export const UnifiedChartPanel = () => {
         opacity: 0.4,
         threshold: getRecommendedThreshold(interval), // Highlight high tension
       });
+    }
+
+    if (activeIndicators.includes('Money Noodle')) {
+        // Band Fill
+        list.push({
+            id: 'MN Band',
+            type: 'band',
+            dataKey: 'mn_upper', // Not used for band but required by type
+            upperDataKey: 'mn_upper',
+            lowerDataKey: 'mn_lower',
+            color: '#808080', // Gray
+            opacity: 0.15,
+        });
+        
+        // Upper Band
+        list.push({
+            id: 'MN Upper',
+            type: 'line',
+            dataKey: 'mn_upper',
+            color: '#ffffff',
+            width: 1,
+            opacity: 0.5,
+        });
+
+        // Lower Band
+        list.push({
+            id: 'MN Lower',
+            type: 'line',
+            dataKey: 'mn_lower',
+            color: '#ffffff',
+            width: 1,
+            opacity: 0.5,
+        });
+
+        // EMA 1 (Aqua)
+        list.push({
+            id: 'MN EMA1',
+            type: 'line',
+            dataKey: 'mn_ema1',
+            color: '#00FFFF', // Aqua
+            width: 2,
+        });
+
+        // EMA 2 (Lime)
+        list.push({
+            id: 'MN EMA2',
+            type: 'line',
+            dataKey: 'mn_ema2',
+            color: '#00FF00', // Lime
+            width: 2,
+        });
     }
 
     return list;
@@ -112,6 +184,18 @@ export const UnifiedChartPanel = () => {
                   }}
                 >
                   Market Pulse
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={activeIndicators.includes('Money Noodle')}
+                  onCheckedChange={(checked) => {
+                    setActiveIndicators(prev => 
+                      checked 
+                        ? [...prev, 'Money Noodle']
+                        : prev.filter(i => i !== 'Money Noodle')
+                    )
+                  }}
+                >
+                  Money Noodle
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
