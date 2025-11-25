@@ -274,16 +274,15 @@ export function useScreenerData(): UseScreenerDataResult {
       const markPriceMap = new Map(markPrices.map(m => [m.symbol, m]));
       const bookTickerMap = new Map(bookTickers.map(b => [b.symbol, b]));
       
-      // Filter to USDT pairs only and sort alphabetically, take first 50
+      // Filter to USDT pairs only and sort alphabetically
       const usdtSymbols = symbols
         .filter(s => s.quoteAsset === 'USDT')
-        .sort((a, b) => a.symbol.localeCompare(b.symbol))
-        .slice(0, 50);
+        .sort((a, b) => a.symbol.localeCompare(b.symbol));
       
-      // Fetch klines for all 50 symbols
+      // Fetch klines for all symbols
       await fetchKlinesForSymbols(usdtSymbols.map(s => s.symbol), signal);
       
-      // Fetch OI history for all 50 symbols
+      // Fetch OI history for all symbols
       const oiMap = await fetchOIHistory(usdtSymbols.map(s => s.symbol), signal);
       
       // Build screener rows
