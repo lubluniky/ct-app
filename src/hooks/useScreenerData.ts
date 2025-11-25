@@ -1,0 +1,324 @@
+/**
+ * useScreenerData Hook
+ * Fetches and processes Binance data for the Screener
+ */
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  ScreenerRow,
+  SymbolInfo,
+  BinanceFuturesTicker,
+  BinanceMarkPrice,
+  BinanceBookTicker,
+  KlineData,
+} from '@/lib/screener/types';
+import {
+  fetchFuturesSymbols,
+  fetchFuturesTickers,
+  fetchMarkPrices,
+  fetchFuturesBookTickers,
+  fetchFuturesKlines,
+  fetchOpenInterestHistory,
+} from '@/lib/screener/api';
+import {
+  calculateVolatility,
+  calculatePriceChange,
+  calculateVolumeSum,
+  calculateVolumeDelta,
+  calculateOIChange,
+} from '@/lib/screener/calculations';
+
+// ============================================
+// TYPES
+// ============================================
+
+interface UseScreenerDataResult {
+  data: ScreenerRow[];
+  loading: boolean;
+  error: string | null;
+  lastUpdate: number;
+  refresh: () => void;
+}
+
+interface SymbolKlinesCache {
+  [symbol: string]: {
+    klines1m: KlineData[];
+    klines5m: KlineData[];
+    klines1h: KlineData[];
+    lastFetch: number;
+  };
+}
+
+// ============================================
+// CONSTANTS
+// ============================================
+
+const REFRESH_INTERVAL = 30000; // 30 seconds
+const KLINE_CACHE_TTL = 60000; // 1 minute
+const BATCH_SIZE = 20; // Process symbols in batches
+
+// ============================================
+// HOOK IMPLEMENTATION
+// ============================================
+
+export function useScreenerData(): UseScreenerDataResult {
+  const [data, setData] = useState<ScreenerRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState(0);
+  
+  const klinesCache = useRef<SymbolKlinesCache>({});
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
+  // Build screener row from API data
+  const buildScreenerRow = useCallback((
+    symbolInfo: SymbolInfo,
+    ticker: BinanceFuturesTicker | undefined,
+    markPrice: BinanceMarkPrice | undefined,
+    bookTicker: BinanceBookTicker | undefined,
+    klines1m: KlineData[],
+    klines5m: KlineData[],
+    klines1h: KlineData[],
+    oiChange8h: number | null
+  ): ScreenerRow => {
+    const price = ticker ? parseFloat(ticker.lastPrice) : 0;
+    const mark = markPrice ? parseFloat(markPrice.markPrice) : null;
+    
+    // Order book data
+    const bid = bookTicker ? parseFloat(bookTicker.bidPrice) : null;
+    const ask = bookTicker ? parseFloat(bookTicker.askPrice) : null;
+    const spread = bid && ask ? ask - bid : null;
+    const spreadPercent = bid && ask && bid > 0 ? ((ask - bid) / bid) * 100 : null;
+    
+    // Calculate metrics from klines
+    const ticks5m = klines1m.length > 0 
+      ? klines1m.slice(-5).reduce((sum, k) => sum + k.trades, 0) 
+      : null;
+    
+    const change5m = calculatePriceChange(klines5m.slice(-1)) ?? 
+      (klines1m.length >= 5 ? calculatePriceChange(klines1m.slice(-5)) : null);
+    
+    const volume5m = calculateVolumeSum(klines1m, 5);
+    const volatility15m = calculateVolatility(klines1m.slice(-15));
+    const volume1h = calculateVolumeSum(klines1m, 60);
+    const vdelta1h = calculateVolumeDelta(klines1m.slice(-60));
+    
+    // 1d change from ticker
+    const change1d = ticker ? parseFloat(ticker.priceChangePercent) : null;
+    
+    // Funding rate
+    const fundingRate = markPrice ? parseFloat(markPrice.lastFundingRate) : null;
+    const nextFundingTime = markPrice ? markPrice.nextFundingTime : null;
+    
+    // OI from mark price endpoint (approximation)
+    // Note: For accurate OI we'd need to call /fapi/v1/openInterest for each symbol
+    const openInterest = null; // Will be fetched separately if needed
+    const openInterestValue = null;
+    
+    // Market cap estimation (not available directly from Binance)
+    const marketCap = null;
+    
+    return {
+      symbol: symbolInfo.symbol,
+      baseAsset: symbolInfo.baseAsset,
+      quoteAsset: symbolInfo.quoteAsset,
+      price,
+      markPrice: mark,
+      priceChangePercent24h: ticker ? parseFloat(ticker.priceChangePercent) : 0,
+      volume24h: ticker ? parseFloat(ticker.volume) : 0,
+      quoteVolume24h: ticker ? parseFloat(ticker.quoteVolume) : 0,
+      highPrice24h: ticker ? parseFloat(ticker.highPrice) : 0,
+      lowPrice24h: ticker ? parseFloat(ticker.lowPrice) : 0,
+      trades24h: ticker ? ticker.count : 0,
+      bidPrice: bid,
+      askPrice: ask,
+      spread,
+      spreadPercent,
+      openInterest,
+      openInterestValue,
+      fundingRate,
+      nextFundingTime,
+      ticks5m,
+      change5m,
+      volume5m,
+      volatility15m,
+      volume1h,
+      vdelta1h,
+      oiChange8h,
+      change1d,
+      marketCap,
+      imbalance: null,
+      tickVolatility: volatility15m,
+      microtrend: null,
+      lastUpdate: Date.now(),
+      isFutures: true,
+    };
+  }, []);
+  
+  // Fetch klines for a batch of symbols
+  const fetchKlinesForSymbols = useCallback(async (
+    symbols: string[],
+    signal: AbortSignal
+  ): Promise<void> => {
+    const now = Date.now();
+    
+    for (const symbol of symbols) {
+      // Check cache
+      const cached = klinesCache.current[symbol];
+      if (cached && now - cached.lastFetch < KLINE_CACHE_TTL) {
+        continue;
+      }
+      
+      try {
+        const [klines1m, klines5m, klines1h] = await Promise.all([
+          fetchFuturesKlines(symbol, '1m', 60, signal),
+          fetchFuturesKlines(symbol, '5m', 12, signal),
+          fetchFuturesKlines(symbol, '1h', 24, signal),
+        ]);
+        
+        klinesCache.current[symbol] = {
+          klines1m,
+          klines5m,
+          klines1h,
+          lastFetch: now,
+        };
+      } catch (err) {
+        // Silently skip failed symbols
+        console.warn(`Failed to fetch klines for ${symbol}`);
+      }
+    }
+  }, []);
+  
+  // Fetch OI history for symbols
+  const fetchOIHistory = useCallback(async (
+    symbols: string[],
+    signal: AbortSignal
+  ): Promise<Map<string, number | null>> => {
+    const result = new Map<string, number | null>();
+    
+    // Fetch in small batches to avoid rate limits
+    for (let i = 0; i < symbols.length; i += 5) {
+      const batch = symbols.slice(i, i + 5);
+      
+      const promises = batch.map(async (symbol) => {
+        try {
+          const history = await fetchOpenInterestHistory(symbol, '1h', 9, signal);
+          const oiChange = calculateOIChange(history, 8);
+          return { symbol, oiChange };
+        } catch {
+          return { symbol, oiChange: null };
+        }
+      });
+      
+      const results = await Promise.all(promises);
+      results.forEach(r => result.set(r.symbol, r.oiChange));
+      
+      // Small delay between batches
+      if (i + 5 < symbols.length) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+    
+    return result;
+  }, []);
+  
+  // Main data fetching function
+  const fetchData = useCallback(async () => {
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch base data in parallel
+      const [symbols, tickers, markPrices, bookTickers] = await Promise.all([
+        fetchFuturesSymbols(signal),
+        fetchFuturesTickers(signal),
+        fetchMarkPrices(signal),
+        fetchFuturesBookTickers(signal),
+      ]);
+      
+      // Create lookup maps
+      const tickerMap = new Map(tickers.map(t => [t.symbol, t]));
+      const markPriceMap = new Map(markPrices.map(m => [m.symbol, m]));
+      const bookTickerMap = new Map(bookTickers.map(b => [b.symbol, b]));
+      
+      // Filter to USDT pairs only and sort by volume
+      const usdtSymbols = symbols
+        .filter(s => s.quoteAsset === 'USDT')
+        .sort((a, b) => {
+          const volA = parseFloat(tickerMap.get(a.symbol)?.quoteVolume || '0');
+          const volB = parseFloat(tickerMap.get(b.symbol)?.quoteVolume || '0');
+          return volB - volA;
+        });
+      
+      // Fetch klines for top symbols (limit to avoid too many requests)
+      const topSymbols = usdtSymbols.slice(0, 100);
+      await fetchKlinesForSymbols(topSymbols.map(s => s.symbol), signal);
+      
+      // Fetch OI history for top 50 symbols
+      const oiMap = await fetchOIHistory(topSymbols.slice(0, 50).map(s => s.symbol), signal);
+      
+      // Build screener rows
+      const rows: ScreenerRow[] = usdtSymbols.map(symbolInfo => {
+        const cached = klinesCache.current[symbolInfo.symbol] || {
+          klines1m: [],
+          klines5m: [],
+          klines1h: [],
+        };
+        
+        return buildScreenerRow(
+          symbolInfo,
+          tickerMap.get(symbolInfo.symbol),
+          markPriceMap.get(symbolInfo.symbol),
+          bookTickerMap.get(symbolInfo.symbol),
+          cached.klines1m,
+          cached.klines5m,
+          cached.klines1h,
+          oiMap.get(symbolInfo.symbol) ?? null
+        );
+      });
+      
+      // Sort by 24h volume (descending)
+      rows.sort((a, b) => b.quoteVolume24h - a.quoteVolume24h);
+      
+      setData(rows);
+      setLastUpdate(Date.now());
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return; // Ignore aborted requests
+      }
+      console.error('Screener fetch error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+    } finally {
+      setLoading(false);
+    }
+  }, [buildScreenerRow, fetchKlinesForSymbols, fetchOIHistory]);
+  
+  // Initial fetch and interval
+  useEffect(() => {
+    fetchData();
+    
+    const interval = setInterval(fetchData, REFRESH_INTERVAL);
+    
+    return () => {
+      clearInterval(interval);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchData]);
+  
+  return {
+    data,
+    loading,
+    error,
+    lastUpdate,
+    refresh: fetchData,
+  };
+}
