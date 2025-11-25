@@ -157,13 +157,16 @@ export async function fetchSpotAggTrades(
  * Fetch all futures perpetual symbols
  */
 export async function fetchFuturesSymbols(signal?: AbortSignal): Promise<SymbolInfo[]> {
+  console.log('[API] Fetching futures exchange info...');
   const response = await rateLimitedFetch(`${FUTURES_BASE_URL}/exchangeInfo`, signal);
   
   if (!response.ok) {
+    console.error(`[API] ❌ Failed to fetch futures exchange info: ${response.status}`);
     throw new Error(`Failed to fetch futures exchange info: ${response.status}`);
   }
   
   const data = await response.json();
+  console.log(`[API] ✅ Exchange info received, ${data.symbols?.length || 0} total symbols`);
   
   return data.symbols
     .filter((s: any) => s.status === 'TRADING' && s.contractType === 'PERPETUAL')
@@ -180,26 +183,34 @@ export async function fetchFuturesSymbols(signal?: AbortSignal): Promise<SymbolI
  * Fetch 24hr ticker for all futures symbols
  */
 export async function fetchFuturesTickers(signal?: AbortSignal): Promise<BinanceFuturesTicker[]> {
+  console.log('[API] Fetching futures tickers...');
   const response = await rateLimitedFetch(`${FUTURES_BASE_URL}/ticker/24hr`, signal);
   
   if (!response.ok) {
+    console.error(`[API] ❌ Failed to fetch futures tickers: ${response.status}`);
     throw new Error(`Failed to fetch futures tickers: ${response.status}`);
   }
   
-  return response.json();
+  const data = await response.json();
+  console.log(`[API] ✅ Tickers received: ${data?.length || 0}`);
+  return data;
 }
 
 /**
  * Fetch mark price and funding rate for all symbols
  */
 export async function fetchMarkPrices(signal?: AbortSignal): Promise<BinanceMarkPrice[]> {
+  console.log('[API] Fetching mark prices...');
   const response = await rateLimitedFetch(`${FUTURES_BASE_URL}/premiumIndex`, signal);
   
   if (!response.ok) {
+    console.error(`[API] ❌ Failed to fetch mark prices: ${response.status}`);
     throw new Error(`Failed to fetch mark prices: ${response.status}`);
   }
   
-  return response.json();
+  const data = await response.json();
+  console.log(`[API] ✅ Mark prices received: ${data?.length || 0}`);
+  return data;
 }
 
 /**

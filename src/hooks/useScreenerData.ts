@@ -261,13 +261,18 @@ export function useScreenerData(): UseScreenerDataResult {
       setLoading(true);
       setError(null);
       
+      console.log('[Screener] Starting data fetch...');
+      
       // Fetch base data in parallel
+      console.log('[Screener] Fetching symbols, tickers, mark prices, book tickers...');
       const [symbols, tickers, markPrices, bookTickers] = await Promise.all([
         fetchFuturesSymbols(signal),
         fetchFuturesTickers(signal),
         fetchMarkPrices(signal),
         fetchFuturesBookTickers(signal),
       ]);
+      
+      console.log(`[Screener] Received: ${symbols.length} symbols, ${tickers.length} tickers, ${markPrices.length} mark prices, ${bookTickers.length} book tickers`);
       
       // Create lookup maps
       const tickerMap = new Map(tickers.map(t => [t.symbol, t]));
@@ -279,11 +284,17 @@ export function useScreenerData(): UseScreenerDataResult {
         .filter(s => s.quoteAsset === 'USDT')
         .sort((a, b) => a.symbol.localeCompare(b.symbol));
       
+      console.log(`[Screener] Filtered to ${usdtSymbols.length} USDT perpetual pairs`);
+      
       // Fetch klines for all symbols
+      console.log('[Screener] Fetching klines for all symbols...');
       await fetchKlinesForSymbols(usdtSymbols.map(s => s.symbol), signal);
+      console.log('[Screener] Klines fetched successfully');
       
       // Fetch OI history for all symbols
+      console.log('[Screener] Fetching OI history...');
       const oiMap = await fetchOIHistory(usdtSymbols.map(s => s.symbol), signal);
+      console.log(`[Screener] OI history fetched for ${oiMap.size} symbols`);
       
       // Build screener rows
       const rows: ScreenerRow[] = usdtSymbols.map(symbolInfo => {
@@ -319,13 +330,20 @@ export function useScreenerData(): UseScreenerDataResult {
       });
       
       // Keep alphabetical order (already sorted)
+      console.log(`[Screener] ✅ Successfully built ${rows.length} screener rows`);
       setData(rows);
       setLastUpdate(Date.now());
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
+        console.log('[Screener] Request aborted (new request started)');
         return; // Ignore aborted requests
       }
-      console.error('Screener fetch error:', err);
+      console.error('[Screener] ❌ Fetch error:', err);
+      console.error('[Screener] Error details:', {
+        name: err instanceof Error ? err.name : 'Unknown',
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      });
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
       setLoading(false);
