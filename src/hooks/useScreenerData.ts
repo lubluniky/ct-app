@@ -79,7 +79,7 @@ export function useScreenerData(): UseScreenerDataResult {
     klines1m: KlineData[],
     klines5m: KlineData[],
     klines1h: KlineData[],
-    oiChange8h: number | null
+    oiData: { oiChange: number | null; currentOI: number | null } | null
   ): ScreenerRow => {
     const price = ticker ? parseFloat(ticker.lastPrice) : 0;
     const mark = markPrice ? parseFloat(markPrice.markPrice) : null;
@@ -115,10 +115,10 @@ export function useScreenerData(): UseScreenerDataResult {
     const fundingRate = markPrice ? parseFloat(markPrice.lastFundingRate) : null;
     const nextFundingTime = markPrice ? markPrice.nextFundingTime : null;
     
-    // OI from mark price endpoint (approximation)
-    // Note: For accurate OI we'd need to call /fapi/v1/openInterest for each symbol
-    const openInterest = null; // Will be fetched separately if needed
-    const openInterestValue = null;
+    // OI data from history
+    const openInterest = oiData?.currentOI ?? null;
+    const openInterestValue = oiData?.currentOI ?? null; // Same value (already in USDT)
+    const oiChange8h = oiData?.oiChange ?? null;
     
     // Market cap estimation (not available directly from Binance)
     const marketCap = null;
@@ -198,8 +198,8 @@ export function useScreenerData(): UseScreenerDataResult {
   const fetchOIHistory = useCallback(async (
     symbols: string[],
     signal: AbortSignal
-  ): Promise<Map<string, number | null>> => {
-    const result = new Map<string, number | null>();
+  ): Promise<Map<string, { oiChange: number | null; currentOI: number | null }>> => {
+    const result = new Map<string, { oiChange: number | null; currentOI: number | null }>();
     
     // Fetch in small batches to avoid rate limits
     for (let i = 0; i < symbols.length; i += 5) {
@@ -207,16 +207,21 @@ export function useScreenerData(): UseScreenerDataResult {
       
       const promises = batch.map(async (symbol) => {
         try {
-          const history = await fetchOpenInterestHistory(symbol, '1h', 9, signal);
+          // Fetch 10 hourly records to ensure we have 8+ hours of history
+          const history = await fetchOpenInterestHistory(symbol, '1h', 10, signal);
           const oiChange = calculateOIChange(history, 8);
-          return { symbol, oiChange };
+          // Get current OI from the latest history entry
+          const currentOI = history.length > 0 
+            ? parseFloat(history[history.length - 1].sumOpenInterestValue)
+            : null;
+          return { symbol, oiChange, currentOI };
         } catch {
-          return { symbol, oiChange: null };
+          return { symbol, oiChange: null, currentOI: null };
         }
       });
       
       const results = await Promise.all(promises);
-      results.forEach(r => result.set(r.symbol, r.oiChange));
+      results.forEach(r => result.set(r.symbol, { oiChange: r.oiChange, currentOI: r.currentOI }));
       
       // Small delay between batches
       if (i + 5 < symbols.length) {

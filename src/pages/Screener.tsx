@@ -267,6 +267,15 @@ const Screener = () => {
                 </TableHead>
                 <TableHead
                   className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleSort('openInterestValue')}
+                >
+                  <div className="flex items-center justify-end">
+                    Open Interest
+                    <SortIndicator field="openInterestValue" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort('quoteVolume24h')}
                 >
                   <div className="flex items-center justify-end">
@@ -281,7 +290,7 @@ const Screener = () => {
                 // Loading skeleton
                 Array.from({ length: 20 }).map((_, i) => (
                   <TableRow key={i} className="border-b border-border/30">
-                    {Array.from({ length: 12 }).map((_, j) => (
+                    {Array.from({ length: 13 }).map((_, j) => (
                       <TableCell key={j} className="py-2">
                         <div className="h-4 bg-muted/50 rounded animate-pulse" />
                       </TableCell>
@@ -290,7 +299,7 @@ const Screener = () => {
                 ))
               ) : filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
                     {searchQuery ? 'No symbols match your search' : 'No data available'}
                   </TableCell>
                 </TableRow>
@@ -335,6 +344,9 @@ const Screener = () => {
                     </TableCell>
                     <TableCell className={`text-right font-mono text-sm py-2 whitespace-nowrap ${getColorClass(row.fundingRate)}`}>
                       {row.fundingRate !== null ? formatFundingRate(row.fundingRate) : '-'}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm py-2 whitespace-nowrap text-muted-foreground">
+                      {row.openInterest !== null ? formatLargeNumber(row.openInterest) : '-'}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm py-2 whitespace-nowrap text-muted-foreground">
                       {formatLargeNumber(row.quoteVolume24h)}

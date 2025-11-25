@@ -131,15 +131,29 @@ export function calculateOIChange(
 ): number | null {
   if (history.length < 2) return null;
   
+  // Sort by timestamp ascending
+  const sorted = [...history].sort((a, b) => a.timestamp - b.timestamp);
+  
   const now = Date.now();
   const cutoffTime = now - hoursBack * 60 * 60 * 1000;
   
-  // Find the entry closest to cutoff time
-  const oldEntry = history.find(h => h.timestamp <= cutoffTime) || history[0];
-  const currentEntry = history[history.length - 1];
+  // Get the current (latest) entry
+  const currentEntry = sorted[sorted.length - 1];
+  
+  // Find the entry closest to (but before or at) the cutoff time
+  // If no entry before cutoff, use the oldest available
+  let oldEntry = sorted[0];
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    if (sorted[i].timestamp <= cutoffTime) {
+      oldEntry = sorted[i];
+      break;
+    }
+  }
   
   const oldOI = parseFloat(oldEntry.sumOpenInterestValue);
   const currentOI = parseFloat(currentEntry.sumOpenInterestValue);
+  
+  if (isNaN(oldOI) || isNaN(currentOI)) return null;
   
   return currentOI - oldOI;
 }
