@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import Macro from "./pages/Macro";
 import Labs from "./pages/Labs";
+import Screener from "./pages/Screener";
 import { Sidebar } from "./components/Sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -64,6 +65,11 @@ const App = () => {
                 <Route path="/dashboard/labs" element={
                   <DashboardLayout>
                     <Labs />
+                  </DashboardLayout>
+                } />
+                <Route path="/dashboard/screener" element={
+                  <DashboardLayout>
+                    <Screener />
                   </DashboardLayout>
                 } />
 

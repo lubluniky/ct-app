@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, LogOut, LogIn, User, Moon, Sun, Globe, FlaskConical } from 'lucide-react';
+import { LayoutDashboard, LogOut, LogIn, User, Moon, Sun, Globe, FlaskConical, ScanSearch } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,18 @@ export const Sidebar = () => {
         >
           <LayoutDashboard size={18} />
           <span className="text-sm font-medium">Dashboard</span>
+        </div>
+
+        <div 
+          onClick={() => navigate('/dashboard/screener')}
+          className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
+            isActive('/dashboard/screener') 
+              ? 'bg-primary/5 text-primary' 
+              : 'text-muted-foreground hover:bg-muted/50'
+          }`}
+        >
+          <ScanSearch size={18} />
+          <span className="text-sm font-medium">Screener</span>
         </div>
         
         <div 
