@@ -4,12 +4,20 @@ import { useKlines } from '@/hooks/useKlines';
 import { getRecommendedThreshold } from '@/lib/tension';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Activity } from 'lucide-react';
+import { Loader2, Activity, Layers } from 'lucide-react';
 import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from '@/components/ui/button';
 
 export const UnifiedChartPanel = () => {
   const [symbol] = useState('BTCUSDT');
   const [interval, setInterval] = useState('1h');
+  const [activeIndicators, setActiveIndicators] = useState<string[]>(['Market Pulse']);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
   // Fetch Data
@@ -52,15 +60,21 @@ export const UnifiedChartPanel = () => {
 
   // Define Overlays
   const overlays: Overlay[] = useMemo(() => {
-    return [{
-      id: 'Market Pulse',
-      type: 'pulse',
-      dataKey: 'tension',
-      color: '#06b6d4', // Pulse Cold (Singularity v6) - Cyan-500
-      opacity: 0.4,
-      threshold: getRecommendedThreshold(interval), // Highlight high tension
-    }];
-  }, [interval]);
+    const list: Overlay[] = [];
+
+    if (activeIndicators.includes('Market Pulse')) {
+      list.push({
+        id: 'Market Pulse',
+        type: 'pulse',
+        dataKey: 'tension',
+        color: '#06b6d4', // Pulse Cold (Singularity v6) - Cyan-500
+        opacity: 0.4,
+        threshold: getRecommendedThreshold(interval), // Highlight high tension
+      });
+    }
+
+    return list;
+  }, [interval, activeIndicators]);
 
   return (
     <Card className="w-full h-full border-border/40 bg-card/50 backdrop-blur-sm shadow-sm flex flex-col">
@@ -78,6 +92,29 @@ export const UnifiedChartPanel = () => {
                     <TabsTrigger value="4h" className="text-xs h-6 px-3">4h</TabsTrigger>
                 </TabsList>
             </Tabs>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 gap-2 text-xs border-dashed">
+                  <Layers className="h-3.5 w-3.5" />
+                  Indicators
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuCheckboxItem
+                  checked={activeIndicators.includes('Market Pulse')}
+                  onCheckedChange={(checked) => {
+                    setActiveIndicators(prev => 
+                      checked 
+                        ? [...prev, 'Market Pulse']
+                        : prev.filter(i => i !== 'Market Pulse')
+                    )
+                  }}
+                >
+                  Market Pulse
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
         </div>
         <ShareChartDialog 
           targetRef={chartRef} 
