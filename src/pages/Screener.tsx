@@ -506,42 +506,42 @@ const Screener = () => {
         </CardHeader>
         <CardContent className="p-0 h-full overflow-auto">
           <Table>
-            <TableHeader className="sticky top-0 bg-card z-10">
-              <TableRow className="hover:bg-transparent border-border/50">
-                <TableHead className="w-[180px]">Symbol</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Ticks 5m</TableHead>
-                <TableHead>Change 5m</TableHead>
-                <TableHead>Volume 5m</TableHead>
-                <TableHead>Volatility 15m</TableHead>
-                <TableHead>Volume 1h</TableHead>
-                <TableHead>Vdelta 1h</TableHead>
-                <TableHead>OI change 8h</TableHead>
-                <TableHead>Change 1d</TableHead>
-                <TableHead>Funding rate</TableHead>
-                <TableHead>OpenInterest</TableHead>
-                <TableHead className="text-right">Marketcap</TableHead>
+            <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
+              <TableRow className="hover:bg-transparent border-b border-border/50">
+                <TableHead className="w-[180px] font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">Symbol</TableHead>
+                <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">Price</TableHead>
+                <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">Ticks 5m</TableHead>
+                <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">Change 5m</TableHead>
+                <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">Volume 5m</TableHead>
+                <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">Volatility 15m</TableHead>
+                <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">Volume 1h</TableHead>
+                <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">Vdelta 1h</TableHead>
+                <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">OI change 8h</TableHead>
+                <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">Change 1d</TableHead>
+                <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">Funding rate</TableHead>
+                <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">OpenInterest</TableHead>
+                <TableHead className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card">Marketcap</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.map((row, index) => (
-                <TableRow key={index} className="hover:bg-muted/50 border-border/50">
-                  <TableCell className="font-medium flex items-center gap-2">
-                    <span className="text-muted-foreground text-xs">▶</span>
-                    {row.symbol}
+                <TableRow key={index} className="hover:bg-muted/50 border-b border-border/30 even:bg-muted/10 transition-colors">
+                  <TableCell className="font-medium flex items-center gap-2 py-2 whitespace-nowrap">
+                    <span className="text-muted-foreground text-[10px]">▶</span>
+                    <span className="text-sm text-foreground">{row.symbol}</span>
                   </TableCell>
-                  <TableCell>{row.price}</TableCell>
-                  <TableCell>{row.ticks5m}</TableCell>
-                  <TableCell className={getColorClass(row.change5m)}>{row.change5m}</TableCell>
-                  <TableCell>{row.volume5m}</TableCell>
-                  <TableCell>{row.volatility15m}</TableCell>
-                  <TableCell>{row.volume1h}</TableCell>
-                  <TableCell className={getColorClass(row.vdelta1h)}>{row.vdelta1h}</TableCell>
-                  <TableCell className={getColorClass(row.oiChange8h)}>{row.oiChange8h}</TableCell>
-                  <TableCell className={getColorClass(row.change1d)}>{row.change1d}</TableCell>
-                  <TableCell className={getColorClass(row.fundingRate)}>{row.fundingRate}</TableCell>
-                  <TableCell>{row.openInterest}</TableCell>
-                  <TableCell className="text-right">{row.marketCap}</TableCell>
+                  <TableCell className="text-right font-mono text-sm py-2 whitespace-nowrap text-muted-foreground">{row.price}</TableCell>
+                  <TableCell className="text-right font-mono text-sm py-2 whitespace-nowrap text-muted-foreground">{row.ticks5m}</TableCell>
+                  <TableCell className={`text-right font-mono text-sm py-2 whitespace-nowrap ${getColorClass(row.change5m)}`}>{row.change5m}</TableCell>
+                  <TableCell className="text-right font-mono text-sm py-2 whitespace-nowrap text-muted-foreground">{row.volume5m}</TableCell>
+                  <TableCell className="text-right font-mono text-sm py-2 whitespace-nowrap text-muted-foreground">{row.volatility15m}</TableCell>
+                  <TableCell className="text-right font-mono text-sm py-2 whitespace-nowrap text-muted-foreground">{row.volume1h}</TableCell>
+                  <TableCell className={`text-right font-mono text-sm py-2 whitespace-nowrap ${getColorClass(row.vdelta1h)}`}>{row.vdelta1h}</TableCell>
+                  <TableCell className={`text-right font-mono text-sm py-2 whitespace-nowrap ${getColorClass(row.oiChange8h)}`}>{row.oiChange8h}</TableCell>
+                  <TableCell className={`text-right font-mono text-sm py-2 whitespace-nowrap ${getColorClass(row.change1d)}`}>{row.change1d}</TableCell>
+                  <TableCell className={`text-right font-mono text-sm py-2 whitespace-nowrap ${getColorClass(row.fundingRate)}`}>{row.fundingRate}</TableCell>
+                  <TableCell className="text-right font-mono text-sm py-2 whitespace-nowrap text-muted-foreground">{row.openInterest}</TableCell>
+                  <TableCell className="text-right font-mono text-sm py-2 whitespace-nowrap text-muted-foreground">{row.marketCap}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
