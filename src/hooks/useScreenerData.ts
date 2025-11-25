@@ -248,21 +248,17 @@ export function useScreenerData(): UseScreenerDataResult {
       const markPriceMap = new Map(markPrices.map(m => [m.symbol, m]));
       const bookTickerMap = new Map(bookTickers.map(b => [b.symbol, b]));
       
-      // Filter to USDT pairs only and sort by volume
+      // Filter to USDT pairs only and sort alphabetically, take first 50
       const usdtSymbols = symbols
         .filter(s => s.quoteAsset === 'USDT')
-        .sort((a, b) => {
-          const volA = parseFloat(tickerMap.get(a.symbol)?.quoteVolume || '0');
-          const volB = parseFloat(tickerMap.get(b.symbol)?.quoteVolume || '0');
-          return volB - volA;
-        });
+        .sort((a, b) => a.symbol.localeCompare(b.symbol))
+        .slice(0, 50);
       
-      // Fetch klines for top symbols (limit to avoid too many requests)
-      const topSymbols = usdtSymbols.slice(0, 100);
-      await fetchKlinesForSymbols(topSymbols.map(s => s.symbol), signal);
+      // Fetch klines for all 50 symbols
+      await fetchKlinesForSymbols(usdtSymbols.map(s => s.symbol), signal);
       
-      // Fetch OI history for top 50 symbols
-      const oiMap = await fetchOIHistory(topSymbols.slice(0, 50).map(s => s.symbol), signal);
+      // Fetch OI history for all 50 symbols
+      const oiMap = await fetchOIHistory(usdtSymbols.map(s => s.symbol), signal);
       
       // Build screener rows
       const rows: ScreenerRow[] = usdtSymbols.map(symbolInfo => {
@@ -284,9 +280,7 @@ export function useScreenerData(): UseScreenerDataResult {
         );
       });
       
-      // Sort by 24h volume (descending)
-      rows.sort((a, b) => b.quoteVolume24h - a.quoteVolume24h);
-      
+      // Keep alphabetical order (already sorted)
       setData(rows);
       setLastUpdate(Date.now());
     } catch (err) {
