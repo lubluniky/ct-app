@@ -198,6 +198,10 @@ export interface ScreenerRow {
   oiChange8h: number | null;
   change1d: number | null;
   
+  // Day/Week opens
+  dayOpen: number | null;
+  weekOpen: number | null;
+  
   // Market cap (estimated)
   marketCap: number | null;
   

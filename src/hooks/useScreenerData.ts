@@ -45,6 +45,8 @@ interface SymbolKlinesCache {
     klines1m: KlineData[];
     klines5m: KlineData[];
     klines1h: KlineData[];
+    klines1d: KlineData[];
+    klines1w: KlineData[];
     lastFetch: number;
   };
 }
@@ -79,7 +81,8 @@ export function useScreenerData(): UseScreenerDataResult {
     klines1m: KlineData[],
     klines5m: KlineData[],
     klines1h: KlineData[],
-    oiData: { oiChange: number | null; currentOI: number | null } | null
+    oiData: { oiChange: number | null; currentOI: number | null } | null,
+    dayWeekData: { dayOpen: number | null; weekOpen: number | null }
   ): ScreenerRow => {
     const price = ticker ? parseFloat(ticker.lastPrice) : 0;
     const mark = markPrice ? parseFloat(markPrice.markPrice) : null;
@@ -151,6 +154,8 @@ export function useScreenerData(): UseScreenerDataResult {
       vdelta1h,
       oiChange8h,
       change1d,
+      dayOpen: dayWeekData.dayOpen,
+      weekOpen: dayWeekData.weekOpen,
       marketCap,
       imbalance: null,
       tickVolatility: volatility15m,
@@ -175,16 +180,20 @@ export function useScreenerData(): UseScreenerDataResult {
       }
       
       try {
-        const [klines1m, klines5m, klines1h] = await Promise.all([
+        const [klines1m, klines5m, klines1h, klines1d, klines1w] = await Promise.all([
           fetchFuturesKlines(symbol, '1m', 60, signal),
           fetchFuturesKlines(symbol, '5m', 12, signal),
           fetchFuturesKlines(symbol, '1h', 24, signal),
+          fetchFuturesKlines(symbol, '1d', 2, signal),
+          fetchFuturesKlines(symbol, '1w', 2, signal),
         ]);
         
         klinesCache.current[symbol] = {
           klines1m,
           klines5m,
           klines1h,
+          klines1d,
+          klines1w,
           lastFetch: now,
         };
       } catch (err) {
@@ -283,7 +292,19 @@ export function useScreenerData(): UseScreenerDataResult {
           klines1m: [],
           klines5m: [],
           klines1h: [],
+          klines1d: [],
+          klines1w: [],
         };
+        
+        // Extract day and week open prices
+        // The current day candle's open price
+        const dayOpen = cached.klines1d.length > 0 
+          ? cached.klines1d[cached.klines1d.length - 1].open 
+          : null;
+        // The current week candle's open price  
+        const weekOpen = cached.klines1w.length > 0 
+          ? cached.klines1w[cached.klines1w.length - 1].open 
+          : null;
         
         return buildScreenerRow(
           symbolInfo,
@@ -293,7 +314,8 @@ export function useScreenerData(): UseScreenerDataResult {
           cached.klines1m,
           cached.klines5m,
           cached.klines1h,
-          oiMap.get(symbolInfo.symbol) ?? null
+          oiMap.get(symbolInfo.symbol) ?? null,
+          { dayOpen, weekOpen }
         );
       });
       

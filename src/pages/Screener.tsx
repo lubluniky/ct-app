@@ -163,6 +163,7 @@ const Screener = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 h-full overflow-auto">
+          <div className="min-w-max">
           <Table>
             <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
               <TableRow className="hover:bg-transparent border-b border-border/50">
@@ -283,6 +284,24 @@ const Screener = () => {
                     <SortIndicator field="quoteVolume24h" />
                   </div>
                 </TableHead>
+                <TableHead
+                  className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleSort('dayOpen')}
+                >
+                  <div className="flex items-center justify-end">
+                    Day
+                    <SortIndicator field="dayOpen" />
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="text-right font-bold text-xs uppercase tracking-wider text-foreground/70 bg-card cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleSort('weekOpen')}
+                >
+                  <div className="flex items-center justify-end">
+                    Week
+                    <SortIndicator field="weekOpen" />
+                  </div>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -290,7 +309,7 @@ const Screener = () => {
                 // Loading skeleton
                 Array.from({ length: 20 }).map((_, i) => (
                   <TableRow key={i} className="border-b border-border/30">
-                    {Array.from({ length: 13 }).map((_, j) => (
+                    {Array.from({ length: 15 }).map((_, j) => (
                       <TableCell key={j} className="py-2">
                         <div className="h-4 bg-muted/50 rounded animate-pulse" />
                       </TableCell>
@@ -299,7 +318,7 @@ const Screener = () => {
                 ))
               ) : filteredData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={15} className="text-center py-8 text-muted-foreground">
                     {searchQuery ? 'No symbols match your search' : 'No data available'}
                   </TableCell>
                 </TableRow>
@@ -351,11 +370,18 @@ const Screener = () => {
                     <TableCell className="text-right font-mono text-sm py-2 whitespace-nowrap text-muted-foreground">
                       {formatLargeNumber(row.quoteVolume24h)}
                     </TableCell>
+                    <TableCell className={`text-right font-mono text-sm py-2 whitespace-nowrap ${row.dayOpen !== null ? (row.price >= row.dayOpen ? 'text-green-500' : 'text-red-500') : 'text-muted-foreground'}`}>
+                      {row.dayOpen !== null ? formatPrice(row.dayOpen) : '-'}
+                    </TableCell>
+                    <TableCell className={`text-right font-mono text-sm py-2 whitespace-nowrap ${row.weekOpen !== null ? (row.price >= row.weekOpen ? 'text-green-500' : 'text-red-500') : 'text-muted-foreground'}`}>
+                      {row.weekOpen !== null ? formatPrice(row.weekOpen) : '-'}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
