@@ -53,8 +53,8 @@ interface SymbolKlinesCache {
 // CONSTANTS
 // ============================================
 
-const REFRESH_INTERVAL = 30000; // 30 seconds
-const KLINE_CACHE_TTL = 60000; // 1 minute
+const REFRESH_INTERVAL = 10000; // 10 seconds
+const KLINE_CACHE_TTL = 10000; // 10 seconds (refresh cache more often)
 const BATCH_SIZE = 20; // Process symbols in batches
 
 // ============================================
@@ -91,17 +91,22 @@ export function useScreenerData(): UseScreenerDataResult {
     const spreadPercent = bid && ask && bid > 0 ? ((ask - bid) / bid) * 100 : null;
     
     // Calculate metrics from klines
-    const ticks5m = klines1m.length > 0 
+    // Ticks 5m: sum of trades from last 5 x 1m candles
+    const ticks5m = klines1m.length >= 5 
       ? klines1m.slice(-5).reduce((sum, k) => sum + k.trades, 0) 
-      : null;
+      : (klines1m.length > 0 ? klines1m.reduce((sum, k) => sum + k.trades, 0) : null);
     
-    const change5m = calculatePriceChange(klines5m.slice(-1)) ?? 
-      (klines1m.length >= 5 ? calculatePriceChange(klines1m.slice(-5)) : null);
+    // Change 5m: price change over last 5 minutes using 1m klines
+    const change5m = klines1m.length >= 5 
+      ? ((klines1m[klines1m.length - 1].close - klines1m[klines1m.length - 5].open) / klines1m[klines1m.length - 5].open) * 100
+      : (klines5m.length >= 2 ? ((klines5m[klines5m.length - 1].close - klines5m[klines5m.length - 2].open) / klines5m[klines5m.length - 2].open) * 100 : null);
     
     const volume5m = calculateVolumeSum(klines1m, 5);
+    // Volatility 15m: using last 15 x 1m candles
     const volatility15m = calculateVolatility(klines1m.slice(-15));
     const volume1h = calculateVolumeSum(klines1m, 60);
-    const vdelta1h = calculateVolumeDelta(klines1m.slice(-60));
+    // Vdelta 1h: (buyVolume - sellVolume) for last hour
+    const vdelta1h = calculateVolumeDelta(klines1m.length >= 60 ? klines1m.slice(-60) : klines1m);
     
     // 1d change from ticker
     const change1d = ticker ? parseFloat(ticker.priceChangePercent) : null;

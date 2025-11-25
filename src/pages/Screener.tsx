@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -97,6 +97,14 @@ const Screener = () => {
   };
 
   // Format last update time
+  const [, forceUpdate] = useState(0);
+  
+  // Force re-render every second to update "Updated X seconds ago"
+  useEffect(() => {
+    const interval = setInterval(() => forceUpdate(n => n + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+  
   const formatLastUpdate = () => {
     if (!lastUpdate) return '';
     const seconds = Math.floor((Date.now() - lastUpdate) / 1000);
@@ -110,9 +118,12 @@ const Screener = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold tracking-tight">Screener</h1>
-          <span className="text-xs text-muted-foreground">
-            {data.length} pairs • Updated {formatLastUpdate()}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${loading ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`} />
+            <span className="text-xs text-muted-foreground">
+              {data.length} pairs • Updated {formatLastUpdate()}
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative w-64">
