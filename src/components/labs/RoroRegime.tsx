@@ -17,16 +17,17 @@ import { format } from 'date-fns';
 
 // Types based on the API contract
 interface RiskRegimeResponse {
-  history: {
+  data: {
     date: string;      // Format: "YYYY-MM-DD"
     score: number;     // -100 to 100
-    btc_price: number; // Price on that date (snapshot)
-  }[];
-  current_breakdown: {
-    name: string;      // Indicator name
-    value: number;     // Raw value
-    signal: string;    // "Risk On" | "Risk Off" | "Neutral"
-    score: number;     // Contribution to total score
+    components: {
+      cyc_def: number;
+      rty_dji: number;
+      es_gc: number;
+      hg_gc: number;
+      btc_nq: number;
+      etf_flow: number;
+    };
   }[];
 }
 
@@ -67,11 +68,11 @@ export const RoroRegime = () => {
   }, []);
 
   const chartData = useMemo(() => {
-    if (!riskData || !riskData.history) return [];
+    if (!riskData || !riskData.data) return [];
     
-    return riskData.history.map(h => {
-      // Prefer Binance price if available, else fallback to API snapshot
-      const price = btcHistory[h.date] || h.btc_price;
+    return riskData.data.map(h => {
+      // Prefer Binance price if available
+      const price = btcHistory[h.date] || 0;
       return {
         date: h.date,
         timestamp: new Date(h.date).getTime(),
@@ -82,12 +83,30 @@ export const RoroRegime = () => {
   }, [riskData, btcHistory]);
 
   const currentScore = useMemo(() => {
-    if (!riskData) return 0;
-    if (riskData.history && riskData.history.length > 0) {
-      return riskData.history[riskData.history.length - 1].score;
-    }
-    // Defensive check: ensure current_breakdown exists before reducing
-    return (riskData.current_breakdown || []).reduce((acc, item) => acc + item.score, 0);
+    if (!riskData || !riskData.data || riskData.data.length === 0) return 0;
+    return riskData.data[riskData.data.length - 1].score;
+  }, [riskData]);
+
+  const currentBreakdown = useMemo(() => {
+    if (!riskData || !riskData.data || riskData.data.length === 0) return [];
+    const last = riskData.data[riskData.data.length - 1];
+    const comps = last.components;
+    
+    const mapping: Record<string, string> = {
+      cyc_def: "Cyclicals vs Defensives",
+      rty_dji: "Small Caps vs Large Caps",
+      es_gc: "Stocks vs Gold",
+      hg_gc: "Copper vs Gold",
+      btc_nq: "Bitcoin vs Nasdaq",
+      etf_flow: "ETF Flows"
+    };
+
+    return Object.entries(comps).map(([key, val]) => ({
+      name: mapping[key] || key,
+      value: val,
+      signal: val > 0 ? "Risk On" : val < 0 ? "Risk Off" : "Neutral",
+      score: val // Assuming raw value is the score contribution or similar
+    }));
   }, [riskData]);
   
   const getRegime = (score: number) => {
@@ -190,7 +209,7 @@ export const RoroRegime = () => {
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Component Breakdown</h3>
             <div className="space-y-3">
-              {riskData?.current_breakdown?.map((item, i) => (
+              {currentBreakdown.map((item, i) => (
                 <div key={i} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 transition-colors">
                   <div className="space-y-0.5">
                     <div className="font-medium text-sm">{item.name}</div>
