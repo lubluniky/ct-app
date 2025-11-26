@@ -1,88 +1,31 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
+import useSWR from 'swr';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuantChart, ChartDataPoint, Overlay } from "@/components/charts/QuantChart";
-import { Loader2, Activity, TrendingUp, TrendingDown, AlertTriangle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Loader2, Activity, AlertTriangle } from "lucide-react";
 
-// Types based on the prompt
-interface RoroHistoryPoint {
-  date: string;
-  score: number;
-  btc_price: number;
+// Types based on the API contract
+interface RiskRegimeResponse {
+  history: {
+    date: string;      // Format: "YYYY-MM-DD"
+    score: number;     // -100 to 100
+    btc_price: number; // Price on that date
+  }[];
+  current_breakdown: {
+    name: string;      // Indicator name
+    value: number;     // Raw value
+    signal: string;    // "Risk On" | "Risk Off" | "Neutral"
+    score: number;     // Contribution to total score
+  }[];
 }
 
-interface RoroBreakdownItem {
-  name: string;
-  score: number;
-  weight?: number;
-  description?: string;
-}
-
-interface RoroResponse {
-  history: RoroHistoryPoint[];
-  current_breakdown: RoroBreakdownItem[];
-}
-
-// Mock Data Generator (since API might not exist yet)
-const generateMockData = (): RoroResponse => {
-  const history: RoroHistoryPoint[] = [];
-  const now = Date.now();
-  let price = 60000;
-  let score = 0;
-  
-  for (let i = 180; i >= 0; i--) {
-    const date = new Date(now - i * 24 * 60 * 60 * 1000).toISOString();
-    
-    // Random walk for price
-    price = price * (1 + (Math.random() - 0.5) * 0.05);
-    
-    // Random walk for score (mean reverting)
-    score = score * 0.95 + (Math.random() - 0.5) * 10;
-    
-    history.push({
-      date,
-      score,
-      btc_price: price
-    });
-  }
-
-  return {
-    history,
-    current_breakdown: [
-      { name: "VIX Term Structure", score: 25, description: "Contango indicates low risk" },
-      { name: "Credit Spreads", score: 15, description: "Tight spreads suggest confidence" },
-      { name: "DXY Correlation", score: -10, description: "Dollar strength headwind" },
-      { name: "Funding Rates", score: 30, description: "Positive funding indicates bullish sentiment" },
-      { name: "Stablecoin Flows", score: 5, description: "Neutral inflows" }
-    ]
-  };
-};
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export const RoroRegime = () => {
-  const [data, setData] = useState<RoroResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate API fetch
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // In real implementation: const res = await fetch('/api/risk-regime');
-        // const json = await res.json();
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const json = generateMockData();
-        setData(json);
-      } catch (err) {
-        console.error("Failed to fetch RORO data", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  const { data, error, isLoading } = useSWR<RiskRegimeResponse>('/api/risk-regime', fetcher);
 
   const chartData = useMemo(() => {
-    if (!data) return [];
+    if (!data || !data.history) return [];
     return data.history.map(h => ({
       timestamp: new Date(h.date).getTime(),
       open: h.score, // Map Score to OHLC for Main Chart (Histogram/Area)
@@ -94,7 +37,14 @@ export const RoroRegime = () => {
     }));
   }, [data]);
 
-  const currentScore = data?.history[data.history.length - 1]?.score ?? 0;
+  const currentScore = useMemo(() => {
+    if (!data) return 0;
+    if (data.history && data.history.length > 0) {
+      return data.history[data.history.length - 1].score;
+    }
+    // Fallback: sum of breakdown scores
+    return data.current_breakdown.reduce((acc, item) => acc + item.score, 0);
+  }, [data]);
   
   const getRegime = (score: number) => {
     if (score > 20) return { label: "RISK ON", color: "text-emerald-500", bg: "bg-emerald-500/10" };
@@ -115,10 +65,18 @@ export const RoroRegime = () => {
     }
   ], []);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="h-[60vh] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center text-destructive">
+        Failed to load RORO data
       </div>
     );
   }
@@ -149,7 +107,7 @@ export const RoroRegime = () => {
                 <div key={i} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 transition-colors">
                   <div className="space-y-0.5">
                     <div className="font-medium text-sm">{item.name}</div>
-                    <div className="text-xs text-muted-foreground">{item.description}</div>
+                    <div className="text-xs text-muted-foreground">{item.signal}</div>
                   </div>
                   <div className={`font-mono font-bold ${item.score > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                     {item.score > 0 ? '+' : ''}{item.score.toFixed(1)}
