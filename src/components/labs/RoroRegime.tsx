@@ -118,21 +118,21 @@ export const RoroRegime = () => {
   const regime = getRegime(currentScore);
 
   // Gradient Offsets Calculation
-  // Range: -100 to 100. Total = 200.
-  // Top (100) is 0%. Bottom (-100) is 100%.
+  // Range: -200 to 200. Total = 400.
+  // Top (200) is 0%. Bottom (-200) is 100%.
   // 0 score is at 50%.
-  // 50 score: (100 - 50) / 200 = 0.25 (25%)
-  // 20 score: (100 - 20) / 200 = 0.40 (40%)
-  // -20 score: (100 - (-20)) / 200 = 0.60 (60%)
-  // -50 score: (100 - (-50)) / 200 = 0.75 (75%)
+  // 50 score: (200 - 50) / 400 = 0.375 (37.5%)
+  // 20 score: (200 - 20) / 400 = 0.45 (45%)
+  // -20 score: (200 - (-20)) / 400 = 0.55 (55%)
+  // -50 score: (200 - (-50)) / 400 = 0.625 (62.5%)
   
   const gradientOffset = () => {
-    // This function is static for fixed domain [-100, 100]
+    // This function is static for fixed domain [-200, 200]
     return {
-      off50: 0.25,
-      off20: 0.40,
-      offMinus20: 0.60,
-      offMinus50: 0.75
+      off50: 0.375,
+      off20: 0.45,
+      offMinus20: 0.55,
+      offMinus50: 0.625
     };
   };
 
@@ -188,82 +188,49 @@ export const RoroRegime = () => {
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-200px)]">
-      {/* Side Panel - Stats */}
-      <Card className="lg:col-span-1 border-border/40 bg-card/50 backdrop-blur-sm h-full overflow-y-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary" />
-            Risk Regime
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+    <div className="flex flex-col h-[calc(100vh-100px)] gap-4">
+      {/* Top Bar - Stats */}
+      <Card className="border-border/40 bg-card/50 backdrop-blur-sm shrink-0">
+        <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Main Score */}
-          <div className={`p-4 rounded-lg border ${regime.bg} border-border/50 text-center space-y-2`}>
-            <div className="text-sm text-muted-foreground uppercase tracking-wider font-medium">Current Status</div>
-            <div className={`text-3xl font-bold ${regime.color}`}>{regime.label}</div>
-            <div className="text-4xl font-mono font-bold">{currentScore.toFixed(1)}</div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-primary" />
+              <span className="font-medium">Risk Regime</span>
+            </div>
+            <div className={`px-3 py-1 rounded border ${regime.bg} border-border/50 flex items-center gap-3`}>
+              <span className={`text-lg font-bold ${regime.color}`}>{regime.label}</span>
+              <span className="text-xl font-mono font-bold">{currentScore.toFixed(1)}</span>
+            </div>
           </div>
 
-          {/* Breakdown */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Component Breakdown</h3>
-            <div className="space-y-3">
-              {currentBreakdown.map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 transition-colors">
-                  <div className="space-y-0.5">
-                    <div className="font-medium text-sm">{item.name}</div>
-                    <div className="text-xs text-muted-foreground">{item.signal}</div>
-                  </div>
-                  <div className={`font-mono font-bold ${item.score > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    {item.score > 0 ? '+' : ''}{item.score.toFixed(1)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="p-3 rounded bg-muted/20 text-xs text-muted-foreground border border-border/30">
-            <div className="flex items-center gap-2 mb-1 text-foreground font-medium">
-              <AlertTriangle className="w-3 h-3" />
-              About this metric
-            </div>
-            The RORO (Risk-On / Risk-Off) score aggregates data from volatility markets, credit spreads, and funding rates to determine the current market appetite for risk assets.
+          {/* Breakdown Chips */}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {currentBreakdown.map((item, i) => (
+              <div key={i} className="flex items-center gap-2 px-2 py-1 rounded bg-muted/30 border border-border/30 text-xs">
+                <span className="text-muted-foreground">{item.name}</span>
+                <span className={`font-mono font-bold ${item.score > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  {item.score > 0 ? '+' : ''}{item.score.toFixed(1)}
+                </span>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
 
       {/* Main Chart */}
-      <Card className="lg:col-span-3 border-border/40 bg-card/50 backdrop-blur-sm h-full flex flex-col">
-        <CardHeader className="py-4 border-b border-border/40">
-          <CardTitle className="text-center text-xl font-medium">Risk-on/Risk-off regime</CardTitle>
+      <Card className="border-border/40 bg-card/50 backdrop-blur-sm flex-1 min-h-0 flex flex-col">
+        <CardHeader className="py-3 border-b border-border/40 shrink-0">
+          <CardTitle className="text-center text-lg font-medium">Risk-on/Risk-off regime</CardTitle>
         </CardHeader>
         <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
-          <div className="pt-4">
+          <div className="pt-2">
             <CustomLegend />
           </div>
           <div className="w-full flex-1 min-h-0 px-4 pb-4">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                    {/* Strong Bull (>50) */}
-                    <stop offset="0%" stopColor="#673ab7" stopOpacity={0.9} />
-                    <stop offset={`${off.off50 * 100}%`} stopColor="#673ab7" stopOpacity={0.9} />
-                    
-                    {/* Basic Risk-On (20-50) */}
-                    <stop offset={`${off.off50 * 100}%`} stopColor="#9575cd" stopOpacity={0.9} />
-                    <stop offset={`${off.off20 * 100}%`} stopColor="#9575cd" stopOpacity={0.9} />
-                    
-                    {/* Neutral Risk-On (0-20) */}
-                    <stop offset={`${off.off20 * 100}%`} stopColor="#d1c4e9" stopOpacity={0.9} />
-                    <stop offset={`${off.offMinus20 * 100}%`} stopColor="#d1c4e9" stopOpacity={0.9} /> {/* Note: Using same color for 0-20 and -20-0 if desired, or split at 50% */}
-                    
-                    {/* Correction: Split Neutral at 0 (50%) */}
-                    {/* Neutral Risk-On (0-20) -> 40% to 50% */}
-                    {/* Neutral Risk-Off (-20-0) -> 50% to 60% */}
-                  </linearGradient>
-                  
                   <linearGradient id="scoreGradientCorrected" x1="0" y1="0" x2="0" y2="1">
                      {/* Strong Bull (>50) */}
                     <stop offset="0%" stopColor="#673ab7" stopOpacity={0.85} />
@@ -306,7 +273,7 @@ export const RoroRegime = () => {
                 
                 <YAxis 
                   yAxisId="left"
-                  domain={[-100, 100]}
+                  domain={[-200, 200]}
                   stroke="#94a3b8"
                   fontSize={10}
                   tickLine={false}
