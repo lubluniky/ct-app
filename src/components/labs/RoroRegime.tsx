@@ -1,15 +1,26 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { QuantChart, ChartDataPoint, Overlay } from "@/components/charts/QuantChart";
 import { Loader2, Activity, AlertTriangle } from "lucide-react";
+import {
+  ComposedChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine
+} from 'recharts';
+import { format } from 'date-fns';
 
 // Types based on the API contract
 interface RiskRegimeResponse {
   history: {
     date: string;      // Format: "YYYY-MM-DD"
     score: number;     // -100 to 100
-    btc_price: number; // Price on that date
+    btc_price: number; // Price on that date (snapshot)
   }[];
   current_breakdown: {
     name: string;      // Indicator name
@@ -22,31 +33,54 @@ interface RiskRegimeResponse {
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 const RISK_API_URL = 'https://api.borkiss.trade/api/risk-regime';
+const BINANCE_API_URL = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=90'; // Fetch slightly more to ensure overlap
 
 export const RoroRegime = () => {
-  const { data, error, isLoading } = useSWR<RiskRegimeResponse>(RISK_API_URL, fetcher);
+  const { data: riskData, error: riskError, isLoading: riskLoading } = useSWR<RiskRegimeResponse>(RISK_API_URL, fetcher);
+  const [btcHistory, setBtcHistory] = useState<Record<string, number>>({});
+
+  // Fetch Binance Data
+  useEffect(() => {
+    const fetchBinance = async () => {
+      try {
+        const res = await fetch(BINANCE_API_URL);
+        const data = await res.json();
+        // Binance kline: [time, open, high, low, close, ...]
+        const history: Record<string, number> = {};
+        data.forEach((k: any) => {
+          const dateStr = format(new Date(k[0]), 'yyyy-MM-dd');
+          history[dateStr] = parseFloat(k[4]);
+        });
+        setBtcHistory(history);
+      } catch (e) {
+        console.error("Failed to fetch Binance data", e);
+      }
+    };
+    fetchBinance();
+  }, []);
 
   const chartData = useMemo(() => {
-    if (!data || !data.history) return [];
-    return data.history.map(h => ({
-      timestamp: new Date(h.date).getTime(),
-      open: h.score, // Map Score to OHLC for Main Chart (Histogram/Area)
-      high: h.score,
-      low: h.score,
-      close: h.score,
-      score: h.score,
-      btc_price: h.btc_price
-    }));
-  }, [data]);
+    if (!riskData || !riskData.history) return [];
+    
+    return riskData.history.map(h => {
+      // Prefer Binance price if available, else fallback to API snapshot
+      const price = btcHistory[h.date] || h.btc_price;
+      return {
+        date: h.date,
+        timestamp: new Date(h.date).getTime(),
+        score: h.score,
+        btc_price: price
+      };
+    });
+  }, [riskData, btcHistory]);
 
   const currentScore = useMemo(() => {
-    if (!data) return 0;
-    if (data.history && data.history.length > 0) {
-      return data.history[data.history.length - 1].score;
+    if (!riskData) return 0;
+    if (riskData.history && riskData.history.length > 0) {
+      return riskData.history[riskData.history.length - 1].score;
     }
-    // Fallback: sum of breakdown scores
-    return data.current_breakdown.reduce((acc, item) => acc + item.score, 0);
-  }, [data]);
+    return riskData.current_breakdown.reduce((acc, item) => acc + item.score, 0);
+  }, [riskData]);
   
   const getRegime = (score: number) => {
     if (score > 20) return { label: "RISK ON", color: "text-emerald-500", bg: "bg-emerald-500/10" };
@@ -56,18 +90,28 @@ export const RoroRegime = () => {
 
   const regime = getRegime(currentScore);
 
-  const overlays: Overlay[] = useMemo(() => [
-    {
-      id: 'BTC Price',
-      type: 'line',
-      dataKey: 'btc_price',
-      color: '#f59e0b', // Amber
-      yAxisId: 'right', // Price on right
-      width: 2
-    }
-  ], []);
+  // Gradient Offsets Calculation
+  // Range: -100 to 100. Total = 200.
+  // Top (100) is 0%. Bottom (-100) is 100%.
+  // 0 score is at 50%.
+  // 50 score: (100 - 50) / 200 = 0.25 (25%)
+  // 20 score: (100 - 20) / 200 = 0.40 (40%)
+  // -20 score: (100 - (-20)) / 200 = 0.60 (60%)
+  // -50 score: (100 - (-50)) / 200 = 0.75 (75%)
+  
+  const gradientOffset = () => {
+    // This function is static for fixed domain [-100, 100]
+    return {
+      off50: 0.25,
+      off20: 0.40,
+      offMinus20: 0.60,
+      offMinus50: 0.75
+    };
+  };
 
-  if (isLoading) {
+  const off = gradientOffset();
+
+  if (riskLoading) {
     return (
       <div className="h-[60vh] flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -75,7 +119,7 @@ export const RoroRegime = () => {
     );
   }
 
-  if (error) {
+  if (riskError) {
     return (
       <div className="h-[60vh] flex items-center justify-center text-destructive">
         Failed to load RORO data
@@ -105,7 +149,7 @@ export const RoroRegime = () => {
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Component Breakdown</h3>
             <div className="space-y-3">
-              {data?.current_breakdown.map((item, i) => (
+              {riskData?.current_breakdown.map((item, i) => (
                 <div key={i} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 transition-colors">
                   <div className="space-y-0.5">
                     <div className="font-medium text-sm">{item.name}</div>
@@ -145,15 +189,115 @@ export const RoroRegime = () => {
           </div>
         </CardHeader>
         <CardContent className="p-0 flex-1 min-h-0">
-          <div className="w-full h-full bg-background/50">
-            <QuantChart
-              data={chartData}
-              overlays={overlays}
-              height="100%"
-              className="w-full h-full"
-              chartType="area" // Main series is Score (Area)
-              mainSeriesName="Risk Score"
-            />
+          <div className="w-full h-full p-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={chartData}>
+                <defs>
+                  <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#5e35b1" stopOpacity={0.4} />
+                    <stop offset={`${off.off50 * 100}%`} stopColor="#5e35b1" stopOpacity={0.4} />
+                    
+                    <stop offset={`${off.off50 * 100}%`} stopColor="#7e57c2" stopOpacity={0.3} />
+                    <stop offset={`${off.off20 * 100}%`} stopColor="#7e57c2" stopOpacity={0.3} />
+                    
+                    <stop offset={`${off.off20 * 100}%`} stopColor="#9fa8da" stopOpacity={0.1} />
+                    <stop offset={`${off.offMinus20 * 100}%`} stopColor="#9fa8da" stopOpacity={0.1} />
+                    
+                    <stop offset={`${off.offMinus20 * 100}%`} stopColor="#d7ccc8" stopOpacity={0.3} />
+                    <stop offset={`${off.offMinus50 * 100}%`} stopColor="#d7ccc8" stopOpacity={0.3} />
+                    
+                    <stop offset={`${off.offMinus50 * 100}%`} stopColor="#4e342e" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="#4e342e" stopOpacity={0.5} />
+                  </linearGradient>
+                </defs>
+                
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(val) => format(new Date(val), 'dd MMM')}
+                  stroke="#64748b"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  minTickGap={30}
+                />
+                
+                <YAxis 
+                  yAxisId="left"
+                  domain={[-100, 100]}
+                  stroke="#64748b"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  ticks={[100, 50, 20, 0, -20, -50, -100]}
+                />
+                
+                <YAxis 
+                  yAxisId="right"
+                  orientation="right"
+                  domain={['auto', 'auto']}
+                  stroke="#f59e0b"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val) => `$${val.toLocaleString()}`}
+                />
+                
+                <Tooltip 
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      const score = payload[0].value as number;
+                      const price = payload[1]?.value as number;
+                      return (
+                        <div className="bg-background/90 backdrop-blur border border-border p-3 rounded shadow-xl text-xs">
+                          <div className="font-medium mb-2 text-muted-foreground">{format(new Date(label), 'EEE, dd MMM yyyy')}</div>
+                          <div className="flex items-center gap-3 mb-1">
+                            <div className="w-2 h-2 rounded-full bg-violet-500"></div>
+                            <span className="text-muted-foreground">Risk Score:</span>
+                            <span className={`font-bold ${score > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                              {score.toFixed(1)}
+                            </span>
+                          </div>
+                          {price && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                              <span className="text-muted-foreground">BTC Price:</span>
+                              <span className="font-mono font-medium text-foreground">
+                                ${price.toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                
+                <ReferenceLine y={0} yAxisId="left" stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" />
+                
+                <Area
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="score"
+                  stroke="#7c3aed"
+                  strokeWidth={2}
+                  fill="url(#scoreGradient)"
+                  animationDuration={1000}
+                />
+                
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="btc_price"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  dot={false}
+                  animationDuration={1000}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
