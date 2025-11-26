@@ -12,8 +12,8 @@ import {
 // CONSTANTS
 // ============================================
 
-const BACKEND_BASE_URL = 'http://91.107.193.27:8080/api/v1';
-export const WS_URL = 'ws://91.107.193.27:8080/api/v1/screener/ws';
+const BACKEND_BASE_URL = 'https://api.borkiss.site/api/v1';
+export const WS_URL = 'wss://api.borkiss.site/api/v1/screener/ws';
 
 // ============================================
 // TYPES
