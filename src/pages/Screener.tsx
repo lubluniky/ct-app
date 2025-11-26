@@ -220,17 +220,16 @@ const Screener = () => {
   // Format last update time
   const [, forceUpdate] = useState(0);
   
-  // Force re-render every second to update "Updated X seconds ago"
+  // Force re-render every 100ms to update "Updated X ms ago"
   useEffect(() => {
-    const interval = setInterval(() => forceUpdate(n => n + 1), 1000);
+    const interval = setInterval(() => forceUpdate(n => n + 1), 100);
     return () => clearInterval(interval);
   }, []);
   
   const formatLastUpdate = () => {
-    if (!lastUpdate) return '';
-    const seconds = Math.floor((Date.now() - lastUpdate) / 1000);
-    if (seconds < 60) return `${seconds}s ago`;
-    return `${Math.floor(seconds / 60)}m ago`;
+    if (!lastUpdate) return 'Waiting...';
+    const ms = Date.now() - lastUpdate;
+    return `${ms}ms ago`;
   };
 
   return (
