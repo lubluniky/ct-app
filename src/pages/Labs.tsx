@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FlaskConical, Play, RotateCcw, Settings2 } from "lucide-react";
 import { CrossPairAnalyzer } from "@/components/labs/CrossPairAnalyzer";
+import { RoroRegime } from "@/components/labs/RoroRegime";
 
 const Labs = () => {
   return (
@@ -16,11 +17,16 @@ const Labs = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="crosspairs" className="space-y-6">
+      <Tabs defaultValue="roro" className="space-y-6">
         <TabsList className="bg-secondary/50">
+          <TabsTrigger value="roro">RORO Regime</TabsTrigger>
           <TabsTrigger value="crosspairs">Cross Pairs</TabsTrigger>
           <TabsTrigger value="backtest">Backtest</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="roro" className="space-y-6 animate-in fade-in slide-in-from-left-2 duration-300">
+          <RoroRegime />
+        </TabsContent>
 
         <TabsContent value="crosspairs" className="space-y-6 animate-in fade-in slide-in-from-left-2 duration-300">
           <CrossPairAnalyzer />
