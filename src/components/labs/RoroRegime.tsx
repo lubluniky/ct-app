@@ -127,6 +127,39 @@ export const RoroRegime = () => {
     );
   }
 
+  const CustomLegend = () => (
+    <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs mb-6 px-4">
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-0.5 bg-foreground"></div>
+        <span className="text-muted-foreground font-medium">BTC Price</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 rounded-full bg-[#d1c4e9]"></div>
+        <span className="text-muted-foreground">Neutral risk-on</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 rounded-full bg-[#d7ccc8]"></div>
+        <span className="text-muted-foreground">Neutral risk-off</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 rounded-full bg-[#9575cd]"></div>
+        <span className="text-muted-foreground">Basic risk-on</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 rounded-full bg-[#8d6e63]"></div>
+        <span className="text-muted-foreground">Basic risk-off</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 rounded-full bg-[#673ab7]"></div>
+        <span className="text-muted-foreground">Strong bull</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 rounded-full bg-[#4e342e]"></div>
+        <span className="text-muted-foreground">Strong bear</span>
+      </div>
+    </div>
+  );
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-200px)]">
       {/* Side Panel - Stats */}
@@ -175,73 +208,94 @@ export const RoroRegime = () => {
 
       {/* Main Chart */}
       <Card className="lg:col-span-3 border-border/40 bg-card/50 backdrop-blur-sm h-full flex flex-col">
-        <CardHeader className="py-3 px-4 border-b border-border/40 flex flex-row items-center justify-between">
-          <CardTitle className="text-base font-medium">Historical Regime Analysis</CardTitle>
-          <div className="flex items-center gap-4 text-xs">
-             <div className="flex items-center gap-2">
-               <div className="w-3 h-3 bg-violet-500/60 rounded-sm"></div>
-               <span>Risk Score</span>
-             </div>
-             <div className="flex items-center gap-2">
-               <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
-               <span>BTC Price</span>
-             </div>
-          </div>
+        <CardHeader className="py-4 border-b border-border/40">
+          <CardTitle className="text-center text-xl font-medium">Risk-on/Risk-off regime</CardTitle>
         </CardHeader>
-        <CardContent className="p-0 flex-1 min-h-0">
-          <div className="w-full h-full p-4">
+        <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
+          <div className="pt-4">
+            <CustomLegend />
+          </div>
+          <div className="w-full flex-1 min-h-0 px-4 pb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData}>
+              <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#5e35b1" stopOpacity={0.4} />
-                    <stop offset={`${off.off50 * 100}%`} stopColor="#5e35b1" stopOpacity={0.4} />
+                    {/* Strong Bull (>50) */}
+                    <stop offset="0%" stopColor="#673ab7" stopOpacity={0.9} />
+                    <stop offset={`${off.off50 * 100}%`} stopColor="#673ab7" stopOpacity={0.9} />
                     
-                    <stop offset={`${off.off50 * 100}%`} stopColor="#7e57c2" stopOpacity={0.3} />
-                    <stop offset={`${off.off20 * 100}%`} stopColor="#7e57c2" stopOpacity={0.3} />
+                    {/* Basic Risk-On (20-50) */}
+                    <stop offset={`${off.off50 * 100}%`} stopColor="#9575cd" stopOpacity={0.9} />
+                    <stop offset={`${off.off20 * 100}%`} stopColor="#9575cd" stopOpacity={0.9} />
                     
-                    <stop offset={`${off.off20 * 100}%`} stopColor="#9fa8da" stopOpacity={0.1} />
-                    <stop offset={`${off.offMinus20 * 100}%`} stopColor="#9fa8da" stopOpacity={0.1} />
+                    {/* Neutral Risk-On (0-20) */}
+                    <stop offset={`${off.off20 * 100}%`} stopColor="#d1c4e9" stopOpacity={0.9} />
+                    <stop offset={`${off.offMinus20 * 100}%`} stopColor="#d1c4e9" stopOpacity={0.9} /> {/* Note: Using same color for 0-20 and -20-0 if desired, or split at 50% */}
                     
-                    <stop offset={`${off.offMinus20 * 100}%`} stopColor="#d7ccc8" stopOpacity={0.3} />
-                    <stop offset={`${off.offMinus50 * 100}%`} stopColor="#d7ccc8" stopOpacity={0.3} />
+                    {/* Correction: Split Neutral at 0 (50%) */}
+                    {/* Neutral Risk-On (0-20) -> 40% to 50% */}
+                    {/* Neutral Risk-Off (-20-0) -> 50% to 60% */}
+                  </linearGradient>
+                  
+                  <linearGradient id="scoreGradientCorrected" x1="0" y1="0" x2="0" y2="1">
+                     {/* Strong Bull (>50) */}
+                    <stop offset="0%" stopColor="#673ab7" stopOpacity={0.85} />
+                    <stop offset={`${off.off50 * 100}%`} stopColor="#673ab7" stopOpacity={0.85} />
                     
-                    <stop offset={`${off.offMinus50 * 100}%`} stopColor="#4e342e" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="#4e342e" stopOpacity={0.5} />
+                    {/* Basic Risk-On (20-50) */}
+                    <stop offset={`${off.off50 * 100}%`} stopColor="#9575cd" stopOpacity={0.85} />
+                    <stop offset={`${off.off20 * 100}%`} stopColor="#9575cd" stopOpacity={0.85} />
+                    
+                    {/* Neutral Risk-On (0-20) */}
+                    <stop offset={`${off.off20 * 100}%`} stopColor="#d1c4e9" stopOpacity={0.85} />
+                    <stop offset="50%" stopColor="#d1c4e9" stopOpacity={0.85} />
+                    
+                    {/* Neutral Risk-Off (-20-0) */}
+                    <stop offset="50%" stopColor="#d7ccc8" stopOpacity={0.85} />
+                    <stop offset={`${off.offMinus20 * 100}%`} stopColor="#d7ccc8" stopOpacity={0.85} />
+                    
+                    {/* Basic Risk-Off (-50--20) */}
+                    <stop offset={`${off.offMinus20 * 100}%`} stopColor="#8d6e63" stopOpacity={0.85} />
+                    <stop offset={`${off.offMinus50 * 100}%`} stopColor="#8d6e63" stopOpacity={0.85} />
+                    
+                    {/* Strong Bear (<-50) */}
+                    <stop offset={`${off.offMinus50 * 100}%`} stopColor="#4e342e" stopOpacity={0.85} />
+                    <stop offset="100%" stopColor="#4e342e" stopOpacity={0.85} />
                   </linearGradient>
                 </defs>
                 
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
                 
                 <XAxis 
                   dataKey="date" 
-                  tickFormatter={(val) => format(new Date(val), 'dd MMM')}
-                  stroke="#64748b"
-                  fontSize={12}
+                  tickFormatter={(val) => format(new Date(val), 'yyyy-MM-dd')}
+                  stroke="#94a3b8"
+                  fontSize={10}
                   tickLine={false}
                   axisLine={false}
                   minTickGap={30}
+                  dy={10}
                 />
                 
                 <YAxis 
                   yAxisId="left"
                   domain={[-100, 100]}
-                  stroke="#64748b"
-                  fontSize={12}
+                  stroke="#94a3b8"
+                  fontSize={10}
                   tickLine={false}
                   axisLine={false}
-                  ticks={[100, 50, 20, 0, -20, -50, -100]}
+                  ticks={[100, 50, 0, -50, -100]}
                 />
                 
                 <YAxis 
                   yAxisId="right"
                   orientation="right"
                   domain={['auto', 'auto']}
-                  stroke="#f59e0b"
-                  fontSize={12}
+                  stroke="#94a3b8"
+                  fontSize={10}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(val) => `$${val.toLocaleString()}`}
+                  tickFormatter={(val) => val.toLocaleString()}
                 />
                 
                 <Tooltip 
@@ -250,7 +304,7 @@ export const RoroRegime = () => {
                       const score = payload[0].value as number;
                       const price = payload[1]?.value as number;
                       return (
-                        <div className="bg-background/90 backdrop-blur border border-border p-3 rounded shadow-xl text-xs">
+                        <div className="bg-background/95 backdrop-blur border border-border p-3 rounded shadow-xl text-xs">
                           <div className="font-medium mb-2 text-muted-foreground">{format(new Date(label), 'EEE, dd MMM yyyy')}</div>
                           <div className="flex items-center gap-3 mb-1">
                             <div className="w-2 h-2 rounded-full bg-violet-500"></div>
@@ -261,7 +315,7 @@ export const RoroRegime = () => {
                           </div>
                           {price && (
                             <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                              <div className="w-2 h-2 rounded-full bg-foreground"></div>
                               <span className="text-muted-foreground">BTC Price:</span>
                               <span className="font-mono font-medium text-foreground">
                                 ${price.toLocaleString()}
@@ -275,15 +329,14 @@ export const RoroRegime = () => {
                   }}
                 />
                 
-                <ReferenceLine y={0} yAxisId="left" stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" />
+                <ReferenceLine y={0} yAxisId="left" stroke="rgba(255,255,255,0.1)" />
                 
                 <Area
                   yAxisId="left"
                   type="monotone"
                   dataKey="score"
-                  stroke="#7c3aed"
-                  strokeWidth={2}
-                  fill="url(#scoreGradient)"
+                  stroke="none"
+                  fill="url(#scoreGradientCorrected)"
                   animationDuration={1000}
                 />
                 
@@ -291,8 +344,9 @@ export const RoroRegime = () => {
                   yAxisId="right"
                   type="monotone"
                   dataKey="btc_price"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
+                  stroke="currentColor" 
+                  className="text-foreground"
+                  strokeWidth={1.5}
                   dot={false}
                   animationDuration={1000}
                 />
