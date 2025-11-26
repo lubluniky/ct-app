@@ -34,7 +34,7 @@ interface RiskRegimeResponse {
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 const RISK_API_URL = 'https://api.borkiss.trade/api/risk-regime';
-const BINANCE_API_URL = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=120'; // Fetch slightly more to ensure overlap
+const BINANCE_API_URL = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=365'; // Fetch more to ensure overlap
 
 export const RoroRegime = () => {
   const { data: riskData, error: riskError, isLoading: riskLoading } = useSWR<RiskRegimeResponse>(RISK_API_URL, fetcher);
@@ -72,7 +72,7 @@ export const RoroRegime = () => {
     
     return riskData.data.map(h => {
       // Prefer Binance price if available
-      const price = btcHistory[h.date] || 0;
+      const price = btcHistory[h.date];
       return {
         date: h.date,
         timestamp: new Date(h.date).getTime(),
