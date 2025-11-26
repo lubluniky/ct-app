@@ -12,8 +12,8 @@ import {
 // CONSTANTS
 // ============================================
 
-const BACKEND_BASE_URL = 'https://api.borkiss.site/api/v1';
-export const WS_URL = 'wss://api.borkiss.site/api/v1/screener/ws';
+const BACKEND_BASE_URL = 'https://api.borkiss.trade/api/v1';
+export const WS_URL = 'wss://api.borkiss.trade/api/v1/screener/ws';
 
 // ============================================
 // TYPES
