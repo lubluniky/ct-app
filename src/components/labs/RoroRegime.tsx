@@ -39,6 +39,13 @@ export const RoroRegime = () => {
   const { data: riskData, error: riskError, isLoading: riskLoading } = useSWR<RiskRegimeResponse>(RISK_API_URL, fetcher);
   const [btcHistory, setBtcHistory] = useState<Record<string, number>>({});
 
+  // Debug: Log incoming data
+  useEffect(() => {
+    if (riskData) {
+      console.log("Risk Data Received:", riskData);
+    }
+  }, [riskData]);
+
   // Fetch Binance Data
   useEffect(() => {
     const fetchBinance = async () => {
@@ -79,7 +86,8 @@ export const RoroRegime = () => {
     if (riskData.history && riskData.history.length > 0) {
       return riskData.history[riskData.history.length - 1].score;
     }
-    return riskData.current_breakdown.reduce((acc, item) => acc + item.score, 0);
+    // Defensive check: ensure current_breakdown exists before reducing
+    return (riskData.current_breakdown || []).reduce((acc, item) => acc + item.score, 0);
   }, [riskData]);
   
   const getRegime = (score: number) => {
@@ -182,7 +190,7 @@ export const RoroRegime = () => {
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Component Breakdown</h3>
             <div className="space-y-3">
-              {riskData?.current_breakdown.map((item, i) => (
+              {riskData?.current_breakdown?.map((item, i) => (
                 <div key={i} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 transition-colors">
                   <div className="space-y-0.5">
                     <div className="font-medium text-sm">{item.name}</div>
