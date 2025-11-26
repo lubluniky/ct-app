@@ -20,6 +20,7 @@ import {
   formatFundingRate,
 } from "@/lib/screener/calculations";
 import { fetchKlines } from "@/lib/screener/api";
+import { QuantChart, ChartDataPoint } from "@/components/charts/QuantChart";
 
 // ============================================
 // MINI CHART COMPONENT
@@ -38,8 +39,8 @@ const MiniChart: React.FC<MiniChartProps> = ({ symbol, onClose }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch last 24 x 5m candles (2 hours)
-        const data = await fetchKlines(symbol, '5m', 24);
+        // Fetch last 100 x 5m candles (approx 8 hours) for better context
+        const data = await fetchKlines(symbol, '5m', 100);
         setKlines(data);
       } catch (err) {
         console.error('Failed to fetch chart data:', err);
@@ -50,35 +51,27 @@ const MiniChart: React.FC<MiniChartProps> = ({ symbol, onClose }) => {
     fetchData();
   }, [symbol]);
 
-  // Calculate chart dimensions
-  const chartHeight = 120;
-  const chartWidth = 300;
-
-  // Find min/max for scaling
-  const prices = klines.flatMap(k => [k.high, k.low]);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-  const priceRange = maxPrice - minPrice || 1;
-
-  // Scale price to Y coordinate
-  const scaleY = (price: number) => {
-    return chartHeight - ((price - minPrice) / priceRange) * chartHeight;
-  };
-
-  // Calculate bar width
-  const barWidth = klines.length > 0 ? (chartWidth / klines.length) * 0.8 : 4;
-  const barGap = klines.length > 0 ? (chartWidth / klines.length) * 0.2 : 1;
+  // Map to ChartDataPoint
+  const chartData: ChartDataPoint[] = useMemo(() => {
+    return klines.map(k => ({
+      timestamp: k.openTime,
+      open: k.open,
+      high: k.high,
+      low: k.low,
+      close: k.close,
+    }));
+  }, [klines]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div 
-        className="bg-card border border-border rounded-lg shadow-xl p-4 min-w-[350px]"
+        className="bg-card border border-border rounded-lg shadow-xl p-4 w-[800px] h-[500px] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className="font-bold text-foreground">{symbol}</span>
-            <span className="text-xs text-muted-foreground">5m • 2h</span>
+            <span className="text-xs text-muted-foreground">5m • 8h</span>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X size={18} />
@@ -86,53 +79,22 @@ const MiniChart: React.FC<MiniChartProps> = ({ symbol, onClose }) => {
         </div>
         
         {loading ? (
-          <div className="h-[120px] flex items-center justify-center">
-            <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
+          <div className="flex-1 flex items-center justify-center">
+            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : klines.length === 0 ? (
-          <div className="h-[120px] flex items-center justify-center text-muted-foreground text-sm">
+          <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
             No data available
           </div>
         ) : (
-          <svg width={chartWidth} height={chartHeight} className="overflow-visible">
-            {klines.map((k, i) => {
-              const x = i * (barWidth + barGap);
-              const isGreen = k.close >= k.open;
-              const bodyTop = scaleY(Math.max(k.open, k.close));
-              const bodyBottom = scaleY(Math.min(k.open, k.close));
-              const bodyHeight = Math.max(1, bodyBottom - bodyTop);
-              const wickTop = scaleY(k.high);
-              const wickBottom = scaleY(k.low);
-
-              return (
-                <g key={i}>
-                  {/* Wick */}
-                  <line
-                    x1={x + barWidth / 2}
-                    y1={wickTop}
-                    x2={x + barWidth / 2}
-                    y2={wickBottom}
-                    stroke={isGreen ? '#22c55e' : '#ef4444'}
-                    strokeWidth={1}
-                  />
-                  {/* Body */}
-                  <rect
-                    x={x}
-                    y={bodyTop}
-                    width={barWidth}
-                    height={bodyHeight}
-                    fill={isGreen ? '#22c55e' : '#ef4444'}
-                  />
-                </g>
-              );
-            })}
-          </svg>
-        )}
-        
-        {klines.length > 0 && (
-          <div className="flex justify-between mt-2 text-[10px] text-muted-foreground font-mono">
-            <span>L: {formatPrice(minPrice)}</span>
-            <span>H: {formatPrice(maxPrice)}</span>
+          <div className="flex-1 min-h-0">
+             <QuantChart 
+                data={chartData} 
+                height="100%" 
+                className="w-full h-full"
+                showGrid={true}
+                showLegend={false}
+             />
           </div>
         )}
       </div>
