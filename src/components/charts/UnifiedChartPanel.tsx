@@ -4,22 +4,29 @@ import { useKlines } from '@/hooks/useKlines';
 import { getRecommendedThreshold } from '@/lib/tension';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Activity, Layers } from 'lucide-react';
+import { Loader2, Activity, Layers, Lock } from 'lucide-react';
 import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 import { calculateMoneyNoodle } from '@/lib/indicators';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
 
 export const UnifiedChartPanel = () => {
   const [symbol] = useState('BTCUSDT');
   const [interval, setInterval] = useState('1h');
   const [activeIndicators, setActiveIndicators] = useState<string[]>(['Market Pulse']);
   const chartRef = React.useRef<HTMLDivElement>(null);
+  const { user, profile, signInWithGoogle } = useAuth();
+  const { toast } = useToast();
+
+  const isProOrUltra = !!(user && (profile?.tier === 'pro' || profile?.tier === 'ultra'));
 
   // Fetch Data
   // Primary source for candles: Futures (matches MTM Tension)
@@ -183,20 +190,46 @@ export const UnifiedChartPanel = () => {
                     )
                   }}
                 >
-                  Market Pulse
+                  Market Pulse (V4)
                 </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={activeIndicators.includes('Money Noodle')}
-                  onCheckedChange={(checked) => {
-                    setActiveIndicators(prev => 
-                      checked 
-                        ? [...prev, 'Money Noodle']
-                        : prev.filter(i => i !== 'Money Noodle')
-                    )
-                  }}
-                >
-                  Money Noodle
-                </DropdownMenuCheckboxItem>
+                
+                {isProOrUltra ? (
+                  <DropdownMenuCheckboxItem
+                    checked={activeIndicators.includes('Money Noodle')}
+                    onCheckedChange={(checked) => {
+                      setActiveIndicators(prev => 
+                        checked 
+                          ? [...prev, 'Money Noodle']
+                          : prev.filter(i => i !== 'Money Noodle')
+                      )
+                    }}
+                  >
+                    Project SB (preview)
+                  </DropdownMenuCheckboxItem>
+                ) : (
+                  <DropdownMenuItem 
+                    className="flex items-center justify-between cursor-pointer text-muted-foreground"
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      if (!user) {
+                        toast({
+                          title: "Login Required",
+                          description: "Please login to access Project SB (preview).",
+                          action: <Button variant="outline" size="sm" onClick={() => signInWithGoogle()}>Login</Button>
+                        });
+                      } else {
+                        toast({
+                          title: "Access Restricted",
+                          description: "Project SB is available for PRO and ULTRA members only.",
+                          variant: "destructive"
+                        });
+                      }
+                    }}
+                  >
+                    <span>Project SB (preview)</span>
+                    <Lock className="h-3 w-3 ml-2" />
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
         </div>
