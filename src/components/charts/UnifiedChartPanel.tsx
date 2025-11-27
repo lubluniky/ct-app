@@ -144,21 +144,21 @@ export const UnifiedChartPanel = () => {
             opacity: 0.5,
         });
 
-        // EMA 1 (Cyan)
+        // EMA 1 (Yellow)
         list.push({
             id: 'MN EMA1',
             type: 'line',
             dataKey: 'mn_ema1',
-            color: '#22d3ee', // Cyan-400
+            color: '#facc15', // Yellow-400
             width: 2,
         });
 
-        // EMA 2 (Emerald)
+        // EMA 2 (Pink)
         list.push({
             id: 'MN EMA2',
             type: 'line',
             dataKey: 'mn_ema2',
-            color: '#34d399', // Emerald-400
+            color: '#f472b6', // Pink-400
             width: 2,
         });
     }
