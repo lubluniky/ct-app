@@ -77,6 +77,7 @@ export const UnifiedChartPanel = () => {
             if (point) {
                 point.mn_ema1 = noodle.emaFast[i];
                 point.mn_ema2 = noodle.emaMedium[i];
+                point.mn_main = noodle.emaMain[i];
                 point.mn_upper = noodle.upperBand[i];
                 point.mn_lower = noodle.lowerBand[i];
             }
@@ -102,52 +103,62 @@ export const UnifiedChartPanel = () => {
     }
 
     if (activeIndicators.includes('Money Noodle')) {
-        // Band Fill
+        // Band Fill (Gray Channel)
         list.push({
             id: 'MN Band',
             type: 'band',
             dataKey: 'mn_upper', // Not used for band but required by type
             upperDataKey: 'mn_upper',
             lowerDataKey: 'mn_lower',
-            color: '#808080', // Gray
-            opacity: 0.15,
+            color: '#94a3b8', // Slate-400
+            opacity: 0.1,
         });
         
-        // Upper Band
+        // Middle Value (Curve in gray channel)
+        list.push({
+            id: 'MN Middle',
+            type: 'line',
+            dataKey: 'mn_main',
+            color: '#cbd5e1', // Slate-300
+            width: 1,
+            opacity: 0.7,
+        });
+
+        // Upper Band Border
         list.push({
             id: 'MN Upper',
             type: 'line',
             dataKey: 'mn_upper',
-            color: '#ffffff',
+            color: '#475569', // Slate-600
             width: 1,
             opacity: 0.5,
         });
 
-        // Lower Band
+        // Lower Band Border
         list.push({
             id: 'MN Lower',
             type: 'line',
             dataKey: 'mn_lower',
-            color: '#ffffff',
+            color: '#475569', // Slate-600
             width: 1,
             opacity: 0.5,
         });
 
-        // EMA 1 (Aqua)
+        // EMA 1 (Cyan)
         list.push({
             id: 'MN EMA1',
             type: 'line',
             dataKey: 'mn_ema1',
-            color: '#00FFFF', // Aqua
+            color: '#22d3ee', // Cyan-400
             width: 2,
         });
 
-        // EMA 2 (Lime)
+        // EMA 2 (Emerald)
         list.push({
             id: 'MN EMA2',
             type: 'line',
             dataKey: 'mn_ema2',
-            color: '#00FF00', // Lime
+            color: '#34d399', // Emerald-400
             width: 2,
         });
     }
