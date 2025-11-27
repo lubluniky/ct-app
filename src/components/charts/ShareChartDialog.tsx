@@ -155,46 +155,44 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({
             </div>
 
             {/* Card Footer */}
-            <div className="flex justify-between items-end font-mono text-zinc-300 pt-2">
+            <div className="flex justify-between items-end font-mono text-zinc-300 pt-1">
               {/* Left Side */}
-              <div className="flex flex-col gap-1">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold tracking-tight text-white uppercase">
-                      Centurion
-                    </h1>
-                    {user ? (
-                      isUltra ? (
-                        <svg width="80" height="32" viewBox="0 0 80 32" className="inline-block -mb-1">
-                          <defs>
-                            <linearGradient id="platinumGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                              <stop offset="0%" stopColor="#a1a1aa" />
-                              <stop offset="50%" stopColor="#f4f4f5" />
-                              <stop offset="100%" stopColor="#a1a1aa" />
-                            </linearGradient>
-                          </defs>
-                          <text 
-                            x="0" 
-                            y="24" 
-                            fontFamily="Inter, sans-serif" 
-                            fontWeight="bold" 
-                            fontSize="24" 
-                            fill="url(#platinumGradient)"
-                            style={{ textTransform: 'uppercase', letterSpacing: '-0.025em' }}
-                          >
-                            ULTRA
-                          </text>
-                        </svg>
-                      ) : (
-                        <span className="text-2xl font-bold tracking-tight text-white uppercase">PRO</span>
-                      )
-                    ) : null}
-                  </div>
-                  <span className="text-lg text-zinc-500 uppercase tracking-widest">Terminal</span>
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-bold tracking-tight text-white uppercase">
+                    Centurion
+                  </h1>
+                  {user ? (
+                    isUltra ? (
+                      <svg width="50" height="20" viewBox="0 0 80 32" className="inline-block">
+                        <defs>
+                          <linearGradient id="platinumGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#a1a1aa" />
+                            <stop offset="50%" stopColor="#f4f4f5" />
+                            <stop offset="100%" stopColor="#a1a1aa" />
+                          </linearGradient>
+                        </defs>
+                        <text 
+                          x="0" 
+                          y="24" 
+                          fontFamily="Inter, sans-serif" 
+                          fontWeight="bold" 
+                          fontSize="24" 
+                          fill="url(#platinumGradient)"
+                          style={{ textTransform: 'uppercase', letterSpacing: '-0.025em' }}
+                        >
+                          ULTRA
+                        </text>
+                      </svg>
+                    ) : (
+                      <span className="text-lg font-bold tracking-tight text-white uppercase">PRO</span>
+                    )
+                  ) : null}
+                  <span className="text-xs text-zinc-500 uppercase tracking-widest self-center">Terminal</span>
                 </div>
 
                 {(symbol || timeframe || indicator) && (
-                   <div className="flex items-center gap-2 text-xs font-mono text-zinc-400 uppercase tracking-wider my-0.5">
+                   <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
                       {symbol && <span className="text-white font-bold">{symbol}</span>}
                       {timeframe && (
                         <>
@@ -210,18 +208,17 @@ export const ShareChartDialog: React.FC<ShareChartDialogProps> = ({
                       )}
                    </div>
                 )}
-
-                <p className="text-[10px] text-zinc-600 tracking-wider uppercase">available at borkiss.trade</p>
               </div>
 
               {/* Right Side */}
-              <div className="flex flex-col items-end gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-zinc-600 uppercase tracking-wider">user</span>
-                  <span className="text-lg font-bold text-white">
+              <div className="flex flex-col items-end gap-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[8px] text-zinc-600 uppercase tracking-wider">user</span>
+                  <span className="text-sm font-bold text-white">
                     {displayName}
                   </span>
                 </div>
+                <p className="text-[8px] text-zinc-600 tracking-wider uppercase">borkiss.trade</p>
               </div>
             </div>
           </div>
