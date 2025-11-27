@@ -1,7 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Activity, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, Activity, AlertTriangle, Lock } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import {
   ComposedChart,
   Area,
@@ -37,6 +39,7 @@ const RISK_API_URL = 'https://api.borkiss.trade/api/risk-regime';
 const BINANCE_API_URL = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=365'; // Fetch more to ensure overlap
 
 export const RoroRegime = () => {
+  const { profile, loading: authLoading, signInWithGoogle } = useAuth();
   const { data: riskData, error: riskError, isLoading: riskLoading } = useSWR<RiskRegimeResponse>(RISK_API_URL, fetcher);
   const [btcHistory, setBtcHistory] = useState<Record<string, number>>({});
 
@@ -137,6 +140,36 @@ export const RoroRegime = () => {
   };
 
   const off = gradientOffset();
+
+  if (authLoading) {
+    return (
+      <div className="h-[60vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (profile?.tier !== 'ultra') {
+    return (
+      <div className="h-[calc(100vh-100px)] flex flex-col items-center justify-center gap-6 border border-border/40 bg-card/50 backdrop-blur-sm rounded-lg p-8 text-center">
+        <div className="p-4 rounded-full bg-muted/30">
+          <Lock className="w-12 h-12 text-primary" />
+        </div>
+        <div className="space-y-2 max-w-md">
+          <h2 className="text-2xl font-bold tracking-tight">Available only for Ultra!</h2>
+          <p className="text-muted-foreground">
+            The Risk-On/Risk-Off Regime indicator is an exclusive feature for Ultra tier members.
+            It provides institutional-grade market regime analysis.
+          </p>
+        </div>
+        {!profile && (
+          <Button onClick={signInWithGoogle} size="lg" className="gap-2">
+            Sign In to Access
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   if (riskLoading) {
     return (
