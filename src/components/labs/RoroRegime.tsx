@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Activity, AlertTriangle, Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { SnapshotButton } from "@/components/SnapshotButton";
+import { ShareChartDialog } from "@/components/charts/ShareChartDialog";
 import {
   ComposedChart,
   Area,
@@ -253,10 +253,12 @@ export const RoroRegime = () => {
           
           {/* Snapshot Button */}
           <div className="flex items-center">
-            <SnapshotButton 
-              containerRef={containerRef}
-              symbol="RORO_Regime"
+            <ShareChartDialog 
+              targetRef={containerRef}
+              title="Risk Regime Analysis"
+              symbol="RORO"
               timeframe="1D"
+              indicator="Risk Regime"
             />
           </div>
         </CardContent>
