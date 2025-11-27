@@ -7,7 +7,7 @@ import { useRef } from 'react';
 import { useVPIN } from '@/hooks/useVPIN';
 import { VPINChart } from './VPINChart';
 import { Card } from '@/components/ui/card';
-import { SnapshotButton } from '@/components/SnapshotButton';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 import { Watermark } from '@/components/Watermark';
 import { Activity } from 'lucide-react';
 
@@ -56,10 +56,12 @@ export function VPINPanel({
           <div className="flex items-center gap-4">
             {/* Snapshot Button */}
             <div data-snapshot-hide>
-              <SnapshotButton
-                containerRef={containerRef}
+              <ShareChartDialog
+                targetRef={containerRef}
+                title="VPIN Analysis"
                 symbol={symbol}
-                timeframe={`VPIN_${timeframe.toUpperCase()}`}
+                timeframe={timeframe.toUpperCase()}
+                indicator="VPIN"
               />
             </div>
 

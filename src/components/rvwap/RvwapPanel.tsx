@@ -6,7 +6,7 @@ import { useEffect, useRef, memo } from 'react';
 import { RvwapChart } from './RvwapChart';
 import { useMultiRvwap } from '@/hooks/useMultiRvwap';
 import { Card } from '@/components/ui/card';
-import { SnapshotButton } from '@/components/SnapshotButton';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 import { TrendingUp, RefreshCw } from 'lucide-react';
 import type { DataSource } from '@/lib/binance';
 
@@ -47,10 +47,12 @@ export const RvwapPanel = memo(function RvwapPanel({ symbol, dataSource }: Rvwap
           )}
           
           <div data-snapshot-hide>
-            <SnapshotButton
-              containerRef={containerRef}
+            <ShareChartDialog
+              targetRef={containerRef}
+              title="Rolling VWAP Analysis"
               symbol={symbol}
-              timeframe="RVWAP_Multi"
+              timeframe="Multi-Period"
+              indicator="RVWAP"
             />
           </div>
         </div>

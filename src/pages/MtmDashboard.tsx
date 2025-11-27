@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useKlines } from '@/hooks/useKlines';
 import { OhlcChart } from '@/components/ohlc/OhlcChart';
-import { SnapshotButton } from '@/components/SnapshotButton';
+import { ShareChartDialog } from '@/components/charts/ShareChartDialog';
 import { RvwapPanel } from '@/components/rvwap/RvwapPanel';
 import { getRecommendedThreshold } from '@/lib/tension';
 import { Button } from '@/components/ui/button';
@@ -113,10 +113,12 @@ function Panel({ timeframe, symbol, dataSource }: PanelProps) {
           <div className={`w-2 h-2 rounded-full ${statusColor}`} title={error ? 'Error' : isLoading ? 'Loading' : 'OK'} />
         </div>
         <div className="flex items-center gap-2">
-          <SnapshotButton 
-            containerRef={containerRef}
+          <ShareChartDialog
+            targetRef={containerRef}
+            title="Market Tension Map"
             symbol={symbol}
             timeframe={timeframe.label}
+            indicator="MTM"
           />
           <div className="flex items-center gap-4 text-xs text-muted-foreground" data-snapshot-hide>
             {lastUpdated && (
