@@ -1,10 +1,11 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
-import useSWR from 'swr';
+import React, { useMemo, useState, useEffect, useRef } from "react";
+import useSWR from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Activity, AlertTriangle, Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ShareChartDialog } from "@/components/charts/ShareChartDialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ComposedChart,
   Area,
@@ -14,15 +15,15 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine
-} from 'recharts';
-import { format } from 'date-fns';
+  ReferenceLine,
+} from "recharts";
+import { format } from "date-fns";
 
 // Types based on the API contract
 interface RiskRegimeResponse {
   data: {
-    date: string;      // Format: "YYYY-MM-DD"
-    score: number;     // -100 to 100
+    date: string; // Format: "YYYY-MM-DD"
+    score: number; // -100 to 100
     components: {
       cyc_def: number;
       rty_dji: number;
@@ -34,15 +35,21 @@ interface RiskRegimeResponse {
   }[];
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const RISK_API_URL = 'https://api.borkiss.trade/api/risk-regime';
-const BINANCE_API_URL = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=365'; // Fetch more to ensure overlap
+const RISK_API_URL = "https://api.borkiss.trade/api/risk-regime";
+const BINANCE_API_URL =
+  "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=365"; // Fetch more to ensure overlap
 
 export const RoroRegime = () => {
   const { profile, loading: authLoading, signInWithGoogle } = useAuth();
-  const { data: riskData, error: riskError, isLoading: riskLoading } = useSWR<RiskRegimeResponse>(RISK_API_URL, fetcher);
+  const {
+    data: riskData,
+    error: riskError,
+    isLoading: riskLoading,
+  } = useSWR<RiskRegimeResponse>(RISK_API_URL, fetcher);
   const [btcHistory, setBtcHistory] = useState<Record<string, number>>({});
+  const [viewMode, setViewMode] = useState<"waves" | "bubbles">("waves");
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Debug: Log incoming data
@@ -60,9 +67,9 @@ export const RoroRegime = () => {
         const data = await res.json();
         // Binance kline: [time, open, high, low, close, ...]
         const history: Record<string, number> = {};
-        data.forEach((k: any) => {
-          const dateStr = format(new Date(k[0]), 'yyyy-MM-dd');
-          history[dateStr] = parseFloat(k[4]);
+        data.forEach((k: (number | string)[]) => {
+          const dateStr = format(new Date(k[0]), "yyyy-MM-dd");
+          history[dateStr] = parseFloat(k[4] as string);
         });
         setBtcHistory(history);
       } catch (e) {
@@ -74,15 +81,15 @@ export const RoroRegime = () => {
 
   const chartData = useMemo(() => {
     if (!riskData || !riskData.data) return [];
-    
-    return riskData.data.map(h => {
+
+    return riskData.data.map((h) => {
       // Prefer Binance price if available
       const price = btcHistory[h.date];
       return {
         date: h.date,
         timestamp: new Date(h.date).getTime(),
         score: h.score,
-        btc_price: price
+        btc_price: price,
       };
     });
   }, [riskData, btcHistory]);
@@ -96,28 +103,42 @@ export const RoroRegime = () => {
     if (!riskData || !riskData.data || riskData.data.length === 0) return [];
     const last = riskData.data[riskData.data.length - 1];
     const comps = last.components;
-    
+
     const mapping: Record<string, string> = {
       cyc_def: "Cyclicals vs Defensives",
       rty_dji: "Small Caps vs Large Caps",
       es_gc: "Stocks vs Gold",
       hg_gc: "Copper vs Gold",
       btc_nq: "Bitcoin vs Nasdaq",
-      etf_flow: "ETF Flows"
+      etf_flow: "ETF Flows",
     };
 
     return Object.entries(comps).map(([key, val]) => ({
       name: mapping[key] || key,
       value: val,
       signal: val > 0 ? "Risk On" : val < 0 ? "Risk Off" : "Neutral",
-      score: val // Assuming raw value is the score contribution or similar
+      score: val, // Assuming raw value is the score contribution or similar
     }));
   }, [riskData]);
-  
+
   const getRegime = (score: number) => {
-    if (score > 20) return { label: "RISK ON", color: "text-emerald-500", bg: "bg-emerald-500/10" };
-    if (score < -20) return { label: "RISK OFF", color: "text-rose-500", bg: "bg-rose-500/10" };
-    return { label: "NEUTRAL", color: "text-yellow-500", bg: "bg-yellow-500/10" };
+    if (score > 20)
+      return {
+        label: "RISK ON",
+        color: "text-emerald-500",
+        bg: "bg-emerald-500/10",
+      };
+    if (score < -20)
+      return {
+        label: "RISK OFF",
+        color: "text-rose-500",
+        bg: "bg-rose-500/10",
+      };
+    return {
+      label: "NEUTRAL",
+      color: "text-yellow-500",
+      bg: "bg-yellow-500/10",
+    };
   };
 
   const regime = getRegime(currentScore);
@@ -130,14 +151,14 @@ export const RoroRegime = () => {
   // 20 score: (200 - 20) / 400 = 0.45 (45%)
   // -20 score: (200 - (-20)) / 400 = 0.55 (55%)
   // -50 score: (200 - (-50)) / 400 = 0.625 (62.5%)
-  
+
   const gradientOffset = () => {
     // This function is static for fixed domain [-200, 200]
     return {
       off50: 0.375,
       off20: 0.45,
       offMinus20: 0.55,
-      offMinus50: 0.625
+      offMinus50: 0.625,
     };
   };
 
@@ -151,17 +172,20 @@ export const RoroRegime = () => {
     );
   }
 
-  if (profile?.tier !== 'ultra') {
+  if (profile?.tier !== "ultra") {
     return (
       <div className="h-[calc(100vh-100px)] flex flex-col items-center justify-center gap-6 border border-border/40 bg-card/50 backdrop-blur-sm rounded-lg p-8 text-center">
         <div className="p-4 rounded-full bg-muted/30">
           <Lock className="w-12 h-12 text-primary" />
         </div>
         <div className="space-y-2 max-w-md">
-          <h2 className="text-2xl font-bold tracking-tight">Available only for Ultra!</h2>
+          <h2 className="text-2xl font-bold tracking-tight">
+            Available only for Ultra!
+          </h2>
           <p className="text-muted-foreground">
-            The Risk-On/Risk-Off Regime indicator is an exclusive feature for Ultra tier members.
-            It provides institutional-grade market regime analysis.
+            The Risk-On/Risk-Off Regime indicator is an exclusive feature for
+            Ultra tier members. It provides institutional-grade market regime
+            analysis.
           </p>
         </div>
         {!profile && (
@@ -233,27 +257,39 @@ export const RoroRegime = () => {
               <Activity className="w-5 h-5 text-primary" />
               <span className="font-medium">Risk Regime</span>
             </div>
-            <div className={`px-3 py-1 rounded border ${regime.bg} border-border/50 flex items-center gap-3`}>
-              <span className={`text-lg font-bold ${regime.color}`}>{regime.label}</span>
-              <span className="text-xl font-mono font-bold">{currentScore.toFixed(1)}</span>
+            <div
+              className={`px-3 py-1 rounded border ${regime.bg} border-border/50 flex items-center gap-3`}
+            >
+              <span className={`text-lg font-bold ${regime.color}`}>
+                {regime.label}
+              </span>
+              <span className="text-xl font-mono font-bold">
+                {currentScore.toFixed(1)}
+              </span>
             </div>
           </div>
 
           {/* Breakdown Chips */}
           <div className="flex flex-wrap items-center justify-center gap-2">
             {currentBreakdown.map((item, i) => (
-              <div key={i} className="flex items-center gap-2 px-2 py-1 rounded bg-muted/30 border border-border/30 text-xs">
+              <div
+                key={i}
+                className="flex items-center gap-2 px-2 py-1 rounded bg-muted/30 border border-border/30 text-xs"
+              >
                 <span className="text-muted-foreground">{item.name}</span>
-                <span className={`font-mono font-bold ${item.score > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                  {item.score > 0 ? '+' : ''}{item.score.toFixed(1)}
+                <span
+                  className={`font-mono font-bold ${item.score > 0 ? "text-emerald-500" : "text-rose-500"}`}
+                >
+                  {item.score > 0 ? "+" : ""}
+                  {item.score.toFixed(1)}
                 </span>
               </div>
             ))}
           </div>
-          
+
           {/* Snapshot Button */}
           <div className="flex items-center">
-            <ShareChartDialog 
+            <ShareChartDialog
               targetRef={containerRef}
               title="Risk Regime Analysis"
               symbol="RORO"
@@ -265,9 +301,31 @@ export const RoroRegime = () => {
       </Card>
 
       {/* Main Chart */}
-      <Card ref={containerRef} className="border-border/40 bg-card/50 backdrop-blur-sm flex-1 min-h-0 flex flex-col">
-        <CardHeader className="py-3 border-b border-border/40 shrink-0">
-          <CardTitle className="text-center text-lg font-medium">Risk-on/Risk-off regime</CardTitle>
+      <Card
+        ref={containerRef}
+        className="border-border/40 bg-card/50 backdrop-blur-sm flex-1 min-h-0 flex flex-col"
+      >
+        <CardHeader className="py-3 border-b border-border/40 shrink-0 flex flex-row items-center justify-between">
+          <div className="w-[120px]" />
+          <CardTitle className="text-center text-lg font-medium">
+            Risk-on/Risk-off regime
+          </CardTitle>
+          <div className="w-[120px] flex justify-end">
+            <Tabs
+              value={viewMode}
+              onValueChange={(v) => setViewMode(v as "waves" | "bubbles")}
+              className="w-auto"
+            >
+              <TabsList className="grid w-full grid-cols-2 h-8">
+                <TabsTrigger value="waves" className="text-xs px-2 h-6">
+                  Waves
+                </TabsTrigger>
+                <TabsTrigger value="bubbles" className="text-xs px-2 h-6">
+                  Bubbles
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </CardHeader>
         <CardContent className="p-0 flex-1 min-h-0 flex flex-col">
           <div className="pt-2">
@@ -275,40 +333,89 @@ export const RoroRegime = () => {
           </div>
           <div className="w-full flex-1 min-h-0 px-4 pb-4">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <ComposedChart
+                data={chartData}
+                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              >
                 <defs>
-                  <linearGradient id="scoreGradientCorrected" x1="0" y1="0" x2="0" y2="1">
-                     {/* Strong Bull (>50) */}
+                  <linearGradient
+                    id="scoreGradientCorrected"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    {/* Strong Bull (>50) */}
                     <stop offset="0%" stopColor="#673ab7" stopOpacity={0.85} />
-                    <stop offset={`${off.off50 * 100}%`} stopColor="#673ab7" stopOpacity={0.85} />
-                    
+                    <stop
+                      offset={`${off.off50 * 100}%`}
+                      stopColor="#673ab7"
+                      stopOpacity={0.85}
+                    />
+
                     {/* Basic Risk-On (20-50) */}
-                    <stop offset={`${off.off50 * 100}%`} stopColor="#9575cd" stopOpacity={0.85} />
-                    <stop offset={`${off.off20 * 100}%`} stopColor="#9575cd" stopOpacity={0.85} />
-                    
+                    <stop
+                      offset={`${off.off50 * 100}%`}
+                      stopColor="#9575cd"
+                      stopOpacity={0.85}
+                    />
+                    <stop
+                      offset={`${off.off20 * 100}%`}
+                      stopColor="#9575cd"
+                      stopOpacity={0.85}
+                    />
+
                     {/* Neutral Risk-On (0-20) */}
-                    <stop offset={`${off.off20 * 100}%`} stopColor="#d1c4e9" stopOpacity={0.85} />
+                    <stop
+                      offset={`${off.off20 * 100}%`}
+                      stopColor="#d1c4e9"
+                      stopOpacity={0.85}
+                    />
                     <stop offset="50%" stopColor="#d1c4e9" stopOpacity={0.85} />
-                    
+
                     {/* Neutral Risk-Off (-20-0) */}
                     <stop offset="50%" stopColor="#d7ccc8" stopOpacity={0.85} />
-                    <stop offset={`${off.offMinus20 * 100}%`} stopColor="#d7ccc8" stopOpacity={0.85} />
-                    
+                    <stop
+                      offset={`${off.offMinus20 * 100}%`}
+                      stopColor="#d7ccc8"
+                      stopOpacity={0.85}
+                    />
+
                     {/* Basic Risk-Off (-50--20) */}
-                    <stop offset={`${off.offMinus20 * 100}%`} stopColor="#8d6e63" stopOpacity={0.85} />
-                    <stop offset={`${off.offMinus50 * 100}%`} stopColor="#8d6e63" stopOpacity={0.85} />
-                    
+                    <stop
+                      offset={`${off.offMinus20 * 100}%`}
+                      stopColor="#8d6e63"
+                      stopOpacity={0.85}
+                    />
+                    <stop
+                      offset={`${off.offMinus50 * 100}%`}
+                      stopColor="#8d6e63"
+                      stopOpacity={0.85}
+                    />
+
                     {/* Strong Bear (<-50) */}
-                    <stop offset={`${off.offMinus50 * 100}%`} stopColor="#4e342e" stopOpacity={0.85} />
-                    <stop offset="100%" stopColor="#4e342e" stopOpacity={0.85} />
+                    <stop
+                      offset={`${off.offMinus50 * 100}%`}
+                      stopColor="#4e342e"
+                      stopOpacity={0.85}
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor="#4e342e"
+                      stopOpacity={0.85}
+                    />
                   </linearGradient>
                 </defs>
-                
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                
-                <XAxis 
-                  dataKey="date" 
-                  tickFormatter={(val) => format(new Date(val), 'yyyy-MM-dd')}
+
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="rgba(255,255,255,0.1)"
+                  vertical={false}
+                />
+
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={(val) => format(new Date(val), "yyyy-MM-dd")}
                   stroke="#94a3b8"
                   fontSize={10}
                   tickLine={false}
@@ -316,8 +423,8 @@ export const RoroRegime = () => {
                   minTickGap={30}
                   dy={10}
                 />
-                
-                <YAxis 
+
+                <YAxis
                   yAxisId="left"
                   domain={[-200, 200]}
                   stroke="#94a3b8"
@@ -326,37 +433,46 @@ export const RoroRegime = () => {
                   axisLine={false}
                   ticks={[100, 50, 0, -50, -100]}
                 />
-                
-                <YAxis 
+
+                <YAxis
                   yAxisId="right"
                   orientation="right"
-                  domain={['auto', 'auto']}
+                  domain={["auto", "auto"]}
                   stroke="#94a3b8"
                   fontSize={10}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(val) => val.toLocaleString()}
                 />
-                
-                <Tooltip 
+
+                <Tooltip
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
-                      const score = payload[0].value as number;
-                      const price = payload[1]?.value as number;
+                      const data = payload[0].payload;
+                      const score = data.score as number;
+                      const price = data.btc_price as number;
                       return (
                         <div className="bg-background/95 backdrop-blur border border-border p-3 rounded shadow-xl text-xs">
-                          <div className="font-medium mb-2 text-muted-foreground">{format(new Date(label), 'EEE, dd MMM yyyy')}</div>
+                          <div className="font-medium mb-2 text-muted-foreground">
+                            {format(new Date(label), "EEE, dd MMM yyyy")}
+                          </div>
                           <div className="flex items-center gap-3 mb-1">
                             <div className="w-2 h-2 rounded-full bg-violet-500"></div>
-                            <span className="text-muted-foreground">Risk Score:</span>
-                            <span className={`font-bold ${score > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            <span className="text-muted-foreground">
+                              Risk Score:
+                            </span>
+                            <span
+                              className={`font-bold ${score > 0 ? "text-emerald-500" : "text-rose-500"}`}
+                            >
                               {score.toFixed(1)}
                             </span>
                           </div>
                           {price && (
                             <div className="flex items-center gap-3">
                               <div className="w-2 h-2 rounded-full bg-foreground"></div>
-                              <span className="text-muted-foreground">BTC Price:</span>
+                              <span className="text-muted-foreground">
+                                BTC Price:
+                              </span>
                               <span className="font-mono font-medium text-foreground">
                                 ${price.toLocaleString()}
                               </span>
@@ -368,26 +484,75 @@ export const RoroRegime = () => {
                     return null;
                   }}
                 />
-                
-                <ReferenceLine y={0} yAxisId="left" stroke="rgba(255,255,255,0.1)" />
-                
-                <Area
+
+                <ReferenceLine
+                  y={0}
                   yAxisId="left"
-                  type="monotone"
-                  dataKey="score"
-                  stroke="none"
-                  fill="url(#scoreGradientCorrected)"
-                  animationDuration={1000}
+                  stroke="rgba(255,255,255,0.1)"
                 />
-                
+
+                {viewMode === "waves" && (
+                  <Area
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="score"
+                    stroke="none"
+                    fill="url(#scoreGradientCorrected)"
+                    animationDuration={1000}
+                  />
+                )}
+
                 <Line
                   yAxisId="right"
                   type="monotone"
                   dataKey="btc_price"
-                  stroke="currentColor" 
+                  stroke="currentColor"
                   className="text-foreground"
                   strokeWidth={1.5}
-                  dot={false}
+                  dot={
+                    viewMode === "bubbles"
+                      ? (props: {
+                          cx: number;
+                          cy: number;
+                          payload: { score: number };
+                        }) => {
+                          const { cx, cy, payload } = props;
+                          const score = payload.score;
+
+                          if (score <= 30) return null;
+
+                          // Sizing: >30. Max 100.
+                          // "every 10 points sizing changes"
+                          // 30-40 -> step 0
+                          // ...
+                          // 90-100 -> step 6
+                          // >100 -> step 7 (capped)
+
+                          const step = Math.min(
+                            Math.floor((score - 30) / 10),
+                            7,
+                          );
+                          const radius = 4 + step * 2.5;
+
+                          // Color
+                          // > 50: Strong Bull (#673ab7)
+                          // 30-50: Basic Risk-On (#9575cd)
+                          let fill = "#9575cd";
+                          if (score > 50) fill = "#673ab7";
+
+                          return (
+                            <circle
+                              cx={cx}
+                              cy={cy}
+                              r={radius}
+                              fill={fill}
+                              stroke="none"
+                              fillOpacity={0.8}
+                            />
+                          );
+                        }
+                      : false
+                  }
                   animationDuration={1000}
                 />
               </ComposedChart>
