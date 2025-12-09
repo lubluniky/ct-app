@@ -6,7 +6,6 @@ import { Loader2, Activity, AlertTriangle, Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ShareChartDialog } from "@/components/charts/ShareChartDialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Toggle } from "@/components/ui/toggle";
 import {
   ComposedChart,
   Area,
@@ -50,8 +49,9 @@ export const RoroRegime = () => {
     isLoading: riskLoading,
   } = useSWR<RiskRegimeResponse>(RISK_API_URL, fetcher);
   const [btcHistory, setBtcHistory] = useState<Record<string, number>>({});
-  const [viewMode, setViewMode] = useState<"waves" | "bubbles">("waves");
-  const [showRotations, setShowRotations] = useState(true);
+  const [viewMode, setViewMode] = useState<"waves" | "bubbles" | "rotations">(
+    "waves",
+  );
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Debug: Log incoming data
@@ -322,26 +322,23 @@ export const RoroRegime = () => {
           <CardTitle className="text-center text-lg font-medium">
             Risk-on/Risk-off regime
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Toggle
-              pressed={showRotations}
-              onPressedChange={setShowRotations}
-              className="h-8 px-2 text-xs"
-              aria-label="Toggle rotations"
-            >
-              Rotations
-            </Toggle>
+          <div className="flex justify-end">
             <Tabs
               value={viewMode}
-              onValueChange={(v) => setViewMode(v as "waves" | "bubbles")}
+              onValueChange={(v) =>
+                setViewMode(v as "waves" | "bubbles" | "rotations")
+              }
               className="w-auto"
             >
-              <TabsList className="grid w-full grid-cols-2 h-8">
+              <TabsList className="grid w-full grid-cols-3 h-8">
                 <TabsTrigger value="waves" className="text-xs px-2 h-6">
                   Waves
                 </TabsTrigger>
                 <TabsTrigger value="bubbles" className="text-xs px-2 h-6">
                   Bubbles
+                </TabsTrigger>
+                <TabsTrigger value="rotations" className="text-xs px-2 h-6">
+                  Rotations
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -564,8 +561,8 @@ export const RoroRegime = () => {
 
                     if (!cx || !cy) return <></>;
 
-                    // 1. Draw Rotation Diamond if enabled
-                    if (showRotations && rotation) {
+                    // 1. Draw Rotation Diamond if in rotations mode
+                    if (viewMode === "rotations" && rotation) {
                       const r = 8; // radius/size of diamond
                       const fill =
                         rotation === "bullish" ? "#10b981" : "#f43f5e"; // Emerald / Rose
