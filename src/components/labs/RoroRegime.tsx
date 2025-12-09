@@ -51,7 +51,7 @@ export const RoroRegime = () => {
   } = useSWR<RiskRegimeResponse>(RISK_API_URL, fetcher);
   const [btcHistory, setBtcHistory] = useState<Record<string, number>>({});
   const [viewMode, setViewMode] = useState<"waves" | "bubbles">("waves");
-  const [showRotations, setShowRotations] = useState(false);
+  const [showRotations, setShowRotations] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Debug: Log incoming data
@@ -562,9 +562,11 @@ export const RoroRegime = () => {
                     const { cx, cy, payload } = props;
                     const { score, rotation } = payload;
 
+                    if (!cx || !cy) return <></>;
+
                     // 1. Draw Rotation Diamond if enabled
                     if (showRotations && rotation) {
-                      const r = 6; // radius/size of diamond
+                      const r = 8; // radius/size of diamond
                       const fill =
                         rotation === "bullish" ? "#10b981" : "#f43f5e"; // Emerald / Rose
                       // Diamond path
@@ -575,7 +577,7 @@ export const RoroRegime = () => {
                           } ${cx - r},${cy}`}
                           fill={fill}
                           stroke="#fff"
-                          strokeWidth={1}
+                          strokeWidth={2}
                         />
                       );
                     }
