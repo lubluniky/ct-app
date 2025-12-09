@@ -6,6 +6,7 @@ import { Loader2, Activity, AlertTriangle, Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ShareChartDialog } from "@/components/charts/ShareChartDialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Toggle } from "@/components/ui/toggle";
 import {
   ComposedChart,
   Area,
@@ -50,6 +51,7 @@ export const RoroRegime = () => {
   } = useSWR<RiskRegimeResponse>(RISK_API_URL, fetcher);
   const [btcHistory, setBtcHistory] = useState<Record<string, number>>({});
   const [viewMode, setViewMode] = useState<"waves" | "bubbles">("waves");
+  const [showRotations, setShowRotations] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Debug: Log incoming data
@@ -82,14 +84,24 @@ export const RoroRegime = () => {
   const chartData = useMemo(() => {
     if (!riskData || !riskData.data) return [];
 
-    return riskData.data.map((h) => {
+    return riskData.data.map((h, i, arr) => {
       // Prefer Binance price if available
       const price = btcHistory[h.date];
+
+      let rotation: "bullish" | "bearish" | null = null;
+      if (i > 0) {
+        const prev = arr[i - 1].score;
+        const curr = h.score;
+        if (prev < 0 && curr >= 0) rotation = "bullish";
+        if (prev >= 0 && curr < 0) rotation = "bearish";
+      }
+
       return {
         date: h.date,
         timestamp: new Date(h.date).getTime(),
         score: h.score,
         btc_price: price,
+        rotation,
       };
     });
   }, [riskData, btcHistory]);
@@ -310,7 +322,15 @@ export const RoroRegime = () => {
           <CardTitle className="text-center text-lg font-medium">
             Risk-on/Risk-off regime
           </CardTitle>
-          <div className="w-[120px] flex justify-end">
+          <div className="flex items-center gap-2">
+            <Toggle
+              pressed={showRotations}
+              onPressedChange={setShowRotations}
+              className="h-8 px-2 text-xs"
+              aria-label="Toggle rotations"
+            >
+              Rotations
+            </Toggle>
             <Tabs
               value={viewMode}
               onValueChange={(v) => setViewMode(v as "waves" | "bubbles")}
@@ -451,6 +471,11 @@ export const RoroRegime = () => {
                       const data = payload[0].payload;
                       const score = data.score as number;
                       const price = data.btc_price as number;
+                      const rotation = data.rotation as
+                        | "bullish"
+                        | "bearish"
+                        | null;
+
                       return (
                         <div className="bg-background/95 backdrop-blur border border-border p-3 rounded shadow-xl text-xs">
                           <div className="font-medium mb-2 text-muted-foreground">
@@ -475,6 +500,23 @@ export const RoroRegime = () => {
                               </span>
                               <span className="font-mono font-medium text-foreground">
                                 ${price.toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          {rotation && (
+                            <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border/50">
+                              <div
+                                className={`w-2 h-2 rotate-45 ${rotation === "bullish" ? "bg-emerald-500" : "bg-rose-500"}`}
+                              ></div>
+                              <span className="text-muted-foreground">
+                                Signal:
+                              </span>
+                              <span
+                                className={`font-bold ${rotation === "bullish" ? "text-emerald-500" : "text-rose-500"}`}
+                              >
+                                {rotation === "bullish"
+                                  ? "Risk-On Rotation"
+                                  : "Risk-Off Rotation"}
                               </span>
                             </div>
                           )}
@@ -509,55 +551,75 @@ export const RoroRegime = () => {
                   stroke="currentColor"
                   className="text-foreground"
                   strokeWidth={1.5}
-                  dot={
-                    viewMode === "bubbles"
-                      ? (props: {
-                          cx: number;
-                          cy: number;
-                          payload: { score: number };
-                        }) => {
-                          const { cx, cy, payload } = props;
-                          const score = payload.score;
-                          const absScore = Math.abs(score);
+                  dot={(props: {
+                    cx: number;
+                    cy: number;
+                    payload: {
+                      score: number;
+                      rotation: "bullish" | "bearish" | null;
+                    };
+                  }) => {
+                    const { cx, cy, payload } = props;
+                    const { score, rotation } = payload;
 
-                          if (absScore <= 30) return null;
+                    // 1. Draw Rotation Diamond if enabled
+                    if (showRotations && rotation) {
+                      const r = 6; // radius/size of diamond
+                      const fill =
+                        rotation === "bullish" ? "#10b981" : "#f43f5e"; // Emerald / Rose
+                      // Diamond path
+                      return (
+                        <polygon
+                          points={`${cx},${cy - r} ${cx + r},${cy} ${cx},${
+                            cy + r
+                          } ${cx - r},${cy}`}
+                          fill={fill}
+                          stroke="#fff"
+                          strokeWidth={1}
+                        />
+                      );
+                    }
 
-                          // Sizing: >30 or <-30. Max 100.
-                          // "every 10 points sizing changes"
-                          const step = Math.min(
-                            Math.floor((absScore - 30) / 10),
-                            7,
-                          );
-                          const radius = 4 + step * 2.5;
+                    // 2. Draw Bubbles if in bubbles mode
+                    if (viewMode === "bubbles") {
+                      const absScore = Math.abs(score);
+                      if (absScore <= 30) return null;
 
-                          // Color
-                          let fill = "#9575cd";
+                      // Sizing: >30 or <-30. Max 100.
+                      const step = Math.min(
+                        Math.floor((absScore - 30) / 10),
+                        7,
+                      );
+                      const radius = 4 + step * 2.5;
 
-                          if (score > 0) {
-                            // Risk On
-                            if (score > 50)
-                              fill = "#673ab7"; // Strong Bull
-                            else fill = "#9575cd"; // Basic Risk-On
-                          } else {
-                            // Risk Off
-                            if (score < -50)
-                              fill = "#4e342e"; // Strong Bear
-                            else fill = "#8d6e63"; // Basic Risk-Off
-                          }
+                      // Color
+                      let fill = "#9575cd";
+                      if (score > 0) {
+                        // Risk On
+                        if (score > 50)
+                          fill = "#673ab7"; // Strong Bull
+                        else fill = "#9575cd"; // Basic Risk-On
+                      } else {
+                        // Risk Off
+                        if (score < -50)
+                          fill = "#4e342e"; // Strong Bear
+                        else fill = "#8d6e63"; // Basic Risk-Off
+                      }
 
-                          return (
-                            <circle
-                              cx={cx}
-                              cy={cy}
-                              r={radius}
-                              fill={fill}
-                              stroke="none"
-                              fillOpacity={0.8}
-                            />
-                          );
-                        }
-                      : false
-                  }
+                      return (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={radius}
+                          fill={fill}
+                          stroke="none"
+                          fillOpacity={0.8}
+                        />
+                      );
+                    }
+
+                    return <></>;
+                  }}
                   animationDuration={1000}
                 />
               </ComposedChart>
