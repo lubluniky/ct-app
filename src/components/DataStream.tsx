@@ -1,65 +1,52 @@
 import { useEffect, useState } from 'react';
 
 export const DataStream = () => {
-  const [streams, setStreams] = useState<Array<{ id: number; left: number; delay: number; duration: number }>>([]);
+  const [streams, setStreams] = useState<Array<{ id: number; left: number; delay: number; duration: number; opacity: number }>>([]);
 
   useEffect(() => {
-    const newStreams = [...Array(12)].map((_, i) => ({
+    const newStreams = [...Array(20)].map((_, i) => ({
       id: i,
-      left: 10 + i * 8,
-      delay: Math.random() * 3,
-      duration: 2 + Math.random() * 2
+      left: Math.random() * 100,
+      delay: Math.random() * 5,
+      duration: 3 + Math.random() * 4,
+      opacity: 0.3 + Math.random() * 0.5
     }));
     setStreams(newStreams);
   }, []);
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Vertical Data Streams with Binary */}
+    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+      {/* Vertical Data Streams */}
       {streams.map((stream) => (
         <div
           key={stream.id}
-          className="absolute top-[-20%] w-[2px]"
+          className="absolute top-[-20%] w-[1px] md:w-[2px]"
           style={{
             left: `${stream.left}%`,
+            animation: `data-stream ${stream.duration}s linear infinite`,
             animationDelay: `${stream.delay}s`,
+            opacity: stream.opacity
           }}
         >
-          {/* Glowing Line */}
-          <div 
-            className="absolute w-full h-[200px] bg-gradient-to-b from-emerald-400/80 via-emerald-500/60 to-transparent animate-data-stream shadow-[0_0_10px_rgba(16,185,129,0.8)]"
-            style={{
-              animationDuration: `${stream.duration}s`
-            }}
-          />
+          {/* Glowing Head */}
+          <div className="absolute bottom-0 w-full h-20 bg-gradient-to-t from-emerald-400 to-transparent" />
           
-          {/* Binary Digits */}
-          <div 
-            className="absolute w-full font-mono text-[8px] text-emerald-400/90 leading-tight animate-data-stream"
-            style={{
-              animationDuration: `${stream.duration}s`
-            }}
-          >
-            {[...Array(20)].map((_, i) => (
-              <div key={i} className="text-center">
+          {/* Trail */}
+          <div className="absolute bottom-0 w-full h-[300px] bg-gradient-to-t from-emerald-500/50 via-emerald-900/20 to-transparent" />
+          
+          {/* Binary/Data Characters */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col-reverse gap-1 text-[8px] md:text-[10px] font-mono text-emerald-300/80">
+            {[...Array(8)].map((_, i) => (
+              <span key={i} className="leading-none opacity-80">
                 {Math.random() > 0.5 ? '1' : '0'}
-              </div>
+              </span>
             ))}
           </div>
         </div>
       ))}
 
-      {/* Horizontal Scan Lines */}
-      {[...Array(3)].map((_, i) => (
-        <div
-          key={`scan-${i}`}
-          className="absolute left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent animate-scan-line"
-          style={{
-            top: `${20 + i * 30}%`,
-            animationDelay: `${i * 2}s`,
-          }}
-        />
-      ))}
+      {/* Horizontal Scan Lines - Radar Effect */}
+      <div className="absolute inset-0 bg-[linear-gradient(transparent_0%,rgba(16,185,129,0.05)_50%,transparent_100%)] bg-[length:100%_4px] animate-scan-line opacity-30" />
     </div>
   );
 };
