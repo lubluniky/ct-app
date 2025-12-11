@@ -334,9 +334,9 @@ export const QuantChart: React.FC<QuantChartProps> = ({
   };
 
   const handleWheel = (e: React.WheelEvent) => {
-    // Prevent default page scroll if inside chart
-    // Note: React synthetic events might need passive: false in native listener for preventDefault to work reliably for wheel
-    // But here we just update state.
+    // Prevent default page scroll when zooming chart
+    e.preventDefault();
+    e.stopPropagation();
 
     if (Math.abs(e.deltaY) > 0) {
       const zoomSpeed = 0.001;
@@ -400,6 +400,22 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       setOffset(newOffset);
     }
   };
+
+  // Setup native wheel listener with passive: false to enable preventDefault
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const wheelHandler = (e: WheelEvent) => {
+      e.preventDefault();
+    };
+
+    container.addEventListener("wheel", wheelHandler, { passive: false });
+
+    return () => {
+      container.removeEventListener("wheel", wheelHandler);
+    };
+  }, []);
 
   const handleMouseLeave = () => {
     setMousePos(null);
