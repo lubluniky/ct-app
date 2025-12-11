@@ -1,9 +1,5 @@
-import { Hero } from "@/components/Hero";
-import { Philosophy } from "@/components/Philosophy";
-import { Experience } from "@/components/Experience";
-import { Ideas } from "@/components/Ideas";
-import { Models } from "@/components/Models";
-import { ToolsOverview } from "@/components/ToolsOverview";
+import { NewHero } from "@/components/NewHero";
+import { Roadmap } from "@/components/Roadmap";
 import { Contact } from "@/components/Contact";
 import { StickyNavbar } from "@/components/StickyNavbar";
 import { Suspense, lazy, useEffect } from "react";
@@ -14,11 +10,13 @@ const Index = () => {
   useEffect(() => {
     // Reset dashboard intro flag when visiting the landing page
     sessionStorage.removeItem('dashboard_intro_shown');
+    // Ensure dark mode is active for the landing page
+    document.documentElement.classList.add('dark');
   }, []);
 
   return (
-    <div className="force-light min-h-screen bg-background relative selection:bg-primary/20 selection:text-primary">
-      <div className="fixed inset-0 z-0 pointer-events-none">
+    <div className="min-h-screen bg-background relative selection:bg-primary/20 selection:text-primary overflow-x-hidden">
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-20">
         <Suspense fallback={null}>
           <PixelBackground />
         </Suspense>
@@ -27,31 +25,14 @@ const Index = () => {
       <StickyNavbar />
 
       <main className="relative z-10">
-        <Hero />
+        <NewHero />
         
-        <div id="philosophy">
-          <Philosophy />
-        </div>
-        
-        <div id="experience">
-          <Experience />
-        </div>
-        
-        <div id="models">
-          <Ideas />
-          <Models />
-        </div>
+        <Roadmap />
 
-        <div id="tools">
-          <ToolsOverview />
-        </div>
-
-        <div id="connect">
-          <Contact />
-        </div>
+        <Contact />
       </main>
         
-      <footer className="relative z-10 border-t border-border py-12 bg-secondary/10">
+      <footer className="relative z-10 border-t border-border py-12 bg-background">
         <div className="container mx-auto px-6 text-center">
           <p className="text-sm text-muted-foreground font-mono">
             BORKISS.TRADE — QUANT RESEARCH LAB

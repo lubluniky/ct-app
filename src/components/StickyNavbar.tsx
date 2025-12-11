@@ -3,9 +3,7 @@ import { Menu, X, Terminal } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 
 const NAV_LINKS = [
-  { id: 'philosophy', label: 'Philosophy', href: '#philosophy' },
-  { id: 'experience', label: 'Experience', href: '#experience' },
-  { id: 'models', label: 'Models', href: '#models' },
+  { id: 'roadmap', label: 'Roadmap', href: '#roadmap' },
   { id: 'connect', label: 'Connect', href: '#connect' },
 ];
 
@@ -50,7 +48,7 @@ export const StickyNavbar = ({
       >
         <div className="container mx-auto px-6 flex items-center justify-between">
           <Link to="/" className="text-xl font-bold tracking-tight flex items-center gap-2">
-            <span className="text-black">BORKISS</span><span className="text-muted-foreground font-light">.TRADE</span>
+            <span className="text-foreground">BORKISS</span><span className="text-muted-foreground font-light">.TRADE</span>
           </Link>
 
           {/* Desktop Nav */}

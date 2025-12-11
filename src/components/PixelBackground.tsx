@@ -91,7 +91,7 @@ const PixelBackground = () => {
         dpr={[1, 2]} // Optimize for retina
         gl={{ antialias: true, alpha: true }}
       >
-        <fog attach="fog" args={['#F8FAFC', 5, 25]} />
+        <fog attach="fog" args={['#09090b', 5, 25]} />
         <VoxelField />
         <Environment preset="city" />
       </Canvas>
