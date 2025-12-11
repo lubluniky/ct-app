@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { Zap, Database, Globe, Cpu, Flag, Activity, Terminal, Layers } from "lucide-react";
+import { Roadmap3DIcon } from "./Roadmap3DIcon";
 
 const milestones = [
   {
@@ -43,88 +44,6 @@ const milestones = [
     icon: Globe
   }
 ];
-
-const HeartAnimation = () => (
-  <div className="relative w-24 h-24 flex items-center justify-center">
-    <div className="absolute inset-0 border border-white/10 rounded-full animate-ping" />
-    <div className="absolute inset-4 border border-white/20 rounded-full animate-pulse" />
-    <div className="w-2 h-2 bg-white rounded-full shadow-[0_0_15px_rgba(255,255,255,0.5)]" />
-    {/* EKG Line */}
-    <svg className="absolute inset-0 w-full h-full text-white/40" viewBox="0 0 100 100">
-      <path d="M0 50 H30 L40 20 L50 80 L60 50 H100" fill="none" stroke="currentColor" strokeWidth="0.5" className="animate-[dash_2s_linear_infinite]" strokeDasharray="100" strokeDashoffset="100" />
-    </svg>
-  </div>
-);
-
-const DatabaseAnimation = () => (
-  <div className="relative w-24 h-24 flex flex-col items-center justify-center gap-2 perspective-500">
-    {[...Array(3)].map((_, i) => (
-      <div 
-        key={i} 
-        className="w-20 h-4 border border-white/20 bg-white/5 rounded-[50%] relative overflow-hidden transform rotate-x-12"
-        style={{ animation: `float 3s ease-in-out infinite ${i * 0.5}s` }}
-      >
-        <div className="absolute inset-0 bg-white/10 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
-        <div className="absolute top-0 left-[-100%] w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-      </div>
-    ))}
-  </div>
-);
-
-const TerminalAnimation = () => (
-  <div className="relative w-24 h-20 border border-white/20 bg-black/80 rounded-sm p-3 flex flex-col gap-1 overflow-hidden shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-    <div className="w-full h-[1px] bg-white/10" />
-    <div className="font-mono text-[8px] text-white/80 leading-none">
-      <span className="text-white/40">{">"}</span> INIT_CORE<br/>
-      <span className="text-white/40">{">"}</span> LOAD_MODULES<br/>
-      <span className="text-white/40">{">"}</span> OPTIMIZING...<br/>
-      <span className="animate-pulse text-white">{">"} _</span>
-    </div>
-  </div>
-);
-
-const ApiAnimation = () => (
-  <div className="relative w-24 h-24 flex items-center justify-center">
-    <div className="absolute w-20 h-20 border border-white/10 rounded-full animate-[spin_10s_linear_infinite]" />
-    <div className="absolute w-16 h-16 border-t border-b border-white/30 rounded-full animate-[spin_3s_linear_infinite]" />
-    <div className="w-2 h-2 bg-white rounded-full shadow-[0_0_10px_white]" />
-    {[...Array(4)].map((_, i) => (
-      <div 
-        key={i} 
-        className="absolute w-[1px] h-10 bg-gradient-to-b from-white/40 to-transparent"
-        style={{ transform: `rotate(${i * 90}deg) translateY(-20px)` }} 
-      />
-    ))}
-  </div>
-);
-
-const EcosystemAnimation = () => (
-  <div className="relative w-24 h-24">
-    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-1 p-2">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="border border-white/10 bg-white/5 relative overflow-hidden rounded-sm group-hover:border-white/30 transition-colors">
-           <div className="absolute inset-0 bg-white/5 animate-pulse" style={{ animationDelay: `${i * 0.3}s` }} />
-        </div>
-      ))}
-    </div>
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="w-28 h-[1px] bg-white/10 rotate-45" />
-      <div className="w-28 h-[1px] bg-white/10 -rotate-45" />
-      <div className="w-2 h-2 bg-white rounded-full animate-ping" />
-    </div>
-  </div>
-);
-
-const getAnimation = (type: string) => {
-  switch (type) {
-    case 'heart': return <HeartAnimation />;
-    case 'database': return <DatabaseAnimation />;
-    case 'terminal': return <TerminalAnimation />;
-    case 'api': return <ApiAnimation />;
-    case 'ecosystem': return <EcosystemAnimation />;
-    default: return <div className="w-12 h-12 border border-white/20" />;
-  }
-};
 
 export const Roadmap = () => {
   return (
@@ -195,8 +114,8 @@ export const Roadmap = () => {
                 </div>
 
                 {/* Animation / Visual */}
-                <div className="flex justify-center md:justify-end opacity-50 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-110 grayscale group-hover:grayscale-0">
-                  {getAnimation(item.type)}
+                <div className="flex justify-center md:justify-end opacity-80 group-hover:opacity-100 transition-all duration-700 transform group-hover:scale-110">
+                  <Roadmap3DIcon type={item.type} />
                 </div>
 
               </div>

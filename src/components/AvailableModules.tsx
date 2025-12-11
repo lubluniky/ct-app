@@ -22,15 +22,17 @@ export const AvailableModules = () => {
           
           {/* Dashboard Module */}
           <Link to="/dashboard" className="group relative block">
-            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-sm" />
-            <div className="relative border border-white/10 p-8 h-full flex flex-col justify-between bg-black/20 backdrop-blur-sm hover:border-white/30 transition-colors duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
+            <div className="relative border border-white/10 p-10 h-full flex flex-col justify-between bg-white/5 backdrop-blur-2xl rounded-3xl hover:border-white/20 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]">
               
               <div className="mb-8">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="p-3 bg-white/5 rounded-sm inline-block">
+                <div className="flex justify-between items-start mb-8">
+                  <div className="p-4 bg-white/10 rounded-2xl inline-block backdrop-blur-md border border-white/10">
                     <LayoutDashboard className="w-8 h-8 text-white" />
                   </div>
-                  <ArrowRight className="w-6 h-6 text-neutral-600 group-hover:text-white transition-colors -rotate-45 group-hover:rotate-0 duration-300" />
+                  <div className="p-2 rounded-full bg-white/5 border border-white/10 group-hover:bg-white/20 transition-colors">
+                    <ArrowRight className="w-6 h-6 text-white/70 group-hover:text-white transition-colors -rotate-45 group-hover:rotate-0 duration-300" />
+                  </div>
                 </div>
                 
                 <h3 className="text-3xl font-bold text-white mb-4 tracking-tight">DASHBOARD</h3>
@@ -40,8 +42,8 @@ export const AvailableModules = () => {
               </div>
 
               <div className="flex items-center gap-4 pt-8 border-t border-white/5">
-                <div className="flex items-center gap-2 text-xs font-mono text-neutral-500 uppercase tracking-wider">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="flex items-center gap-2 text-xs font-mono text-neutral-400 uppercase tracking-wider">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" />
                   Live System
                 </div>
               </div>
@@ -50,15 +52,17 @@ export const AvailableModules = () => {
 
           {/* Screener Module */}
           <Link to="/screener" className="group relative block">
-            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-sm" />
-            <div className="relative border border-white/10 p-8 h-full flex flex-col justify-between bg-black/20 backdrop-blur-sm hover:border-white/30 transition-colors duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
+            <div className="relative border border-white/10 p-10 h-full flex flex-col justify-between bg-white/5 backdrop-blur-2xl rounded-3xl hover:border-white/20 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,255,255,0.05)]">
               
               <div className="mb-8">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="p-3 bg-white/5 rounded-sm inline-block">
+                <div className="flex justify-between items-start mb-8">
+                  <div className="p-4 bg-white/10 rounded-2xl inline-block backdrop-blur-md border border-white/10">
                     <ScanLine className="w-8 h-8 text-white" />
                   </div>
-                  <ArrowRight className="w-6 h-6 text-neutral-600 group-hover:text-white transition-colors -rotate-45 group-hover:rotate-0 duration-300" />
+                  <div className="p-2 rounded-full bg-white/5 border border-white/10 group-hover:bg-white/20 transition-colors">
+                    <ArrowRight className="w-6 h-6 text-white/70 group-hover:text-white transition-colors -rotate-45 group-hover:rotate-0 duration-300" />
+                  </div>
                 </div>
                 
                 <h3 className="text-3xl font-bold text-white mb-4 tracking-tight">SCREENER</h3>
@@ -68,8 +72,8 @@ export const AvailableModules = () => {
               </div>
 
               <div className="flex items-center gap-4 pt-8 border-t border-white/5">
-                <div className="flex items-center gap-2 text-xs font-mono text-neutral-500 uppercase tracking-wider">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="flex items-center gap-2 text-xs font-mono text-neutral-400 uppercase tracking-wider">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" />
                   High Frequency
                 </div>
               </div>

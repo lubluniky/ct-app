@@ -1,161 +1,107 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, Stars } from '@react-three/drei';
+import { Float, Stars, MeshDistortMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
-const NetworkSignals = () => {
-  const radius = 3.2;
-  const detail = 1;
+const LiquidCore = () => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const mouse = useRef({ x: 0, y: 0 });
 
-  const { nodes, edges } = useMemo(() => {
-    const geometry = new THREE.IcosahedronGeometry(radius, detail);
-    const positions = geometry.attributes.position;
-    const nodes: THREE.Vector3[] = [];
-    const nodesMap = new Map<string, number>();
-
-    // Extract unique vertices
-    for (let i = 0; i < positions.count; i++) {
-      const v = new THREE.Vector3().fromBufferAttribute(positions, i);
-      const key = `${v.x.toFixed(3)},${v.y.toFixed(3)},${v.z.toFixed(3)}`;
-      if (!nodesMap.has(key)) {
-        nodesMap.set(key, nodes.length);
-        nodes.push(v);
-      }
-    }
-
-    const edges: [number, number][] = [];
-    // Connect nearest neighbors
-    let minD = Infinity;
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const d = nodes[i].distanceTo(nodes[j]);
-        if (d < minD) minD = d;
-      }
-    }
-    const threshold = minD * 1.1;
-
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        if (nodes[i].distanceTo(nodes[j]) < threshold) {
-          edges.push([i, j]);
-        }
-      }
-    }
-
-    return { nodes, edges };
-  }, []);
-
-  const signalCount = 60;
-  const signals = useMemo(() => {
-    return new Array(signalCount).fill(0).map(() => ({
-      edgeIndex: Math.floor(Math.random() * edges.length),
-      progress: Math.random(),
-      speed: 0.03 + Math.random() * 0.04,
-      direction: Math.random() > 0.5 ? 1 : -1
-    }));
-  }, [edges]);
-
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-
-  useFrame(() => {
+  useFrame((state) => {
     if (!meshRef.current) return;
+    
+    // Organic rotation
+    meshRef.current.rotation.x = state.clock.getElapsedTime() * 0.2;
+    meshRef.current.rotation.y = state.clock.getElapsedTime() * 0.3;
 
-    signals.forEach((signal, i) => {
-      signal.progress += signal.speed * signal.direction;
-      
-      if (signal.progress > 1 || signal.progress < 0) {
-        signal.edgeIndex = Math.floor(Math.random() * edges.length);
-        signal.progress = signal.direction > 0 ? 0 : 1;
-      }
-
-      const [startIndex, endIndex] = edges[signal.edgeIndex];
-      const start = nodes[startIndex];
-      const end = nodes[endIndex];
-      
-      dummy.position.lerpVectors(start, end, signal.progress);
-      dummy.scale.setScalar(1);
-      dummy.updateMatrix();
-      meshRef.current.setMatrixAt(i, dummy.matrix);
-    });
-    meshRef.current.instanceMatrix.needsUpdate = true;
+    // Mouse interaction
+    const targetX = mouse.current.x * 0.5;
+    const targetY = mouse.current.y * 0.5;
+    
+    meshRef.current.rotation.x += (targetY - meshRef.current.rotation.x) * 0.02;
+    meshRef.current.rotation.y += (targetX - meshRef.current.rotation.y) * 0.02;
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, signalCount]}>
-      <sphereGeometry args={[0.03, 8, 8]} />
-      <meshBasicMaterial color="#ffffff" toneMapped={false} transparent opacity={0.8} />
-    </instancedMesh>
+    <group>
+      <Float speed={2} rotationIntensity={1} floatIntensity={1}>
+        <mesh ref={meshRef} scale={2.5}>
+          <sphereGeometry args={[1, 128, 128]} />
+          <MeshDistortMaterial
+            color="#ffffff"
+            roughness={0.1}
+            metalness={0.9}
+            distort={0.4}
+            speed={2}
+            wireframe={false}
+          />
+        </mesh>
+      </Float>
+      
+      {/* Outer Energy Field */}
+      <Float speed={4} rotationIntensity={0.5} floatIntensity={0.5}>
+        <mesh scale={3.2}>
+          <sphereGeometry args={[1, 64, 64]} />
+          <meshStandardMaterial 
+            color="#ffffff" 
+            wireframe 
+            transparent 
+            opacity={0.05} 
+          />
+        </mesh>
+      </Float>
+    </group>
   );
 };
 
-const Core = () => {
-  const meshRef = useRef<THREE.Group>(null);
-  const innerRef = useRef<THREE.Mesh>(null);
-  const outerRef = useRef<THREE.Mesh>(null);
-  const mouse = useRef({ x: 0, y: 0 });
+const ParticleField = () => {
+  const count = 2000;
+  const mesh = useRef<THREE.InstancedMesh>(null);
+  
+  const particles = useMemo(() => {
+    const temp = [];
+    for (let i = 0; i < count; i++) {
+      const t = Math.random() * 100;
+      const factor = 20 + Math.random() * 100;
+      const speed = 0.01 + Math.random() / 200;
+      const xFactor = -50 + Math.random() * 100;
+      const yFactor = -50 + Math.random() * 100;
+      const zFactor = -50 + Math.random() * 100;
+      temp.push({ t, factor, speed, xFactor, yFactor, zFactor, mx: 0, my: 0 });
+    }
+    return temp;
+  }, [count]);
 
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      mouse.current = {
-        x: (event.clientX / window.innerWidth) * 2 - 1,
-        y: -(event.clientY / window.innerHeight) * 2 + 1,
-      };
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
 
   useFrame((state) => {
-    if (!meshRef.current || !innerRef.current || !outerRef.current) return;
-
-    // Smooth rotation based on mouse
-    const targetX = mouse.current.y * 1.2;
-    const targetY = mouse.current.x * 1.2;
-
-    meshRef.current.rotation.x += (targetX - meshRef.current.rotation.x) * 0.05;
-    meshRef.current.rotation.y += (targetY - meshRef.current.rotation.y) * 0.05;
-
-    // Parallax effect
-    const parallaxX = mouse.current.x * 0.5;
-    const parallaxY = mouse.current.y * 0.5;
-    meshRef.current.position.x += (parallaxX - meshRef.current.position.x) * 0.05;
-    meshRef.current.position.y += (parallaxY - meshRef.current.position.y) * 0.05;
-
-    // Constant idle rotation
-    innerRef.current.rotation.y += 0.002;
-    innerRef.current.rotation.z += 0.001;
+    if (!mesh.current) return;
     
-    outerRef.current.rotation.y -= 0.001;
-    outerRef.current.rotation.x -= 0.0005;
+    particles.forEach((particle, i) => {
+      let { t, factor, speed, xFactor, yFactor, zFactor } = particle;
+      t = particle.t += speed / 2;
+      const a = Math.cos(t) + Math.sin(t * 1) / 10;
+      const b = Math.sin(t) + Math.cos(t * 2) / 10;
+      const s = Math.cos(t);
+      
+      dummy.position.set(
+        (particle.mx / 10) * a + xFactor + Math.cos((t / 10) * factor) + (Math.sin(t * 1) * factor) / 10,
+        (particle.my / 10) * b + yFactor + Math.sin((t / 10) * factor) + (Math.cos(t * 2) * factor) / 10,
+        (particle.my / 10) * b + zFactor + Math.cos((t / 10) * factor) + (Math.sin(t * 3) * factor) / 10
+      );
+      dummy.scale.setScalar(s);
+      dummy.rotation.set(s * 5, s * 5, s * 5);
+      dummy.updateMatrix();
+      mesh.current.setMatrixAt(i, dummy.matrix);
+    });
+    mesh.current.instanceMatrix.needsUpdate = true;
   });
 
   return (
-    <group ref={meshRef}>
-      {/* Inner Core - Dense Wireframe */}
-      <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-        <mesh ref={innerRef}>
-          <icosahedronGeometry args={[2.2, 2]} />
-          <meshBasicMaterial color="#ffffff" wireframe transparent opacity={0.1} />
-        </mesh>
-      </Float>
-
-      {/* Outer Shell - Sparse Wireframe */}
-      <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.2}>
-        <mesh ref={outerRef}>
-          <icosahedronGeometry args={[3.2, 1]} />
-          <meshBasicMaterial color="#ffffff" wireframe transparent opacity={0.03} />
-          <NetworkSignals />
-        </mesh>
-      </Float>
-
-      {/* Glowing Points */}
-      <points>
-        <sphereGeometry args={[4.0, 48, 48]} />
-        <pointsMaterial color="#ffffff" size={0.015} transparent opacity={0.15} sizeAttenuation />
-      </points>
-    </group>
+    <instancedMesh ref={mesh} args={[undefined, undefined, count]}>
+      <dodecahedronGeometry args={[0.05, 0]} />
+      <meshBasicMaterial color="#ffffff" transparent opacity={0.4} />
+    </instancedMesh>
   );
 };
 
@@ -164,11 +110,12 @@ const Scene = () => {
     <>
       <ambientLight intensity={0.5} />
       <pointLight position={[10, 10, 10]} intensity={1} />
+      <pointLight position={[-10, -10, -10]} intensity={0.5} />
       
-      <Core />
+      <LiquidCore />
+      <ParticleField />
       
-      {/* Background Particles */}
-      <Stars radius={50} depth={50} count={2000} factor={3} saturation={0} fade speed={1} />
+      <Stars radius={50} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
     </>
   );
 };
@@ -177,25 +124,15 @@ export const Hero3D = () => {
   return (
     <div className="w-full h-full min-h-[600px] relative z-10 fade-in">
       <Canvas
-        camera={{ position: [0, 0, 12], fov: 45 }} // Increased Z distance to fix clipping
+        camera={{ position: [0, 0, 10], fov: 45 }}
         gl={{ antialias: true, alpha: true }}
-        dpr={[1, 2]} // Optimize for high DPI screens
+        dpr={[1, 2]}
         onCreated={({ gl }) => {
           gl.setClearColor(new THREE.Color('#000000'), 0);
         }}
       >
         <Scene />
       </Canvas>
-      
-      {/* Overlay Text */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-        <div className="text-center space-y-4 mix-blend-difference">
-          <div className="text-[10px] font-mono text-white/60 tracking-[0.5em] uppercase animate-pulse">
-            System Active
-          </div>
-          <div className="w-1 h-1 bg-white rounded-full mx-auto animate-ping" />
-        </div>
-      </div>
     </div>
   );
 };
