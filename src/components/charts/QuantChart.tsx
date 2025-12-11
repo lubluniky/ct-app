@@ -714,9 +714,15 @@ export const QuantChart: React.FC<QuantChartProps> = ({
     overlays
       .filter((o) => o.type === "pulse")
       .forEach((overlay) => {
+        // Find the panel for this overlay
+        const panelId = overlay.panelId || 1;
+        const panel = panels.find((p) => p.id === panelId);
+
+        if (!panel) return; // Skip if panel not found
+
         // Pulse Panel Dimensions
-        const panelTop = mainChartHeight;
-        const panelHeight = indicatorHeight;
+        const panelTop = panel.top;
+        const panelHeight = panel.height;
         const pulsePaddingTop = 15; // Micro offset to prevent hitting the ceiling
 
         // We need a local scale for Pulse (0-100)
