@@ -1,4 +1,5 @@
 import { NewHero } from "@/components/NewHero";
+import { AvailableModules } from "@/components/AvailableModules";
 import { Roadmap } from "@/components/Roadmap";
 import { Contact } from "@/components/Contact";
 import { StickyNavbar } from "@/components/StickyNavbar";
@@ -22,6 +23,8 @@ const Index = () => {
       <main className="relative z-10">
         <NewHero />
         
+        <AvailableModules />
+
         <Roadmap />
 
         <Contact />
