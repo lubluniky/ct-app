@@ -197,9 +197,6 @@ export const CrossPairAnalyzer = () => {
   const [showRawPrices, setShowRawPrices] = useState(false);
   const [useGarch, setUseGarch] = useState(true);
   const [panelRatio, setPanelRatio] = useState(0.25);
-  const [panelRatio, setPanelRatio] = useState(0.25);
-  const [correlationPanelSize, setCorrelationPanelSize] = useState(1);
-  const [cointegrationPanelSize, setCointegrationPanelSize] = useState(1);
   const [openA, setOpenA] = useState(false);
   const [openB, setOpenB] = useState(false);
   const chartRef = React.useRef<HTMLDivElement>(null);
@@ -535,9 +532,6 @@ export const CrossPairAnalyzer = () => {
         </div>
       </div>
 
-        </div>
-      </div>
-
       <Alert className="bg-secondary/20 border-primary/20">
         <AlertCircle className="h-4 w-4 text-primary" />
         <AlertDescription className="text-xs text-muted-foreground">
@@ -635,7 +629,6 @@ export const CrossPairAnalyzer = () => {
                     domain: [-1, 1],
                     width: 2,
                     panelId: 1,
-                    panelSize: correlationPanelSize,
                   },
                   {
                     id: "cointegration",
@@ -646,7 +639,6 @@ export const CrossPairAnalyzer = () => {
                     domain: [-3, 3],
                     width: 2,
                     panelId: 2,
-                    panelSize: cointegrationPanelSize,
                   },
                   ...(showRawPrices
                     ? [
