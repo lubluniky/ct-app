@@ -462,8 +462,7 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isResizing, resizeStartY, resizeStartRatio, onPanelRatioChange, dimensions.height]);
-    };
-  }, []);
+
 
   const handleMouseLeave = () => {
     setMousePos(null);
