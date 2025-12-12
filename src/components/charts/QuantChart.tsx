@@ -31,6 +31,7 @@ export interface Overlay {
   domain?: [number, number]; // Custom domain for oscillator/panel
   yAxisId?: string; // 'left' | 'right' or custom id
   panelId?: number; // Which panel this overlay belongs to (0 = main, 1+ = bottom panels)
+  panelSize?: number; // Relative size/weight of this panel (default: 1)
 }
 
 interface QuantChartProps {
@@ -137,30 +138,54 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       };
     }
 
-    // Count unique panels (panelId > 0)
+    // Count unique panels and calculate sizes
     const panelOverlays = overlays.filter(
       (o) =>
         o.type === "pulse" || o.type === "oscillator" || o.type === "z-score",
     );
-    const panelIds = Array.from(
-      new Set(panelOverlays.map((o) => o.panelId || 1)),
-    );
+    
+    // Group overlays by panelId and calculate total weight
+    const panelMap = new Map<number, { overlays: typeof panelOverlays, totalSize: number }>();
+    panelOverlays.forEach((o) => {
+      const pid = o.panelId || 1;
+      if (!panelMap.has(pid)) {
+        panelMap.set(pid, { overlays: [], totalSize: 0 });
+      }
+      const panel = panelMap.get(pid)!;
+      panel.overlays.push(o);
+      // Use the maximum panelSize from overlays in the same panel
+      const size = o.panelSize || 1;
+      panel.totalSize = Math.max(panel.totalSize, size);
+    });
+
+    const panelIds = Array.from(panelMap.keys()).sort((a, b) => a - b);
     const numPanels = panelIds.length;
+    
+    // Calculate total weight
+    const totalWeight = panelIds.reduce((sum, id) => sum + panelMap.get(id)!.totalSize, 0);
 
     const ratio = panelRatio;
     const totalIndicatorHeight = numPanels > 0 ? dimensions.height * ratio : 0;
     const mainChartHeight =
       numPanels > 0 ? dimensions.height * (1 - ratio) : dimensions.height;
-    const panelHeight = numPanels > 0 ? totalIndicatorHeight / numPanels : 0;
 
-    // Create panel info array
-    const panels = panelIds
-      .sort((a, b) => a - b)
-      .map((id, index) => ({
+    // Create panel info array with proportional sizes
+    let currentTop = mainChartHeight;
+    const panels = panelIds.map((id) => {
+      const panelData = panelMap.get(id)!;
+      const panelHeight = totalWeight > 0 
+        ? (totalIndicatorHeight * panelData.totalSize) / totalWeight 
+        : totalIndicatorHeight / numPanels;
+      
+      const panel = {
         id,
-        top: mainChartHeight + index * panelHeight,
+        top: currentTop,
         height: panelHeight,
-      }));
+      };
+      
+      currentTop += panelHeight;
+      return panel;
+    });
 
     const maxVisibleBars = Math.floor(
       (dimensions.width - (padding.right + (padding.left || 0))) /
