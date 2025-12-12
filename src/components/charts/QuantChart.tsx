@@ -106,7 +106,7 @@ export const QuantChart: React.FC<QuantChartProps> = ({
     offset: number;
   } | null>(null);
 
-  // Resize states for panel separator
+  // Resize states for draggable panel separator
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStartY, setResizeStartY] = useState(0);
   const [resizeStartRatio, setResizeStartRatio] = useState(0);
@@ -421,6 +421,8 @@ export const QuantChart: React.FC<QuantChartProps> = ({
 
     return () => {
       container.removeEventListener("wheel", wheelHandler);
+    };
+  }, []);
 
 
   // Handle panel resizing
@@ -437,14 +439,10 @@ export const QuantChart: React.FC<QuantChartProps> = ({
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current || !dimensions.height) return;
-      
       const deltaY = e.clientY - resizeStartY;
       const deltaRatio = deltaY / dimensions.height;
       let newRatio = resizeStartRatio + deltaRatio;
-      
-      // Clamp between 0.1 and 0.7
       newRatio = Math.max(0.1, Math.min(0.7, newRatio));
-      
       if (onPanelRatioChange) {
         onPanelRatioChange(newRatio);
       }
@@ -454,15 +452,14 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       setIsResizing(false);
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isResizing, resizeStartY, resizeStartRatio, onPanelRatioChange, dimensions.height]);
-
 
   const handleMouseLeave = () => {
     setMousePos(null);
@@ -1277,22 +1274,18 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+
       {/* Draggable Panel Separator */}
       {panels.length > 0 && (
         <div
-          className="absolute left-0 right-0 h-1 hover:h-2 cursor-ns-resize z-50 transition-all group"
-          style={{ 
-            top: `${mainChartHeight}px`,
-            background: isResizing 
-              ? 'rgba(59, 130, 246, 0.6)' 
-              : 'rgba(100, 116, 139, 0.3)'
+          className="absolute left-0 right-0 h-1 hover:h-2 cursor-ns-resize z-50 transition-all"
+          style={{
+            top: mainChartHeight,
+            background: isResizing ? "rgba(59, 130, 246, 0.6)" : "rgba(100, 116, 139, 0.3)",
           }}
           onMouseDown={handleResizeStart}
         >
           <div className="absolute inset-x-0 -top-2 -bottom-2" />
-          <div className="hidden group-hover:block absolute left-1/2 -translate-x-1/2 -top-6 bg-background/90 border border-border px-2 py-1 rounded text-xs whitespace-nowrap pointer-events-none">
-            Drag to resize panels
-          </div>
         </div>
       )}
 
