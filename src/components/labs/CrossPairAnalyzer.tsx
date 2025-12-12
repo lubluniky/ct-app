@@ -185,7 +185,6 @@ const calculateCointegration = (
 };
 
 import { Checkbox } from "@/components/ui/checkbox";
-import { Slider } from "@/components/ui/slider";
 
 export const CrossPairAnalyzer = () => {
   const [symbolA, setSymbolA] = useState("BTCUSDT");
@@ -197,6 +196,8 @@ export const CrossPairAnalyzer = () => {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [showRawPrices, setShowRawPrices] = useState(false);
   const [useGarch, setUseGarch] = useState(true);
+  const [panelRatio, setPanelRatio] = useState(0.25);
+  const [panelRatio, setPanelRatio] = useState(0.25);
   const [correlationPanelSize, setCorrelationPanelSize] = useState(1);
   const [cointegrationPanelSize, setCointegrationPanelSize] = useState(1);
   const [openA, setOpenA] = useState(false);
@@ -534,38 +535,6 @@ export const CrossPairAnalyzer = () => {
         </div>
       </div>
 
-
-      <div className="flex flex-col gap-4 p-4 bg-card/30 border border-border/40 rounded-lg">
-        <div className="text-sm font-medium text-muted-foreground">Indicator Panel Sizes</div>
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-4 flex-1">
-            <Label className="text-sm whitespace-nowrap min-w-[100px]">Correlation:</Label>
-            <Slider
-              value={[correlationPanelSize]}
-              onValueChange={(value) => setCorrelationPanelSize(value[0])}
-              min={0.5}
-              max={3}
-              step={0.5}
-              className="flex-1 max-w-[200px]"
-            />
-            <span className="text-xs text-muted-foreground min-w-[2.5rem] text-right">
-              {correlationPanelSize.toFixed(1)}x
-            </span>
-          </div>
-          <div className="flex items-center gap-4 flex-1">
-            <Label className="text-sm whitespace-nowrap min-w-[120px]">Cointegration:</Label>
-            <Slider
-              value={[cointegrationPanelSize]}
-              onValueChange={(value) => setCointegrationPanelSize(value[0])}
-              min={0.5}
-              max={3}
-              step={0.5}
-              className="flex-1 max-w-[200px]"
-            />
-            <span className="text-xs text-muted-foreground min-w-[2.5rem] text-right">
-              {cointegrationPanelSize.toFixed(1)}x
-            </span>
-          </div>
         </div>
       </div>
 
@@ -644,7 +613,8 @@ export const CrossPairAnalyzer = () => {
                 height="100%"
                 className="w-full h-full"
                 chartType="area"
-                panelRatio={0.25}
+                panelRatio={panelRatio}
+                onPanelRatioChange={setPanelRatio}
                 mainSeriesName={
                   useGarch ? "Vol Adjusted Ratio" : "Simple Ratio"
                 }

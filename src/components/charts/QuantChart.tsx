@@ -31,7 +31,6 @@ export interface Overlay {
   domain?: [number, number]; // Custom domain for oscillator/panel
   yAxisId?: string; // 'left' | 'right' or custom id
   panelId?: number; // Which panel this overlay belongs to (0 = main, 1+ = bottom panels)
-  panelSize?: number; // Relative size/weight of this panel (default: 1)
 }
 
 interface QuantChartProps {
@@ -43,6 +42,7 @@ interface QuantChartProps {
   padding?: { top: number; bottom: number; right: number; left?: number };
   chartType?: "candle" | "line" | "area";
   panelRatio?: number;
+  onPanelRatioChange?: (ratio: number) => void;
   mainSeriesName?: string;
   showLegend?: boolean;
 }
@@ -85,6 +85,7 @@ export const QuantChart: React.FC<QuantChartProps> = ({
   padding = { top: 20, bottom: 30, right: 60, left: 0 },
   chartType = "candle",
   panelRatio = 0.3,
+  onPanelRatioChange,
   mainSeriesName,
   showLegend = true,
 }) => {
@@ -138,54 +139,30 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       };
     }
 
-    // Count unique panels and calculate sizes
+    // Count unique panels (panelId > 0)
     const panelOverlays = overlays.filter(
       (o) =>
         o.type === "pulse" || o.type === "oscillator" || o.type === "z-score",
     );
-    
-    // Group overlays by panelId and calculate total weight
-    const panelMap = new Map<number, { overlays: typeof panelOverlays, totalSize: number }>();
-    panelOverlays.forEach((o) => {
-      const pid = o.panelId || 1;
-      if (!panelMap.has(pid)) {
-        panelMap.set(pid, { overlays: [], totalSize: 0 });
-      }
-      const panel = panelMap.get(pid)!;
-      panel.overlays.push(o);
-      // Use the maximum panelSize from overlays in the same panel
-      const size = o.panelSize || 1;
-      panel.totalSize = Math.max(panel.totalSize, size);
-    });
-
-    const panelIds = Array.from(panelMap.keys()).sort((a, b) => a - b);
+    const panelIds = Array.from(
+      new Set(panelOverlays.map((o) => o.panelId || 1)),
+    );
     const numPanels = panelIds.length;
-    
-    // Calculate total weight
-    const totalWeight = panelIds.reduce((sum, id) => sum + panelMap.get(id)!.totalSize, 0);
 
     const ratio = panelRatio;
     const totalIndicatorHeight = numPanels > 0 ? dimensions.height * ratio : 0;
     const mainChartHeight =
       numPanels > 0 ? dimensions.height * (1 - ratio) : dimensions.height;
+    const panelHeight = numPanels > 0 ? totalIndicatorHeight / numPanels : 0;
 
-    // Create panel info array with proportional sizes
-    let currentTop = mainChartHeight;
-    const panels = panelIds.map((id) => {
-      const panelData = panelMap.get(id)!;
-      const panelHeight = totalWeight > 0 
-        ? (totalIndicatorHeight * panelData.totalSize) / totalWeight 
-        : totalIndicatorHeight / numPanels;
-      
-      const panel = {
+    // Create panel info array
+    const panels = panelIds
+      .sort((a, b) => a - b)
+      .map((id, index) => ({
         id,
-        top: currentTop,
+        top: mainChartHeight + index * panelHeight,
         height: panelHeight,
-      };
-      
-      currentTop += panelHeight;
-      return panel;
-    });
+      }));
 
     const maxVisibleBars = Math.floor(
       (dimensions.width - (padding.right + (padding.left || 0))) /
@@ -439,6 +416,47 @@ export const QuantChart: React.FC<QuantChartProps> = ({
 
     return () => {
       container.removeEventListener("wheel", wheelHandler);
+
+
+  // Handle panel resizing
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    setResizeStartY(e.clientY);
+    setResizeStartRatio(panelRatio);
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current || !dimensions.height) return;
+      
+      const deltaY = e.clientY - resizeStartY;
+      const deltaRatio = deltaY / dimensions.height;
+      let newRatio = resizeStartRatio + deltaRatio;
+      
+      // Clamp between 0.1 and 0.7
+      newRatio = Math.max(0.1, Math.min(0.7, newRatio));
+      
+      if (onPanelRatioChange) {
+        onPanelRatioChange(newRatio);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, resizeStartY, resizeStartRatio, onPanelRatioChange, dimensions.height]);
     };
   }, []);
 
@@ -1255,6 +1273,25 @@ export const QuantChart: React.FC<QuantChartProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      {/* Draggable Panel Separator */}
+      {panels.length > 0 && (
+        <div
+          className="absolute left-0 right-0 h-1 hover:h-2 cursor-ns-resize z-50 transition-all group"
+          style={{ 
+            top: `${mainChartHeight}px`,
+            background: isResizing 
+              ? 'rgba(59, 130, 246, 0.6)' 
+              : 'rgba(100, 116, 139, 0.3)'
+          }}
+          onMouseDown={handleResizeStart}
+        >
+          <div className="absolute inset-x-0 -top-2 -bottom-2" />
+          <div className="hidden group-hover:block absolute left-1/2 -translate-x-1/2 -top-6 bg-background/90 border border-border px-2 py-1 rounded text-xs whitespace-nowrap pointer-events-none">
+            Drag to resize panels
+          </div>
+        </div>
+      )}
+
       {/* Main Chart Layer */}
       <canvas
         ref={canvasRef}
