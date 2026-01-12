@@ -1,4 +1,4 @@
-import { ArrowRight, Terminal, Cpu, Zap, Globe } from "lucide-react";
+import { ArrowRight, Terminal, Activity, Cpu, Zap, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TechnicalGrid } from "./TechnicalGrid";
 import { DataStream } from "./DataStream";
@@ -78,8 +78,8 @@ export const NewHero = () => {
               </div>
             </div>
 
-            {/* Actions - LT Space Button */}
-            <div className="flex flex-col sm:flex-row gap-4 mt-12">
+            {/* Actions - LT Space Button & Secondary */}
+            <div className="flex flex-col items-start gap-6 mt-12">
               <Link
                 to="/dashboard"
                 className="group relative px-10 py-5 bg-white text-black font-bold text-lg tracking-widest transition-all hover:bg-neutral-200 hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.3)]"
@@ -90,6 +90,28 @@ export const NewHero = () => {
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </div>
               </Link>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  to="/dashboard"
+                  className="group px-6 py-3 bg-transparent border border-white/20 hover:bg-white/5 text-white/80 font-bold tracking-wider transition-all text-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <Terminal className="w-4 h-4" />
+                    <span>CT TERMINAL</span>
+                  </div>
+                </Link>
+
+                <Link
+                  to="/dashboard/screener"
+                  className="group px-6 py-3 bg-transparent border border-white/20 hover:bg-white/5 text-white/80 font-bold tracking-wider transition-all text-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <Activity className="w-4 h-4" />
+                    <span>CT SCREENER</span>
+                  </div>
+                </Link>
+              </div>
             </div>
           </div>
 
