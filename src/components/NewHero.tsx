@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { TechnicalGrid } from "./TechnicalGrid";
 import { DataStream } from "./DataStream";
 import { Hero3D } from "./Hero3D";
-import ltSpaceLogo from "../assets/Cryptomannn Academy Avatar Black (2).png";
+import ltSpaceLogo from "../assets/calogo.png";
 import ctLogo from "../assets/logo228123.jpg";
 
 export const NewHero = () => {
