@@ -918,31 +918,44 @@ const LTSpace = () => {
             </div>
 
             <div className="h-[500px] w-full">
-              <style>{`
-                .recharts-sankey-node text {
-                  fill: #fff !important;
-                  font-size: 10px;
-                  font-family: monospace;
-                  font-weight: bold;
-                }
-              `}</style>
               <ResponsiveContainer width="100%" height="100%">
                 <Sankey
                   data={sankeyData}
                   node={({ x, y, width, height, index, payload, fill }) => {
+                    const isSource = payload.targetLinks.length === 0;
+
                     return (
-                      <rect
-                        x={x}
-                        y={y}
-                        width={width}
-                        height={height}
-                        fill={fill}
-                        opacity={0.9}
-                      />
+                      <g>
+                        <rect
+                          x={x}
+                          y={y}
+                          width={width}
+                          height={height}
+                          fill={fill}
+                          opacity={0.9}
+                        />
+                        <text
+                          x={isSource ? x + width + 6 : x - 6}
+                          y={y + height / 2}
+                          dy={4}
+                          textAnchor={isSource ? "start" : "end"}
+                          fontSize={12}
+                          fontFamily="monospace"
+                          fontWeight="bold"
+                          fill="#fff"
+                          style={{
+                            pointerEvents: "none",
+                            textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+                          }}
+                        >
+                          {payload.name}
+                        </text>
+                      </g>
                     );
                   }}
                   link={<SankeyLink />}
-                  nodePadding={50}
+                  nodePadding={10}
+                  nodeWidth={20}
                   margin={{ left: 20, right: 20, top: 20, bottom: 20 }}
                 >
                   <Tooltip
