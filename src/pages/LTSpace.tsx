@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -28,6 +28,11 @@ const LTSpace = () => {
   const [fdmcRevenueData, setFdmcRevenueData] = useState<CombinedChartData[]>(
     [],
   );
+  const [feesGrowthData, setFeesGrowthData] = useState<CombinedChartData[]>([]);
+  const [revenueGrowthData, setRevenueGrowthData] = useState<
+    CombinedChartData[]
+  >([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<30 | 60 | 90>(90);
@@ -37,8 +42,9 @@ const LTSpace = () => {
       setLoading(true);
       try {
         const endDate = new Date().toISOString().split("T")[0];
+        // Request 400 days to calculate 90d growth of 30d rolling sums
         const startDateObj = new Date();
-        startDateObj.setDate(startDateObj.getDate() - timeframe);
+        startDateObj.setDate(startDateObj.getDate() - 400);
         const startDate = startDateObj.toISOString().split("T")[0];
 
         const headers = {
@@ -47,135 +53,150 @@ const LTSpace = () => {
           origin: "https://app.artemisanalytics.com",
           referer: "https://app.artemisanalytics.com/",
           "x-art-webtoken":
-            "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NjgzMTUxMjksImV4cCI6MTc2ODQwMTUyOX0.WFes6s4VU1ZgwEuNSzb5LxF8-jwPjOsw9zFX4ZuN25s", // Ideally this should be refreshed or proxied
+            "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NjgzMTUxMjksImV4cCI6MTc2ODQwMTUyOX0.WFes6s4VU1ZgwEuNSzb5LxF8-jwPjOsw9zFX4ZuN25s",
         };
 
-        // Fetch MET Data (FEES)
-        const metResponse = await fetch(
-          `https://data-svc.artemisxyz.com/v2/data/FEES?symbols=met&startDate=${startDate}&endDate=${endDate}`,
-          { headers },
-        );
-        if (!metResponse.ok) throw new Error("Failed to fetch MET data");
-        const metJson = await metResponse.json();
+        const fetchEndpoint = async (metric: string, symbol: string) => {
+          const res = await fetch(
+            `https://data-svc.artemisxyz.com/v2/data/${metric}?symbols=${symbol}&startDate=${startDate}&endDate=${endDate}`,
+            { headers },
+          );
+          if (!res.ok)
+            throw new Error(`Failed to fetch ${metric} for ${symbol}`);
+          return res.json();
+        };
 
-        // Fetch RAY Data (FEES)
-        const rayResponse = await fetch(
-          `https://data-svc.artemisxyz.com/v2/data/FEES?symbols=ray&startDate=${startDate}&endDate=${endDate}`,
-          { headers },
-        );
-        if (!rayResponse.ok) throw new Error("Failed to fetch RAY data");
-        const rayJson = await rayResponse.json();
+        // Parallel Fetching
+        const [
+          metFees,
+          rayFees,
+          metRev,
+          rayRev,
+          metFdmcFees,
+          rayFdmcFees,
+          metFdmcRev,
+          rayFdmcRev,
+        ] = await Promise.all([
+          fetchEndpoint("FEES", "met"),
+          fetchEndpoint("FEES", "ray"),
+          fetchEndpoint("REVENUE", "met"),
+          fetchEndpoint("REVENUE", "ray"),
+          fetchEndpoint("FDMC_FEES_RATIO", "met"),
+          fetchEndpoint("FDMC_FEES_RATIO", "ray"),
+          fetchEndpoint("FDMC_REVENUE_RATIO", "met"),
+          fetchEndpoint("FDMC_REVENUE_RATIO", "ray"),
+        ]);
 
-        // Fetch MET Revenue
-        const metRevResponse = await fetch(
-          `https://data-svc.artemisxyz.com/v2/data/REVENUE?symbols=met&startDate=${startDate}&endDate=${endDate}`,
-          { headers },
-        );
-        if (!metRevResponse.ok) throw new Error("Failed to fetch MET revenue");
-        const metRevJson = await metRevResponse.json();
+        // --- Helpers ---
 
-        // Fetch RAY Revenue
-        const rayRevResponse = await fetch(
-          `https://data-svc.artemisxyz.com/v2/data/REVENUE?symbols=ray&startDate=${startDate}&endDate=${endDate}`,
-          { headers },
-        );
-        if (!rayRevResponse.ok) throw new Error("Failed to fetch RAY revenue");
-        const rayRevJson = await rayRevResponse.json();
+        const getSeriesData = (
+          json: any,
+          symbol: string,
+        ): [number, number][] => {
+          const series = json.series?.find(
+            (s: any) => s.asset.toLowerCase() === symbol.toLowerCase(),
+          );
+          return series ? series.data : [];
+        };
 
-        // Fetch MET FDMC/Fees Ratio
-        const metFdmcFeesResponse = await fetch(
-          `https://data-svc.artemisxyz.com/v2/data/FDMC_FEES_RATIO?symbols=met&startDate=${startDate}&endDate=${endDate}`,
-          { headers },
-        );
-        if (!metFdmcFeesResponse.ok)
-          throw new Error("Failed to fetch MET FDMC Fees Ratio");
-        const metFdmcFeesJson = await metFdmcFeesResponse.json();
-
-        // Fetch RAY FDMC/Fees Ratio
-        const rayFdmcFeesResponse = await fetch(
-          `https://data-svc.artemisxyz.com/v2/data/FDMC_FEES_RATIO?symbols=ray&startDate=${startDate}&endDate=${endDate}`,
-          { headers },
-        );
-        if (!rayFdmcFeesResponse.ok)
-          throw new Error("Failed to fetch RAY FDMC Fees Ratio");
-        const rayFdmcFeesJson = await rayFdmcFeesResponse.json();
-
-        // Fetch MET FDMC/Revenue Ratio
-        const metFdmcRevResponse = await fetch(
-          `https://data-svc.artemisxyz.com/v2/data/FDMC_REVENUE_RATIO?symbols=met&startDate=${startDate}&endDate=${endDate}`,
-          { headers },
-        );
-        if (!metFdmcRevResponse.ok)
-          throw new Error("Failed to fetch MET FDMC Revenue Ratio");
-        const metFdmcRevJson = await metFdmcRevResponse.json();
-
-        // Fetch RAY FDMC/Revenue Ratio
-        const rayFdmcRevResponse = await fetch(
-          `https://data-svc.artemisxyz.com/v2/data/FDMC_REVENUE_RATIO?symbols=ray&startDate=${startDate}&endDate=${endDate}`,
-          { headers },
-        );
-        if (!rayFdmcRevResponse.ok)
-          throw new Error("Failed to fetch RAY FDMC Revenue Ratio");
-        const rayFdmcRevJson = await rayFdmcRevResponse.json();
-
-        // Process and Merge Data
-        const processAndMerge = (
-          json1: any,
-          symbol1: string,
-          json2: any,
-          symbol2: string,
-        ) => {
-          const getData = (json: any, sym: string) => {
-            const series = json.series?.find(
-              (s: any) => s.asset.toLowerCase() === sym.toLowerCase(),
-            );
-            return series ? series.data : [];
-          };
-
-          const data1 = getData(json1, symbol1);
-          const data2 = getData(json2, symbol2);
-
-          // Use a map to merge by timestamp
+        const mergeSeries = (
+          data1: [number, number][],
+          data2: [number, number][],
+        ): CombinedChartData[] => {
           const merged = new Map<
             number,
             { date: string; met: number; ray: number }
           >();
 
-          data1.forEach((item: any[]) => {
-            merged.set(item[0], {
-              date: new Date(item[0]).toISOString().slice(5, 10),
-              met: item[1],
+          data1.forEach(([ts, val]) => {
+            merged.set(ts, {
+              date: new Date(ts).toISOString().slice(5, 10),
+              met: val,
               ray: 0,
             });
           });
 
-          data2.forEach((item: any[]) => {
-            const timestamp = item[0];
-            if (merged.has(timestamp)) {
-              merged.get(timestamp)!.ray = item[1];
+          data2.forEach(([ts, val]) => {
+            if (merged.has(ts)) {
+              merged.get(ts)!.ray = val;
             } else {
-              merged.set(timestamp, {
-                date: new Date(timestamp).toISOString().slice(5, 10),
+              merged.set(ts, {
+                date: new Date(ts).toISOString().slice(5, 10),
                 met: 0,
-                ray: item[1],
+                ray: val,
               });
             }
           });
 
-          // Convert to array and sort by timestamp (key)
           return Array.from(merged.entries())
             .sort((a, b) => a[0] - b[0])
             .map((entry) => entry[1]);
         };
 
-        setFeesData(processAndMerge(metJson, "met", rayJson, "ray"));
-        setRevenueData(processAndMerge(metRevJson, "met", rayRevJson, "ray"));
+        const calculateGrowth = (
+          data: [number, number][],
+        ): [number, number][] => {
+          // 1. Calculate Rolling 30d Sums
+          const sums = data.map((_, i) => {
+            if (i < 29) return null; // Need 30 days
+            let s = 0;
+            for (let k = 0; k < 30; k++) s += data[i - k][1];
+            return s;
+          });
+
+          // 2. Calculate % Change vs 90 days ago
+          return data.map((item, i) => {
+            const currentSum = sums[i];
+            const prevSum = i >= 90 ? sums[i - 90] : null;
+
+            if (
+              currentSum === null ||
+              prevSum === null ||
+              prevSum === 0 ||
+              currentSum === 0
+            ) {
+              return [item[0], 0];
+            }
+
+            const change = ((currentSum - prevSum) / prevSum) * 100;
+            return [item[0], change];
+          });
+        };
+
+        // --- Data Processing ---
+
+        // 1. Raw Series
+        const metFeesData = getSeriesData(metFees, "met");
+        const rayFeesData = getSeriesData(rayFees, "ray");
+        const metRevData = getSeriesData(metRev, "met");
+        const rayRevData = getSeriesData(rayRev, "ray");
+
+        // 2. Main Charts (Fees, Rev)
+        setFeesData(mergeSeries(metFeesData, rayFeesData));
+        setRevenueData(mergeSeries(metRevData, rayRevData));
+
+        // 3. FDMC Charts
         setFdmcFeesData(
-          processAndMerge(metFdmcFeesJson, "met", rayFdmcFeesJson, "ray"),
+          mergeSeries(
+            getSeriesData(metFdmcFees, "met"),
+            getSeriesData(rayFdmcFees, "ray"),
+          ),
         );
         setFdmcRevenueData(
-          processAndMerge(metFdmcRevJson, "met", rayFdmcRevJson, "ray"),
+          mergeSeries(
+            getSeriesData(metFdmcRev, "met"),
+            getSeriesData(rayFdmcRev, "ray"),
+          ),
         );
+
+        // 4. Growth Charts
+        const metFeesGrowth = calculateGrowth(metFeesData);
+        const rayFeesGrowth = calculateGrowth(rayFeesData);
+        const metRevGrowth = calculateGrowth(metRevData);
+        const rayRevGrowth = calculateGrowth(rayRevData);
+
+        setFeesGrowthData(mergeSeries(metFeesGrowth, rayFeesGrowth));
+        setRevenueGrowthData(mergeSeries(metRevGrowth, rayRevGrowth));
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to initialize data stream.");
@@ -185,7 +206,39 @@ const LTSpace = () => {
     };
 
     fetchData();
-  }, [timeframe]);
+    // Run once on mount. Timeframe filtering is done in render/useMemo.
+  }, []);
+
+  // Filter Data based on selected Timeframe
+  const sliceData = (data: CombinedChartData[]) => {
+    // Assuming data is daily and sorted.
+    // If the API returns fewer days than requested due to gaps, we might show less.
+    // .slice(-timeframe) takes the last N items.
+    if (!data || data.length === 0) return [];
+    return data.slice(-timeframe);
+  };
+
+  const visibleFees = useMemo(() => sliceData(feesData), [feesData, timeframe]);
+  const visibleRevenue = useMemo(
+    () => sliceData(revenueData),
+    [revenueData, timeframe],
+  );
+  const visibleFdmcFees = useMemo(
+    () => sliceData(fdmcFeesData),
+    [fdmcFeesData, timeframe],
+  );
+  const visibleFdmcRev = useMemo(
+    () => sliceData(fdmcRevenueData),
+    [fdmcRevenueData, timeframe],
+  );
+  const visibleFeesGrowth = useMemo(
+    () => sliceData(feesGrowthData),
+    [feesGrowthData, timeframe],
+  );
+  const visibleRevenueGrowth = useMemo(
+    () => sliceData(revenueGrowthData),
+    [revenueGrowthData, timeframe],
+  );
 
   if (loading) {
     return (
@@ -281,7 +334,7 @@ const LTSpace = () => {
 
           <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={feesData}>
+              <BarChart data={visibleFees}>
                 <XAxis
                   dataKey="date"
                   axisLine={false}
@@ -361,7 +414,7 @@ const LTSpace = () => {
 
           <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueData}>
+              <BarChart data={visibleRevenue}>
                 <XAxis
                   dataKey="date"
                   axisLine={false}
@@ -427,209 +480,366 @@ const LTSpace = () => {
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
 
-      {/* FDMC Ratio Charts */}
-      <div className="space-y-8 relative z-10 mt-8">
-        {/* FDMC / Fees Chart */}
-        <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
-              MET vs RAY FDMC / FEES RATIO
-            </h3>
-            <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
-              DAILY TIMEFRAME
-            </span>
+        {/* FDMC Ratio Charts */}
+        <div className="grid grid-cols-1 gap-8 relative z-10 mt-8">
+          {/* FDMC / Fees Chart */}
+          <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                MET vs RAY FDMC / FEES RATIO
+              </h3>
+              <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                DAILY TIMEFRAME
+              </span>
+            </div>
+
+            <div className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={visibleFdmcFees}>
+                  <defs>
+                    <linearGradient
+                      id="colorMetFdmcFees"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#38bdf8" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient
+                      id="colorRayFdmcFees"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="5%" stopColor="#f472b6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#f472b6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="date"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "#525252",
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                    }}
+                    dy={10}
+                  />
+                  <YAxis
+                    hide={false}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "#525252",
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                    }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#000",
+                      borderColor: "#333",
+                      color: "#fff",
+                    }}
+                    itemStyle={{ color: "#fff" }}
+                    formatter={(value: number) =>
+                      `${Intl.NumberFormat("en-US", {
+                        maximumFractionDigits: 2,
+                      }).format(value)}x`
+                    }
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    height={36}
+                    iconType="circle"
+                    formatter={(value) => (
+                      <span className="text-neutral-400 font-mono text-sm ml-2">
+                        {value}
+                      </span>
+                    )}
+                  />
+                  <Area
+                    type="monotone"
+                    name="Meteora"
+                    dataKey="met"
+                    stroke="#38bdf8"
+                    fillOpacity={1}
+                    fill="url(#colorMetFdmcFees)"
+                  />
+                  <Area
+                    type="monotone"
+                    name="Raydium"
+                    dataKey="ray"
+                    stroke="#f472b6"
+                    fillOpacity={1}
+                    fill="url(#colorRayFdmcFees)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="h-[400px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={fdmcFeesData}>
-                <defs>
-                  <linearGradient
-                    id="colorMetFdmcFees"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient
-                    id="colorRayFdmcFees"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor="#f472b6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#f472b6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="date"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{
-                    fill: "#525252",
-                    fontSize: 10,
-                    fontFamily: "monospace",
-                  }}
-                  dy={10}
-                />
-                <YAxis
-                  hide={false}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{
-                    fill: "#525252",
-                    fontSize: 10,
-                    fontFamily: "monospace",
-                  }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#000",
-                    borderColor: "#333",
-                    color: "#fff",
-                  }}
-                  itemStyle={{ color: "#fff" }}
-                  formatter={(value: number) =>
-                    `${Intl.NumberFormat("en-US", {
-                      maximumFractionDigits: 2,
-                    }).format(value)}x`
-                  }
-                />
-                <Legend
-                  verticalAlign="top"
-                  height={36}
-                  iconType="circle"
-                  formatter={(value) => (
-                    <span className="text-neutral-400 font-mono text-sm ml-2">
-                      {value}
-                    </span>
-                  )}
-                />
-                <Area
-                  type="monotone"
-                  name="Meteora"
-                  dataKey="met"
-                  stroke="#38bdf8"
-                  fillOpacity={1}
-                  fill="url(#colorMetFdmcFees)"
-                />
-                <Area
-                  type="monotone"
-                  name="Raydium"
-                  dataKey="ray"
-                  stroke="#f472b6"
-                  fillOpacity={1}
-                  fill="url(#colorRayFdmcFees)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* FDMC / Revenue Chart */}
+          <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                MET vs RAY FDMC / REVENUE RATIO
+              </h3>
+              <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                DAILY TIMEFRAME
+              </span>
+            </div>
+
+            <div className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={visibleFdmcRev}>
+                  <defs>
+                    <linearGradient
+                      id="colorMetFdmcRev"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="5%" stopColor="#2dd4bf" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#2dd4bf" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient
+                      id="colorRayFdmcRev"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="5%" stopColor="#fb7185" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#fb7185" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="date"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "#525252",
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                    }}
+                    dy={10}
+                  />
+                  <YAxis
+                    hide={false}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "#525252",
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                    }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#000",
+                      borderColor: "#333",
+                      color: "#fff",
+                    }}
+                    itemStyle={{ color: "#fff" }}
+                    formatter={(value: number) =>
+                      `${Intl.NumberFormat("en-US", {
+                        maximumFractionDigits: 2,
+                      }).format(value)}x`
+                    }
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    height={36}
+                    iconType="circle"
+                    formatter={(value) => (
+                      <span className="text-neutral-400 font-mono text-sm ml-2">
+                        {value}
+                      </span>
+                    )}
+                  />
+                  <Area
+                    type="monotone"
+                    name="Meteora"
+                    dataKey="met"
+                    stroke="#2dd4bf"
+                    fillOpacity={1}
+                    fill="url(#colorMetFdmcRev)"
+                  />
+                  <Area
+                    type="monotone"
+                    name="Raydium"
+                    dataKey="ray"
+                    stroke="#fb7185"
+                    fillOpacity={1}
+                    fill="url(#colorRayFdmcRev)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
-        {/* FDMC / Revenue Chart */}
-        <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
-              MET vs RAY FDMC / REVENUE RATIO
-            </h3>
-            <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
-              DAILY TIMEFRAME
-            </span>
+        {/* Growth Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10 mt-8">
+          {/* Fees Growth Chart */}
+          <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                FEES GROWTH RATE (90D)
+              </h3>
+              <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                % CHANGE OF 30D SUM
+              </span>
+            </div>
+
+            <div className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={visibleFeesGrowth}>
+                  <XAxis
+                    dataKey="date"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "#525252",
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                    }}
+                    dy={10}
+                  />
+                  <YAxis
+                    hide={false}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "#525252",
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                    }}
+                    tickFormatter={(value) => `${value.toFixed(0)}%`}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "white", opacity: 0.05 }}
+                    contentStyle={{
+                      backgroundColor: "#000",
+                      borderColor: "#333",
+                      color: "#fff",
+                    }}
+                    itemStyle={{ color: "#fff" }}
+                    formatter={(value: number) =>
+                      `${Intl.NumberFormat("en-US", {
+                        maximumFractionDigits: 2,
+                      }).format(value)}%`
+                    }
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    height={36}
+                    iconType="square"
+                    formatter={(value) => (
+                      <span className="text-neutral-400 font-mono text-sm ml-2">
+                        {value}
+                      </span>
+                    )}
+                  />
+                  <Bar
+                    name="Meteora"
+                    dataKey="met"
+                    fill="#3b82f6" // Blue
+                    radius={[2, 2, 0, 0]}
+                  />
+                  <Bar
+                    name="Raydium"
+                    dataKey="ray"
+                    fill="#a855f7" // Purple
+                    radius={[2, 2, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div className="h-[400px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={fdmcRevenueData}>
-                <defs>
-                  <linearGradient
-                    id="colorMetFdmcRev"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor="#2dd4bf" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#2dd4bf" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient
-                    id="colorRayFdmcRev"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor="#fb7185" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#fb7185" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="date"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{
-                    fill: "#525252",
-                    fontSize: 10,
-                    fontFamily: "monospace",
-                  }}
-                  dy={10}
-                />
-                <YAxis
-                  hide={false}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{
-                    fill: "#525252",
-                    fontSize: 10,
-                    fontFamily: "monospace",
-                  }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#000",
-                    borderColor: "#333",
-                    color: "#fff",
-                  }}
-                  itemStyle={{ color: "#fff" }}
-                  formatter={(value: number) =>
-                    `${Intl.NumberFormat("en-US", {
-                      maximumFractionDigits: 2,
-                    }).format(value)}x`
-                  }
-                />
-                <Legend
-                  verticalAlign="top"
-                  height={36}
-                  iconType="circle"
-                  formatter={(value) => (
-                    <span className="text-neutral-400 font-mono text-sm ml-2">
-                      {value}
-                    </span>
-                  )}
-                />
-                <Area
-                  type="monotone"
-                  name="Meteora"
-                  dataKey="met"
-                  stroke="#2dd4bf"
-                  fillOpacity={1}
-                  fill="url(#colorMetFdmcRev)"
-                />
-                <Area
-                  type="monotone"
-                  name="Raydium"
-                  dataKey="ray"
-                  stroke="#fb7185"
-                  fillOpacity={1}
-                  fill="url(#colorRayFdmcRev)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* Revenue Growth Chart */}
+          <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                REVENUE GROWTH RATE (90D)
+              </h3>
+              <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                % CHANGE OF 30D SUM
+              </span>
+            </div>
+
+            <div className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={visibleRevenueGrowth}>
+                  <XAxis
+                    dataKey="date"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "#525252",
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                    }}
+                    dy={10}
+                  />
+                  <YAxis
+                    hide={false}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{
+                      fill: "#525252",
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                    }}
+                    tickFormatter={(value) => `${value.toFixed(0)}%`}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "white", opacity: 0.05 }}
+                    contentStyle={{
+                      backgroundColor: "#000",
+                      borderColor: "#333",
+                      color: "#fff",
+                    }}
+                    itemStyle={{ color: "#fff" }}
+                    formatter={(value: number) =>
+                      `${Intl.NumberFormat("en-US", {
+                        maximumFractionDigits: 2,
+                      }).format(value)}%`
+                    }
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    height={36}
+                    iconType="square"
+                    formatter={(value) => (
+                      <span className="text-neutral-400 font-mono text-sm ml-2">
+                        {value}
+                      </span>
+                    )}
+                  />
+                  <Bar
+                    name="Meteora"
+                    dataKey="met"
+                    fill="#10b981" // Green
+                    radius={[2, 2, 0, 0]}
+                  />
+                  <Bar
+                    name="Raydium"
+                    dataKey="ray"
+                    fill="#f97316" // Orange
+                    radius={[2, 2, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
