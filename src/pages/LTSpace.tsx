@@ -21,14 +21,15 @@ const LTSpace = () => {
   const [rayData, setRayData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [timeframe, setTimeframe] = useState<30 | 60 | 90>(90);
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const endDate = new Date().toISOString().split("T")[0];
-        // Start date 3 months ago for a good view
         const startDateObj = new Date();
-        startDateObj.setMonth(startDateObj.getMonth() - 3);
+        startDateObj.setDate(startDateObj.getDate() - timeframe);
         const startDate = startDateObj.toISOString().split("T")[0];
 
         const headers = {
@@ -85,7 +86,7 @@ const LTSpace = () => {
     };
 
     fetchData();
-  }, []);
+  }, [timeframe]);
 
   if (loading) {
     return (
@@ -136,7 +137,23 @@ const LTSpace = () => {
           </div>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+          <div className="flex bg-neutral-900/50 rounded-sm p-1 border border-white/10 backdrop-blur-sm">
+            {[90, 60, 30].map((days) => (
+              <button
+                key={days}
+                onClick={() => setTimeframe(days as 30 | 60 | 90)}
+                className={`px-3 py-1 text-xs font-mono transition-colors rounded-sm ${
+                  timeframe === days
+                    ? "bg-white text-black font-bold"
+                    : "text-neutral-500 hover:text-white"
+                }`}
+              >
+                {days}D
+              </button>
+            ))}
+          </div>
+
           <div className="px-4 py-2 border border-white/10 rounded-sm bg-white/5 backdrop-blur-sm">
             <div className="text-[10px] text-neutral-400 font-mono mb-1">
               NETWORK STATUS
