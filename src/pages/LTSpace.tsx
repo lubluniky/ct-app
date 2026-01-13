@@ -19,6 +19,8 @@ interface ChartData {
 const LTSpace = () => {
   const [metData, setMetData] = useState<ChartData[]>([]);
   const [rayData, setRayData] = useState<ChartData[]>([]);
+  const [metRevenue, setMetRevenue] = useState<ChartData[]>([]);
+  const [rayRevenue, setRayRevenue] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<30 | 60 | 90>(90);
@@ -41,7 +43,7 @@ const LTSpace = () => {
             "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NjgzMTUxMjksImV4cCI6MTc2ODQwMTUyOX0.WFes6s4VU1ZgwEuNSzb5LxF8-jwPjOsw9zFX4ZuN25s", // Ideally this should be refreshed or proxied
         };
 
-        // Fetch MET Data
+        // Fetch MET Data (FEES)
         const metResponse = await fetch(
           `https://data-svc.artemisxyz.com/v2/data/FEES?symbols=met&startDate=${startDate}&endDate=${endDate}`,
           { headers },
@@ -49,13 +51,29 @@ const LTSpace = () => {
         if (!metResponse.ok) throw new Error("Failed to fetch MET data");
         const metJson = await metResponse.json();
 
-        // Fetch RAY Data
+        // Fetch RAY Data (FEES)
         const rayResponse = await fetch(
           `https://data-svc.artemisxyz.com/v2/data/FEES?symbols=ray&startDate=${startDate}&endDate=${endDate}`,
           { headers },
         );
         if (!rayResponse.ok) throw new Error("Failed to fetch RAY data");
         const rayJson = await rayResponse.json();
+
+        // Fetch MET Revenue
+        const metRevResponse = await fetch(
+          `https://data-svc.artemisxyz.com/v2/data/REVENUE?symbols=met&startDate=${startDate}&endDate=${endDate}`,
+          { headers },
+        );
+        if (!metRevResponse.ok) throw new Error("Failed to fetch MET revenue");
+        const metRevJson = await metRevResponse.json();
+
+        // Fetch RAY Revenue
+        const rayRevResponse = await fetch(
+          `https://data-svc.artemisxyz.com/v2/data/REVENUE?symbols=ray&startDate=${startDate}&endDate=${endDate}`,
+          { headers },
+        );
+        if (!rayRevResponse.ok) throw new Error("Failed to fetch RAY revenue");
+        const rayRevJson = await rayRevResponse.json();
 
         // Process Data
         const processArtemisData = (json: any, symbol: string) => {
@@ -77,6 +95,8 @@ const LTSpace = () => {
 
         setMetData(processArtemisData(metJson, "met"));
         setRayData(processArtemisData(rayJson, "ray"));
+        setMetRevenue(processArtemisData(metRevJson, "met"));
+        setRayRevenue(processArtemisData(rayRevJson, "ray"));
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to initialize data stream.");
@@ -258,6 +278,111 @@ const LTSpace = () => {
                       key={`cell-${index}`}
                       fill={
                         index === rayData.length - 1 ? "#a855f7" : "#581c87"
+                      }
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Revenue Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10 mt-8">
+        {/* Chart 3: MET REVENUE */}
+        <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+              <span className="w-1 h-4 bg-emerald-500 block rounded-sm"></span>
+              MET REVENUE
+            </h3>
+            <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+              DAILY TIMEFRAME
+            </span>
+          </div>
+
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={metRevenue}>
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: "#525252",
+                    fontSize: 10,
+                    fontFamily: "monospace",
+                  }}
+                  dy={10}
+                />
+                <YAxis hide />
+                <Tooltip
+                  cursor={{ fill: "white", opacity: 0.05 }}
+                  contentStyle={{
+                    backgroundColor: "#000",
+                    borderColor: "#333",
+                    color: "#fff",
+                  }}
+                  itemStyle={{ color: "#fff" }}
+                />
+                <Bar dataKey="val" radius={[2, 2, 0, 0]}>
+                  {metRevenue.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={
+                        index === metRevenue.length - 1 ? "#10b981" : "#065f46"
+                      }
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Chart 4: RAY REVENUE */}
+        <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+              <span className="w-1 h-4 bg-orange-500 block rounded-sm"></span>
+              RAY REVENUE
+            </h3>
+            <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+              DAILY TIMEFRAME
+            </span>
+          </div>
+
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={rayRevenue}>
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: "#525252",
+                    fontSize: 10,
+                    fontFamily: "monospace",
+                  }}
+                  dy={10}
+                />
+                <YAxis hide />
+                <Tooltip
+                  cursor={{ fill: "white", opacity: 0.05 }}
+                  contentStyle={{
+                    backgroundColor: "#000",
+                    borderColor: "#333",
+                    color: "#fff",
+                  }}
+                  itemStyle={{ color: "#fff" }}
+                />
+                <Bar dataKey="val" radius={[2, 2, 0, 0]}>
+                  {rayRevenue.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={
+                        index === rayRevenue.length - 1 ? "#f97316" : "#9a3412"
                       }
                     />
                   ))}
