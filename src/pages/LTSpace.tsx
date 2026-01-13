@@ -6,21 +6,21 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Legend,
   Cell,
 } from "recharts";
 import { ArrowLeft, Terminal, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
 
-interface ChartData {
+interface CombinedChartData {
   date: string;
-  val: number;
+  met: number;
+  ray: number;
 }
 
 const LTSpace = () => {
-  const [metData, setMetData] = useState<ChartData[]>([]);
-  const [rayData, setRayData] = useState<ChartData[]>([]);
-  const [metRevenue, setMetRevenue] = useState<ChartData[]>([]);
-  const [rayRevenue, setRayRevenue] = useState<ChartData[]>([]);
+  const [feesData, setFeesData] = useState<CombinedChartData[]>([]);
+  const [revenueData, setRevenueData] = useState<CombinedChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<30 | 60 | 90>(90);
@@ -75,28 +75,58 @@ const LTSpace = () => {
         if (!rayRevResponse.ok) throw new Error("Failed to fetch RAY revenue");
         const rayRevJson = await rayRevResponse.json();
 
-        // Process Data
-        const processArtemisData = (json: any, symbol: string) => {
-          const series = json.series?.find(
-            (s: any) => s.asset.toLowerCase() === symbol.toLowerCase(),
-          );
+        // Process and Merge Data
+        const processAndMerge = (
+          json1: any,
+          symbol1: string,
+          json2: any,
+          symbol2: string,
+        ) => {
+          const getData = (json: any, sym: string) => {
+            const series = json.series?.find(
+              (s: any) => s.asset.toLowerCase() === sym.toLowerCase(),
+            );
+            return series ? series.data : [];
+          };
 
-          if (series && series.data) {
-            return series.data.map((item: any[]) => {
-              const date = new Date(item[0]);
-              return {
-                date: date.toISOString().slice(5, 10), // MM-DD
-                val: item[1],
-              };
+          const data1 = getData(json1, symbol1);
+          const data2 = getData(json2, symbol2);
+
+          // Use a map to merge by timestamp
+          const merged = new Map<
+            number,
+            { date: string; met: number; ray: number }
+          >();
+
+          data1.forEach((item: any[]) => {
+            merged.set(item[0], {
+              date: new Date(item[0]).toISOString().slice(5, 10),
+              met: item[1],
+              ray: 0,
             });
-          }
-          return [];
+          });
+
+          data2.forEach((item: any[]) => {
+            const timestamp = item[0];
+            if (merged.has(timestamp)) {
+              merged.get(timestamp)!.ray = item[1];
+            } else {
+              merged.set(timestamp, {
+                date: new Date(timestamp).toISOString().slice(5, 10),
+                met: 0,
+                ray: item[1],
+              });
+            }
+          });
+
+          // Convert to array and sort by timestamp (key)
+          return Array.from(merged.entries())
+            .sort((a, b) => a[0] - b[0])
+            .map((entry) => entry[1]);
         };
 
-        setMetData(processArtemisData(metJson, "met"));
-        setRayData(processArtemisData(rayJson, "ray"));
-        setMetRevenue(processArtemisData(metRevJson, "met"));
-        setRayRevenue(processArtemisData(rayRevJson, "ray"));
+        setFeesData(processAndMerge(metJson, "met", rayJson, "ray"));
+        setRevenueData(processAndMerge(metRevJson, "met", rayRevJson, "ray"));
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to initialize data stream.");
@@ -184,22 +214,21 @@ const LTSpace = () => {
       </header>
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
-        {/* Chart 1: MET */}
+      <div className="space-y-8 relative z-10">
+        {/* Fees Chart */}
         <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
-              <span className="w-1 h-4 bg-blue-500 block rounded-sm"></span>
-              MET FEES
+              MET vs RAY FEES
             </h3>
             <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
               DAILY TIMEFRAME
             </span>
           </div>
 
-          <div className="h-[300px] w-full">
+          <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={metData}>
+              <BarChart data={feesData}>
                 <XAxis
                   dataKey="date"
                   axisLine={false}
@@ -211,7 +240,22 @@ const LTSpace = () => {
                   }}
                   dy={10}
                 />
-                <YAxis hide />
+                <YAxis
+                  hide={false}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: "#525252",
+                    fontSize: 10,
+                    fontFamily: "monospace",
+                  }}
+                  tickFormatter={(value) =>
+                    `$${Intl.NumberFormat("en-US", {
+                      notation: "compact",
+                      maximumFractionDigits: 1,
+                    }).format(value)}`
+                  }
+                />
                 <Tooltip
                   cursor={{ fill: "white", opacity: 0.05 }}
                   contentStyle={{
@@ -220,37 +264,51 @@ const LTSpace = () => {
                     color: "#fff",
                   }}
                   itemStyle={{ color: "#fff" }}
+                  formatter={(value: number) =>
+                    `$${Intl.NumberFormat("en-US").format(value)}`
+                  }
                 />
-                <Bar dataKey="val" radius={[2, 2, 0, 0]}>
-                  {metData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={
-                        index === metData.length - 1 ? "#3b82f6" : "#1e3a8a"
-                      }
-                    />
-                  ))}
-                </Bar>
+                <Legend
+                  verticalAlign="top"
+                  height={36}
+                  iconType="square"
+                  formatter={(value) => (
+                    <span className="text-neutral-400 font-mono text-sm ml-2">
+                      {value}
+                    </span>
+                  )}
+                />
+                <Bar
+                  name="Meteora"
+                  dataKey="met"
+                  fill="#06b6d4" // Cyan
+                  radius={[2, 2, 0, 0]}
+                />
+                <Bar
+                  name="Raydium"
+                  dataKey="ray"
+                  fill="#8b5cf6" // Purple
+                  radius={[2, 2, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Chart 2: RAY */}
+        {/* Revenue Chart */}
         <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
-              <span className="w-1 h-4 bg-purple-500 block rounded-sm"></span>
-              RAY FEES
+              MET vs RAY REVENUE
             </h3>
             <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
               DAILY TIMEFRAME
             </span>
           </div>
 
-          <div className="h-[300px] w-full">
+          <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={rayData}>
+              <BarChart data={revenueData}>
                 <XAxis
                   dataKey="date"
                   axisLine={false}
@@ -262,51 +320,8 @@ const LTSpace = () => {
                   }}
                   dy={10}
                 />
-                <YAxis hide />
-                <Tooltip
-                  cursor={{ fill: "white", opacity: 0.05 }}
-                  contentStyle={{
-                    backgroundColor: "#000",
-                    borderColor: "#333",
-                    color: "#fff",
-                  }}
-                  itemStyle={{ color: "#fff" }}
-                />
-                <Bar dataKey="val" radius={[2, 2, 0, 0]}>
-                  {rayData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={
-                        index === rayData.length - 1 ? "#a855f7" : "#581c87"
-                      }
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* Revenue Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10 mt-8">
-        {/* Chart 3: MET REVENUE */}
-        <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
-              <span className="w-1 h-4 bg-emerald-500 block rounded-sm"></span>
-              MET REVENUE
-            </h3>
-            <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
-              DAILY TIMEFRAME
-            </span>
-          </div>
-
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={metRevenue}>
-                <XAxis
-                  dataKey="date"
+                <YAxis
+                  hide={false}
                   axisLine={false}
                   tickLine={false}
                   tick={{
@@ -314,9 +329,13 @@ const LTSpace = () => {
                     fontSize: 10,
                     fontFamily: "monospace",
                   }}
-                  dy={10}
+                  tickFormatter={(value) =>
+                    `$${Intl.NumberFormat("en-US", {
+                      notation: "compact",
+                      maximumFractionDigits: 1,
+                    }).format(value)}`
+                  }
                 />
-                <YAxis hide />
                 <Tooltip
                   cursor={{ fill: "white", opacity: 0.05 }}
                   contentStyle={{
@@ -325,68 +344,32 @@ const LTSpace = () => {
                     color: "#fff",
                   }}
                   itemStyle={{ color: "#fff" }}
+                  formatter={(value: number) =>
+                    `$${Intl.NumberFormat("en-US").format(value)}`
+                  }
                 />
-                <Bar dataKey="val" radius={[2, 2, 0, 0]}>
-                  {metRevenue.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={
-                        index === metRevenue.length - 1 ? "#10b981" : "#065f46"
-                      }
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Chart 4: RAY REVENUE */}
-        <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
-              <span className="w-1 h-4 bg-orange-500 block rounded-sm"></span>
-              RAY REVENUE
-            </h3>
-            <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
-              DAILY TIMEFRAME
-            </span>
-          </div>
-
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={rayRevenue}>
-                <XAxis
-                  dataKey="date"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{
-                    fill: "#525252",
-                    fontSize: 10,
-                    fontFamily: "monospace",
-                  }}
-                  dy={10}
+                <Legend
+                  verticalAlign="top"
+                  height={36}
+                  iconType="square"
+                  formatter={(value) => (
+                    <span className="text-neutral-400 font-mono text-sm ml-2">
+                      {value}
+                    </span>
+                  )}
                 />
-                <YAxis hide />
-                <Tooltip
-                  cursor={{ fill: "white", opacity: 0.05 }}
-                  contentStyle={{
-                    backgroundColor: "#000",
-                    borderColor: "#333",
-                    color: "#fff",
-                  }}
-                  itemStyle={{ color: "#fff" }}
+                <Bar
+                  name="Meteora"
+                  dataKey="met"
+                  fill="#10b981" // Emerald
+                  radius={[2, 2, 0, 0]}
                 />
-                <Bar dataKey="val" radius={[2, 2, 0, 0]}>
-                  {rayRevenue.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={
-                        index === rayRevenue.length - 1 ? "#f97316" : "#9a3412"
-                      }
-                    />
-                  ))}
-                </Bar>
+                <Bar
+                  name="Raydium"
+                  dataKey="ray"
+                  fill="#f97316" // Orange
+                  radius={[2, 2, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
