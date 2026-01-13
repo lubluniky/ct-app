@@ -923,205 +923,284 @@ const LTSpace = () => {
 
           {/* Bottom Grid: Sankey & CEX */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Sankey Chart */}
-          <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
-                METEORA: REVENUE SOURCES
-              </h3>
-              <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
-                LAST 7 DAYS
-              </span>
-            </div>
+            {/* Sankey Chart */}
+            <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                  METEORA: REVENUE SOURCES
+                </h3>
+                <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                  LAST 7 DAYS
+                </span>
+              </div>
 
-            <div className="h-[600px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <Sankey
-                  data={sankeyData}
-                  node={({ x, y, width, height, index, payload, fill }) => {
-                    const isSource = payload.targetLinks.length === 0;
+              <div className="h-[600px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <Sankey
+                    data={sankeyData}
+                    node={({ x, y, width, height, index, payload, fill }) => {
+                      const isSource = payload.targetLinks.length === 0;
 
-                    if (height < 10 && !isSource) {
+                      if (height < 10 && !isSource) {
+                        return (
+                          <rect
+                            x={x}
+                            y={y}
+                            width={width}
+                            height={height}
+                            fill={fill}
+                            opacity={0.9}
+                          />
+                        );
+                      }
+
                       return (
-                        <rect
-                          x={x}
-                          y={y}
-                          width={width}
-                          height={height}
-                          fill={fill}
-                          opacity={0.9}
-                        />
+                        <g>
+                          <rect
+                            x={x}
+                            y={y}
+                            width={width}
+                            height={height}
+                            fill={fill}
+                            opacity={0.9}
+                          />
+                          <text
+                            x={isSource ? x - 6 : x + width + 6}
+                            y={y + height / 2}
+                            dy={4}
+                            textAnchor={isSource ? "end" : "start"}
+                            fontSize={10}
+                            fontFamily="monospace"
+                            fontWeight="bold"
+                            fill="#fff"
+                            style={{
+                              pointerEvents: "none",
+                              textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+                            }}
+                          >
+                            {payload.name}
+                          </text>
+                        </g>
                       );
-                    }
-
-                    return (
-                      <g>
-                        <rect
-                          x={x}
-                          y={y}
-                          width={width}
-                          height={height}
-                          fill={fill}
-                          opacity={0.9}
-                        />
-                        <text
-                          x={isSource ? x - 6 : x + width + 6}
-                          y={y + height / 2}
-                          dy={4}
-                          textAnchor={isSource ? "end" : "start"}
-                          fontSize={10}
-                          fontFamily="monospace"
-                          fontWeight="bold"
-                          fill="#fff"
-                          style={{
-                            pointerEvents: "none",
-                            textShadow: "0 1px 2px rgba(0,0,0,0.8)",
-                          }}
-                        >
-                          {payload.name}
-                        </text>
-                      </g>
-                    );
-                  }}
-                  link={<SankeyLink />}
-                  nodePadding={10}
-                  nodeWidth={20}
-                  margin={{ left: 100, right: 150, top: 20, bottom: 20 }}
-                >
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#000",
-                      borderColor: "#333",
-                      color: "#fff",
                     }}
-                    itemStyle={{ color: "#fff" }}
-                    formatter={(value: number) =>
-                      `$${Intl.NumberFormat("en-US", {
-                        maximumFractionDigits: 0,
-                      }).format(value)}`
-                    }
-                  />
-                </Sankey>
-              </ResponsiveContainer>
+                    link={<SankeyLink />}
+                    nodePadding={10}
+                    nodeWidth={20}
+                    margin={{ left: 100, right: 150, top: 20, bottom: 20 }}
+                  >
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#000",
+                        borderColor: "#333",
+                        color: "#fff",
+                      }}
+                      itemStyle={{ color: "#fff" }}
+                      formatter={(value: number) =>
+                        `$${Intl.NumberFormat("en-US", {
+                          maximumFractionDigits: 0,
+                        }).format(value)}`
+                      }
+                    />
+                  </Sankey>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
 
-          {/* CEX Holdings Chart */}
-          <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
-                MET HELD ON CEXs
-              </h3>
-              <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
-                DAILY TIMEFRAME
-              </span>
+            {/* CEX Holdings Chart */}
+            <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                  MET HELD ON CEXs
+                </h3>
+                <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                  DAILY TIMEFRAME
+                </span>
+              </div>
+
+              <div className="h-[600px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={visibleCexHoldings}>
+                    <defs>
+                      <linearGradient
+                        id="colorBybit"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#e88a0e"
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#e88a0e"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                      <linearGradient
+                        id="colorKuCoin"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#6cd88e"
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#6cd88e"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                      <linearGradient
+                        id="colorMEXC"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#43d4dd"
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#43d4dd"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                      <linearGradient
+                        id="colorBitget"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#4773b4"
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#4773b4"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                      <linearGradient id="colorOKX" x1="0" y1="0" x2="0" y2="1">
+                        <stop
+                          offset="5%"
+                          stopColor="#484646"
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#484646"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                      <linearGradient
+                        id="colorOther"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#9a9595"
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#9a9595"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="date"
+                      stroke="#555"
+                      tick={{ fill: "#666", fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#555"
+                      tick={{ fill: "#666", fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(val) =>
+                        new Intl.NumberFormat("en-US", {
+                          notation: "compact",
+                          maximumFractionDigits: 1,
+                        }).format(val)
+                      }
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#1F2937",
+                        borderColor: "#374151",
+                        color: "#F3F4F6",
+                      }}
+                      itemStyle={{ color: "#F3F4F6" }}
+                      formatter={(value: number) =>
+                        new Intl.NumberFormat("en-US").format(value)
+                      }
+                    />
+                    <Legend />
+                    <Area
+                      type="monotone"
+                      dataKey="Other"
+                      stackId="1"
+                      stroke="#9a9595"
+                      fill="url(#colorOther)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="Bitget"
+                      stackId="1"
+                      stroke="#4773b4"
+                      fill="url(#colorBitget)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="KuCoin"
+                      stackId="1"
+                      stroke="#6cd88e"
+                      fill="url(#colorKuCoin)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="MEXC"
+                      stackId="1"
+                      stroke="#43d4dd"
+                      fill="url(#colorMEXC)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="Bybit"
+                      stackId="1"
+                      stroke="#e88a0e"
+                      fill="url(#colorBybit)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="OKX"
+                      stackId="1"
+                      stroke="#484646"
+                      fill="url(#colorOKX)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-
-            <div className="h-[600px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={visibleCexHoldings}>
-                <defs>
-                  <linearGradient id="colorBybit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#e88a0e" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#e88a0e" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorKuCoin" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6cd88e" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#6cd88e" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorMEXC" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#43d4dd" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#43d4dd" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorBitget" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4773b4" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#4773b4" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorOKX" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#484646" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#484646" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorOther" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#9a9595" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#9a9595" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="date"
-                  stroke="#555"
-                  tick={{ fill: "#666", fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="#555"
-                  tick={{ fill: "#666", fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(val) =>
-                    new Intl.NumberFormat("en-US", {
-                      notation: "compact",
-                      maximumFractionDigits: 1,
-                    }).format(val)
-                  }
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#1F2937",
-                    borderColor: "#374151",
-                    color: "#F3F4F6",
-                  }}
-                  itemStyle={{ color: "#F3F4F6" }}
-                  formatter={(value: number) =>
-                    new Intl.NumberFormat("en-US").format(value)
-                  }
-                />
-                <Legend />
-                <Area
-                  type="monotone"
-                  dataKey="Other"
-                  stackId="1"
-                  stroke="#9a9595"
-                  fill="url(#colorOther)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="Bitget"
-                  stackId="1"
-                  stroke="#4773b4"
-                  fill="url(#colorBitget)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="KuCoin"
-                  stackId="1"
-                  stroke="#6cd88e"
-                  fill="url(#colorKuCoin)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="MEXC"
-                  stackId="1"
-                  stroke="#43d4dd"
-                  fill="url(#colorMEXC)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="Bybit"
-                  stackId="1"
-                  stroke="#e88a0e"
-                  fill="url(#colorBybit)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="OKX"
-                  stackId="1"
-                  stroke="#484646"
-                  fill="url(#colorOKX)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
           </div>
         </div>
       </div>
