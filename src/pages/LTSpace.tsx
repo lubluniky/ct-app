@@ -1135,7 +1135,8 @@ const LTSpace = () => {
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
 export default LTSpace;
