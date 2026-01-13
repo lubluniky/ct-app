@@ -83,7 +83,7 @@ export const NewHero = () => {
             {/* Actions - LT Space Button & Secondary */}
             <div className="flex flex-col items-start gap-6 mt-12">
               <Link
-                to="/dashboard"
+                to="/lt-space"
                 className="group relative px-10 py-5 bg-white text-black font-bold text-lg tracking-widest transition-all hover:bg-neutral-200 hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.3)]"
               >
                 <div className="relative flex items-center gap-4">

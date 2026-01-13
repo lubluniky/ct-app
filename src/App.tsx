@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import Macro from "./pages/Macro";
 import Labs from "./pages/Labs";
 import Screener from "./pages/Screener";
+import LTSpace from "./pages/LTSpace";
 import { Sidebar } from "./components/Sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -21,23 +22,25 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const isMobile = useIsMobile();
 
   if (isMobile) {
-    return <main className="h-screen w-full bg-background overflow-hidden">{children}</main>;
+    return (
+      <main className="h-screen w-full bg-background overflow-hidden">
+        {children}
+      </main>
+    );
   }
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {children}
-      </main>
+      <main className="flex-1 flex flex-col overflow-hidden">{children}</main>
     </div>
   );
 };
 
 const App = () => {
   // Log analytics initialization on mount
-  if (typeof window !== 'undefined') {
-    console.log('Vercel Analytics active');
+  if (typeof window !== "undefined") {
+    console.log("Vercel Analytics active");
   }
 
   return (
@@ -50,34 +53,56 @@ const App = () => {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
-                
+                <Route path="/lt-space" element={<LTSpace />} />
+
                 {/* Dashboard Routes */}
-                <Route path="/dashboard" element={
-                  <DashboardLayout>
-                    <Dashboard />
-                  </DashboardLayout>
-                } />
-                <Route path="/dashboard/macro" element={
-                  <DashboardLayout>
-                    <Macro />
-                  </DashboardLayout>
-                } />
-                <Route path="/dashboard/labs" element={
-                  <DashboardLayout>
-                    <Labs />
-                  </DashboardLayout>
-                } />
-                <Route path="/dashboard/screener" element={
-                  <DashboardLayout>
-                    <Screener />
-                  </DashboardLayout>
-                } />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <DashboardLayout>
+                      <Dashboard />
+                    </DashboardLayout>
+                  }
+                />
+                <Route
+                  path="/dashboard/macro"
+                  element={
+                    <DashboardLayout>
+                      <Macro />
+                    </DashboardLayout>
+                  }
+                />
+                <Route
+                  path="/dashboard/labs"
+                  element={
+                    <DashboardLayout>
+                      <Labs />
+                    </DashboardLayout>
+                  }
+                />
+                <Route
+                  path="/dashboard/screener"
+                  element={
+                    <DashboardLayout>
+                      <Screener />
+                    </DashboardLayout>
+                  }
+                />
 
                 {/* Redirect old routes to new dashboard */}
-                <Route path="/dashboard/mtm" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard/test" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard/rvwap" element={<Navigate to="/dashboard" replace />} />
-                
+                <Route
+                  path="/dashboard/mtm"
+                  element={<Navigate to="/dashboard" replace />}
+                />
+                <Route
+                  path="/dashboard/test"
+                  element={<Navigate to="/dashboard" replace />}
+                />
+                <Route
+                  path="/dashboard/rvwap"
+                  element={<Navigate to="/dashboard" replace />}
+                />
+
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
