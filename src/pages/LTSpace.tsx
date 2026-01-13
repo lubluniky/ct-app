@@ -21,6 +21,10 @@ interface CombinedChartData {
 const LTSpace = () => {
   const [feesData, setFeesData] = useState<CombinedChartData[]>([]);
   const [revenueData, setRevenueData] = useState<CombinedChartData[]>([]);
+  const [fdmcFeesData, setFdmcFeesData] = useState<CombinedChartData[]>([]);
+  const [fdmcRevenueData, setFdmcRevenueData] = useState<CombinedChartData[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<30 | 60 | 90>(90);
@@ -75,6 +79,42 @@ const LTSpace = () => {
         if (!rayRevResponse.ok) throw new Error("Failed to fetch RAY revenue");
         const rayRevJson = await rayRevResponse.json();
 
+        // Fetch MET FDMC/Fees Ratio
+        const metFdmcFeesResponse = await fetch(
+          `https://data-svc.artemisxyz.com/v2/data/FDMC_FEES_RATIO?symbols=met&startDate=${startDate}&endDate=${endDate}`,
+          { headers },
+        );
+        if (!metFdmcFeesResponse.ok)
+          throw new Error("Failed to fetch MET FDMC Fees Ratio");
+        const metFdmcFeesJson = await metFdmcFeesResponse.json();
+
+        // Fetch RAY FDMC/Fees Ratio
+        const rayFdmcFeesResponse = await fetch(
+          `https://data-svc.artemisxyz.com/v2/data/FDMC_FEES_RATIO?symbols=ray&startDate=${startDate}&endDate=${endDate}`,
+          { headers },
+        );
+        if (!rayFdmcFeesResponse.ok)
+          throw new Error("Failed to fetch RAY FDMC Fees Ratio");
+        const rayFdmcFeesJson = await rayFdmcFeesResponse.json();
+
+        // Fetch MET FDMC/Revenue Ratio
+        const metFdmcRevResponse = await fetch(
+          `https://data-svc.artemisxyz.com/v2/data/FDMC_REVENUE_RATIO?symbols=met&startDate=${startDate}&endDate=${endDate}`,
+          { headers },
+        );
+        if (!metFdmcRevResponse.ok)
+          throw new Error("Failed to fetch MET FDMC Revenue Ratio");
+        const metFdmcRevJson = await metFdmcRevResponse.json();
+
+        // Fetch RAY FDMC/Revenue Ratio
+        const rayFdmcRevResponse = await fetch(
+          `https://data-svc.artemisxyz.com/v2/data/FDMC_REVENUE_RATIO?symbols=ray&startDate=${startDate}&endDate=${endDate}`,
+          { headers },
+        );
+        if (!rayFdmcRevResponse.ok)
+          throw new Error("Failed to fetch RAY FDMC Revenue Ratio");
+        const rayFdmcRevJson = await rayFdmcRevResponse.json();
+
         // Process and Merge Data
         const processAndMerge = (
           json1: any,
@@ -127,6 +167,12 @@ const LTSpace = () => {
 
         setFeesData(processAndMerge(metJson, "met", rayJson, "ray"));
         setRevenueData(processAndMerge(metRevJson, "met", rayRevJson, "ray"));
+        setFdmcFeesData(
+          processAndMerge(metFdmcFeesJson, "met", rayFdmcFeesJson, "ray"),
+        );
+        setFdmcRevenueData(
+          processAndMerge(metFdmcRevJson, "met", rayFdmcRevJson, "ray"),
+        );
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to initialize data stream.");
@@ -368,6 +414,161 @@ const LTSpace = () => {
                   name="Raydium"
                   dataKey="ray"
                   fill="#f97316" // Orange
+                  radius={[2, 2, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* FDMC Ratio Charts */}
+      <div className="space-y-8 relative z-10 mt-8">
+        {/* FDMC / Fees Chart */}
+        <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+              MET vs RAY FDMC / FEES RATIO
+            </h3>
+            <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+              DAILY TIMEFRAME
+            </span>
+          </div>
+
+          <div className="h-[400px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={fdmcFeesData}>
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: "#525252",
+                    fontSize: 10,
+                    fontFamily: "monospace",
+                  }}
+                  dy={10}
+                />
+                <YAxis
+                  hide={false}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: "#525252",
+                    fontSize: 10,
+                    fontFamily: "monospace",
+                  }}
+                />
+                <Tooltip
+                  cursor={{ fill: "white", opacity: 0.05 }}
+                  contentStyle={{
+                    backgroundColor: "#000",
+                    borderColor: "#333",
+                    color: "#fff",
+                  }}
+                  itemStyle={{ color: "#fff" }}
+                  formatter={(value: number) =>
+                    `${Intl.NumberFormat("en-US", {
+                      maximumFractionDigits: 2,
+                    }).format(value)}x`
+                  }
+                />
+                <Legend
+                  verticalAlign="top"
+                  height={36}
+                  iconType="square"
+                  formatter={(value) => (
+                    <span className="text-neutral-400 font-mono text-sm ml-2">
+                      {value}
+                    </span>
+                  )}
+                />
+                <Bar
+                  name="Meteora"
+                  dataKey="met"
+                  fill="#38bdf8" // Light Blue
+                  radius={[2, 2, 0, 0]}
+                />
+                <Bar
+                  name="Raydium"
+                  dataKey="ray"
+                  fill="#f472b6" // Pink
+                  radius={[2, 2, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* FDMC / Revenue Chart */}
+        <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+              MET vs RAY FDMC / REVENUE RATIO
+            </h3>
+            <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+              DAILY TIMEFRAME
+            </span>
+          </div>
+
+          <div className="h-[400px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={fdmcRevenueData}>
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: "#525252",
+                    fontSize: 10,
+                    fontFamily: "monospace",
+                  }}
+                  dy={10}
+                />
+                <YAxis
+                  hide={false}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{
+                    fill: "#525252",
+                    fontSize: 10,
+                    fontFamily: "monospace",
+                  }}
+                />
+                <Tooltip
+                  cursor={{ fill: "white", opacity: 0.05 }}
+                  contentStyle={{
+                    backgroundColor: "#000",
+                    borderColor: "#333",
+                    color: "#fff",
+                  }}
+                  itemStyle={{ color: "#fff" }}
+                  formatter={(value: number) =>
+                    `${Intl.NumberFormat("en-US", {
+                      maximumFractionDigits: 2,
+                    }).format(value)}x`
+                  }
+                />
+                <Legend
+                  verticalAlign="top"
+                  height={36}
+                  iconType="square"
+                  formatter={(value) => (
+                    <span className="text-neutral-400 font-mono text-sm ml-2">
+                      {value}
+                    </span>
+                  )}
+                />
+                <Bar
+                  name="Meteora"
+                  dataKey="met"
+                  fill="#2dd4bf" // Teal
+                  radius={[2, 2, 0, 0]}
+                />
+                <Bar
+                  name="Raydium"
+                  dataKey="ray"
+                  fill="#fb7185" // Rose
                   radius={[2, 2, 0, 0]}
                 />
               </BarChart>
