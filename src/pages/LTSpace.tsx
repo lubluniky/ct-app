@@ -903,10 +903,8 @@ const LTSpace = () => {
               </ResponsiveContainer>
             </div>
           </div>
-        </div>
 
-        {/* Sankey Chart */}
-        <div className="grid grid-cols-1 gap-8 relative z-10 mt-8">
+          {/* Sankey Chart */}
           <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
@@ -917,12 +915,25 @@ const LTSpace = () => {
               </span>
             </div>
 
-            <div className="h-[500px] w-full">
+            <div className="h-[600px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <Sankey
                   data={sankeyData}
                   node={({ x, y, width, height, index, payload, fill }) => {
                     const isSource = payload.targetLinks.length === 0;
+
+                    if (height < 10 && !isSource) {
+                      return (
+                        <rect
+                          x={x}
+                          y={y}
+                          width={width}
+                          height={height}
+                          fill={fill}
+                          opacity={0.9}
+                        />
+                      );
+                    }
 
                     return (
                       <g>
@@ -939,7 +950,7 @@ const LTSpace = () => {
                           y={y + height / 2}
                           dy={4}
                           textAnchor={isSource ? "start" : "end"}
-                          fontSize={12}
+                          fontSize={10}
                           fontFamily="monospace"
                           fontWeight="bold"
                           fill="#fff"
@@ -956,7 +967,7 @@ const LTSpace = () => {
                   link={<SankeyLink />}
                   nodePadding={10}
                   nodeWidth={20}
-                  margin={{ left: 20, right: 20, top: 20, bottom: 20 }}
+                  margin={{ left: 20, right: 120, top: 20, bottom: 20 }}
                 >
                   <Tooltip
                     contentStyle={{
