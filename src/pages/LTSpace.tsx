@@ -15,6 +15,7 @@ import {
 import { ArrowLeft, Terminal, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
 import ltSpaceLogo from "../assets/calogo.png";
+import cexHoldingsData from "../assets/cex_holdings.json";
 
 interface CombinedChartData {
   date: string;
@@ -305,6 +306,18 @@ const LTSpace = () => {
     () => sliceData(revenueGrowthData),
     [revenueGrowthData, timeframe],
   );
+
+  const visibleCexHoldings = useMemo(() => {
+    if (!cexHoldingsData || cexHoldingsData.length === 0) return [];
+    const sliced = cexHoldingsData.slice(-timeframe);
+    return sliced.map((item) => ({
+      ...item,
+      date: new Date(item.date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+    }));
+  }, [timeframe]);
 
   if (loading) {
     return (
@@ -990,10 +1003,139 @@ const LTSpace = () => {
               </ResponsiveContainer>
             </div>
           </div>
+
+          {/* CEX Holdings Chart */}
+          <div
+            style={{
+              backgroundColor: "#111",
+              padding: "20px",
+              borderRadius: "12px",
+              border: "1px solid #333",
+              marginBottom: "20px",
+              height: "400px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: "20px",
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: "16px", color: "#ccc" }}>
+                MET HELD ON CEXs
+              </h3>
+              <div style={{ color: "#666", fontSize: "12px" }}>
+                Source: Blockworks Research
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={visibleCexHoldings}>
+                <defs>
+                  <linearGradient id="colorBybit" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#e88a0e" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#e88a0e" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorKuCoin" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6cd88e" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#6cd88e" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorMEXC" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#43d4dd" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#43d4dd" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorBitget" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#4773b4" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#4773b4" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorOKX" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#484646" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#484646" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorOther" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#9a9595" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#9a9595" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="date"
+                  stroke="#555"
+                  tick={{ fill: "#666", fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="#555"
+                  tick={{ fill: "#666", fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(val) =>
+                    new Intl.NumberFormat("en-US", {
+                      notation: "compact",
+                      maximumFractionDigits: 1,
+                    }).format(val)
+                  }
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#1F2937",
+                    borderColor: "#374151",
+                    color: "#F3F4F6",
+                  }}
+                  itemStyle={{ color: "#F3F4F6" }}
+                  formatter={(value: number) =>
+                    new Intl.NumberFormat("en-US").format(value)
+                  }
+                />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="Other"
+                  stackId="1"
+                  stroke="#9a9595"
+                  fill="url(#colorOther)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="Bitget"
+                  stackId="1"
+                  stroke="#4773b4"
+                  fill="url(#colorBitget)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="KuCoin"
+                  stackId="1"
+                  stroke="#6cd88e"
+                  fill="url(#colorKuCoin)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="MEXC"
+                  stackId="1"
+                  stroke="#43d4dd"
+                  fill="url(#colorMEXC)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="Bybit"
+                  stackId="1"
+                  stroke="#e88a0e"
+                  fill="url(#colorBybit)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="OKX"
+                  stackId="1"
+                  stroke="#484646"
+                  fill="url(#colorOKX)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 export default LTSpace;
