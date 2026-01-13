@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   Legend,
   Cell,
+  Sankey,
 } from "recharts";
 import { ArrowLeft, Terminal, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -20,6 +21,44 @@ interface CombinedChartData {
   met: number;
   ray: number;
 }
+
+const sankeyData = {
+  nodes: [
+    { name: "DAMM" },
+    { name: "DLMM" },
+    { name: "AI Agents" },
+    { name: "Bitcoin" },
+    { name: "Composite Tokens" },
+    { name: "LST Swaps" },
+    { name: "Memes" },
+    { name: "Other" },
+    { name: "Project Tokens" },
+    { name: "SOL-Stablecoin" },
+    { name: "Stablecoin Swaps" },
+    { name: "Tokenized Assets" },
+  ],
+  links: [
+    { source: 0, target: 2, value: 227.65 },
+    { source: 0, target: 3, value: 94.02 },
+    { source: 0, target: 4, value: 8.86 },
+    { source: 0, target: 5, value: 755.62 },
+    { source: 0, target: 6, value: 920608.86 },
+    { source: 0, target: 9, value: 6296.89 },
+    { source: 0, target: 8, value: 14291.76 },
+    { source: 0, target: 10, value: 0.33 },
+    { source: 0, target: 11, value: 493.56 },
+    { source: 0, target: 7, value: 500.48 },
+    { source: 1, target: 2, value: 228.67 },
+    { source: 1, target: 3, value: 1198.88 },
+    { source: 1, target: 4, value: 988.52 },
+    { source: 1, target: 5, value: 91.19 },
+    { source: 1, target: 6, value: 290085.02 },
+    { source: 1, target: 9, value: 13237.32 },
+    { source: 1, target: 8, value: 15024.9 },
+    { source: 1, target: 10, value: 26.17 },
+    { source: 1, target: 11, value: 57.84 },
+  ],
+};
 
 const LTSpace = () => {
   const [feesData, setFeesData] = useState<CombinedChartData[]>([]);
@@ -838,6 +877,53 @@ const LTSpace = () => {
                     radius={[2, 2, 0, 0]}
                   />
                 </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Sankey Chart */}
+        <div className="grid grid-cols-1 gap-8 relative z-10 mt-8">
+          <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                METEORA: REVENUE SOURCES
+              </h3>
+              <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                LAST 7 DAYS
+              </span>
+            </div>
+
+            <div className="h-[500px] w-full">
+              <style>{`
+                .recharts-sankey-node text {
+                  fill: #fff !important;
+                  font-size: 12px;
+                  font-family: monospace;
+                }
+              `}</style>
+              <ResponsiveContainer width="100%" height="100%">
+                <Sankey
+                  data={sankeyData}
+                  node={{ stroke: "none", fill: "#525252" }}
+                  link={{ stroke: "#a855f7", strokeOpacity: 0.3 }}
+                  nodePadding={50}
+                  margin={{ left: 20, right: 20, top: 20, bottom: 20 }}
+                >
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#000",
+                      borderColor: "#333",
+                      color: "#fff",
+                    }}
+                    itemStyle={{ color: "#fff" }}
+                    formatter={(value: number) =>
+                      `$${Intl.NumberFormat("en-US", {
+                        maximumFractionDigits: 0,
+                      }).format(value)}`
+                    }
+                  />
+                </Sankey>
               </ResponsiveContainer>
             </div>
           </div>
