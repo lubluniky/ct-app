@@ -46,6 +46,22 @@ interface EthfiBuybackData {
   cumulative: number;
 }
 
+interface EthfiActiveLoansData {
+  date: string;
+  activeLoans: number;
+}
+
+interface EthfiRevenueGrowthData {
+  date: string;
+  growthPercent: number;
+}
+
+interface EthfiStakedData {
+  date: string;
+  stakedSupply: number;
+  percStaked: number;
+}
+
 const sankeyData = {
   nodes: [
     { name: "DAMM", fill: "#737373" },
@@ -140,6 +156,13 @@ const LTSpace = () => {
   const [ethfiBuybackData, setEthfiBuybackData] = useState<EthfiBuybackData[]>(
     [],
   );
+  const [ethfiActiveLoansData, setEthfiActiveLoansData] = useState<
+    EthfiActiveLoansData[]
+  >([]);
+  const [ethfiRevenueGrowthData, setEthfiRevenueGrowthData] = useState<
+    EthfiRevenueGrowthData[]
+  >([]);
+  const [ethfiStakedData, setEthfiStakedData] = useState<EthfiStakedData[]>([]);
   const [ethfiLoading, setEthfiLoading] = useState(false);
   const [ethfiError, setEthfiError] = useState<string | null>(null);
   const [fdmcRevenueData, setFdmcRevenueData] = useState<CombinedChartData[]>(
@@ -337,18 +360,41 @@ const LTSpace = () => {
       try {
         const API_BASE = "https://api.borkiss.trade/v1/query";
 
-        // Fetch all three datasets in parallel
-        const [tvlRes, revenueRes, buybackRes] = await Promise.all([
-          fetch(`${API_BASE}/3961816/results/csv`),
-          fetch(`${API_BASE}/5490119/results/csv`),
-          fetch(`${API_BASE}/5135676/results/csv`),
-        ]);
+        // Fetch all datasets in parallel
+        const [tvlRes, revenueRes, buybackRes, stakedRes, activeLoansRes] =
+          await Promise.all([
+            fetch(`${API_BASE}/3961816/results/csv`),
+            fetch(`${API_BASE}/5490119/results/csv`),
+            fetch(`${API_BASE}/5135676/results/csv`),
+            fetch(`${API_BASE}/4283053/results/csv`),
+            fetch("https://api.tokenterminal.com/trpc/metrics.postTimeseries", {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                authorization: "Bearer c0e5035a-64f6-4d2c-b5f6-ac1d1cb3da2f",
+                "x-tt-terminal-jwt":
+                  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcm9udEVuZCI6InRlcm1pbmFsIGRhc2hib2FyZCIsImlhdCI6MTc2ODYxMDE3NCwiZXhwIjoxNzY5ODE5Nzc0fQ.lLTq3tyur3JRZiU8otKw4uD6BvO39M8tTg_-_BLkBXg",
+              },
+              body: JSON.stringify({
+                data_ids: ["etherfi"],
+                metric_ids: ["active_loans"],
+                interval: "1095d",
+                groupBy: "chain",
+                includeSelf: false,
+                include_products_in_project_breakdown: false,
+                bridged: false,
+              }),
+            }),
+          ]);
 
-        const [tvlCsv, revenueCsv, buybackCsv] = await Promise.all([
-          tvlRes.text(),
-          revenueRes.text(),
-          buybackRes.text(),
-        ]);
+        const [tvlCsv, revenueCsv, buybackCsv, stakedCsv, activeLoansJson] =
+          await Promise.all([
+            tvlRes.text(),
+            revenueRes.text(),
+            buybackRes.text(),
+            stakedRes.text(),
+            activeLoansRes.json(),
+          ]);
 
         // Parse TVL data (Chart 1)
         const tvlRaw = parseCSV(tvlCsv);
@@ -415,6 +461,83 @@ const LTSpace = () => {
           .sort((a, b) => a.rawDate - b.rawDate)
           .map(({ rawDate, ...rest }) => rest);
         setEthfiBuybackData(buybackParsed);
+
+        // Parse Active Loans data (Chart 6) - from TokenTerminal
+        if (activeLoansJson?.result?.data?.data) {
+          const loansData = activeLoansJson.result.data.data;
+          const loansParsed: EthfiActiveLoansData[] = loansData
+            .map((row: { timestamp: string; value: number }) => ({
+              date: new Date(row.timestamp).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "2-digit",
+              }),
+              rawDate: new Date(row.timestamp).getTime(),
+              activeLoans: row.value || 0,
+            }))
+            .sort(
+              (a: { rawDate: number }, b: { rawDate: number }) =>
+                a.rawDate - b.rawDate,
+            )
+            .map(({ rawDate, ...rest }: { rawDate: number }) => rest);
+          setEthfiActiveLoansData(loansParsed);
+        }
+
+        // Parse ETHFI Staked data (Chart 8)
+        const stakedRaw = parseCSV(stakedCsv);
+        const stakedParsed: EthfiStakedData[] = stakedRaw
+          .map((row) => ({
+            date: new Date(row.day).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "2-digit",
+            }),
+            rawDate: new Date(row.day).getTime(),
+            stakedSupply: parseFloat(row.staked_supply) || 0,
+            percStaked: parseFloat(row.perc_staked) * 100 || 0, // Convert to percentage
+          }))
+          .sort((a, b) => a.rawDate - b.rawDate)
+          .map(({ rawDate, ...rest }) => rest);
+        setEthfiStakedData(stakedParsed);
+
+        // Calculate Revenue Growth Rate (Chart 7) - 13 week rolling sum change
+        // Group revenue by week and calculate 13-week sum, then % change
+        const weeklyTotals: { weekKey: string; total: number }[] = [];
+        const weeklyMap: Record<string, number> = {};
+
+        revenueParsed.forEach((row) => {
+          // Each row is already a week
+          const total =
+            row["Liquid Vaults"] +
+            row.Staking +
+            row.Withdrawals +
+            row["ether.fi Cash"] +
+            row["ether.fi Cash Borrows"];
+          weeklyMap[row.date] = total;
+          weeklyTotals.push({ weekKey: row.date, total });
+        });
+
+        // Calculate 13-week rolling sums and % change
+        const revenueGrowthParsed: EthfiRevenueGrowthData[] = [];
+        for (let i = 25; i < weeklyTotals.length; i++) {
+          // Need at least 26 weeks (13 current + 13 previous)
+          let currentSum = 0;
+          let prevSum = 0;
+
+          for (let j = 0; j < 13; j++) {
+            currentSum += weeklyTotals[i - j].total;
+            prevSum += weeklyTotals[i - 13 - j].total;
+          }
+
+          const growthPercent =
+            prevSum > 0 ? ((currentSum - prevSum) / prevSum) * 100 : 0;
+
+          revenueGrowthParsed.push({
+            date: weeklyTotals[i].weekKey,
+            growthPercent,
+          });
+        }
+        setEthfiRevenueGrowthData(revenueGrowthParsed);
       } catch (err) {
         console.error("Error fetching ETHFI data:", err);
         setEthfiError("Failed to load ETHFI data");
@@ -1785,6 +1908,312 @@ const LTSpace = () => {
                         dataKey="cumulative"
                         name="Cum. ETHFI Bought"
                         stroke="#ffffff"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Chart 6: Active Loans - Area Chart */}
+              <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                    ACTIVE LOANS (ETHER.FI CASH)
+                  </h3>
+                  <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                    DAILY • SCROLL
+                  </span>
+                </div>
+
+                <div className="h-[400px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={ethfiActiveLoansData}>
+                      <defs>
+                        <linearGradient
+                          id="colorActiveLoans"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#22c55e"
+                            stopOpacity={0.4}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#22c55e"
+                            stopOpacity={0}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#525252",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        dy={10}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#525252",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        tickFormatter={(value) =>
+                          `$${Intl.NumberFormat("en-US", {
+                            notation: "compact",
+                            maximumFractionDigits: 1,
+                          }).format(value)}`
+                        }
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#000",
+                          borderColor: "#333",
+                          color: "#fff",
+                        }}
+                        itemStyle={{ color: "#fff" }}
+                        formatter={(value: number) =>
+                          `$${Intl.NumberFormat("en-US", {
+                            maximumFractionDigits: 0,
+                          }).format(value)}`
+                        }
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        height={36}
+                        formatter={(value) => (
+                          <span className="text-neutral-400 font-mono text-sm ml-2">
+                            {value}
+                          </span>
+                        )}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="activeLoans"
+                        name="Active Loans"
+                        stroke="#22c55e"
+                        strokeWidth={2}
+                        fill="url(#colorActiveLoans)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Chart 7: Revenue Growth Rate - Bar Chart */}
+              <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                    REVENUE GROWTH RATE (90D)
+                  </h3>
+                  <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                    % CHANGE OF 13W SUM
+                  </span>
+                </div>
+
+                <div className="h-[400px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={ethfiRevenueGrowthData}>
+                      <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#525252",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        dy={10}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#525252",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        tickFormatter={(value) => `${value.toFixed(0)}%`}
+                      />
+                      <Tooltip
+                        cursor={{ fill: "white", opacity: 0.05 }}
+                        contentStyle={{
+                          backgroundColor: "#000",
+                          borderColor: "#333",
+                          color: "#fff",
+                        }}
+                        itemStyle={{ color: "#fff" }}
+                        formatter={(value: number) =>
+                          `${Intl.NumberFormat("en-US", {
+                            maximumFractionDigits: 2,
+                          }).format(value)}%`
+                        }
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        height={36}
+                        iconType="square"
+                        formatter={(value) => (
+                          <span className="text-neutral-400 font-mono text-sm ml-2">
+                            {value}
+                          </span>
+                        )}
+                      />
+                      <Bar
+                        dataKey="growthPercent"
+                        name="Growth %"
+                        fill="#f59e0b"
+                        radius={[2, 2, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Chart 8: ETHFI Staked - Dual Axis Area + Line */}
+              <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                    ETHFI STAKED
+                  </h3>
+                  <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                    DAILY
+                  </span>
+                </div>
+
+                <div className="h-[400px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={ethfiStakedData}>
+                      <defs>
+                        <linearGradient
+                          id="colorStakedSupply"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#8b5cf6"
+                            stopOpacity={0.4}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#8b5cf6"
+                            stopOpacity={0}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#525252",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        dy={10}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        yAxisId="left"
+                        orientation="left"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#8b5cf6",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        tickFormatter={(value) =>
+                          Intl.NumberFormat("en-US", {
+                            notation: "compact",
+                            maximumFractionDigits: 1,
+                          }).format(value)
+                        }
+                        label={{
+                          value: "Staked Supply",
+                          angle: -90,
+                          position: "insideLeft",
+                          fill: "#8b5cf6",
+                          fontSize: 11,
+                          fontFamily: "monospace",
+                        }}
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#06b6d4",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        tickFormatter={(value) => `${value.toFixed(1)}%`}
+                        label={{
+                          value: "% Staked",
+                          angle: 90,
+                          position: "insideRight",
+                          fill: "#06b6d4",
+                          fontSize: 11,
+                          fontFamily: "monospace",
+                        }}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#000",
+                          borderColor: "#333",
+                          color: "#fff",
+                        }}
+                        itemStyle={{ color: "#fff" }}
+                        formatter={(value: number, name: string) => {
+                          if (name === "% Staked") {
+                            return `${value.toFixed(2)}%`;
+                          }
+                          return Intl.NumberFormat("en-US", {
+                            maximumFractionDigits: 0,
+                          }).format(value);
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        height={36}
+                        formatter={(value) => (
+                          <span className="text-neutral-400 font-mono text-sm ml-2">
+                            {value}
+                          </span>
+                        )}
+                      />
+                      <Area
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="stakedSupply"
+                        name="Staked Supply"
+                        stroke="#8b5cf6"
+                        strokeWidth={2}
+                        fill="url(#colorStakedSupply)"
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="percStaked"
+                        name="% Staked"
+                        stroke="#06b6d4"
                         strokeWidth={2}
                         dot={false}
                       />
