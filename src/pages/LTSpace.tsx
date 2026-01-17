@@ -11,8 +11,10 @@ import {
   Legend,
   Cell,
   Sankey,
+  ComposedChart,
+  Line,
 } from "recharts";
-import { ArrowLeft, Terminal, Activity } from "lucide-react";
+import { ArrowLeft, Terminal, Activity, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import ltSpaceLogo from "../assets/calogo.png";
 import cexHoldingsData from "../assets/cex_holdings.json";
@@ -21,6 +23,27 @@ interface CombinedChartData {
   date: string;
   met: number;
   ray: number;
+}
+
+interface EthfiTvlData {
+  date: string;
+  tvlEth: number;
+  tvlUsd: number;
+}
+
+interface EthfiRevenueData {
+  date: string;
+  "Liquid Vaults": number;
+  Staking: number;
+  Withdrawals: number;
+  "ether.fi Cash": number;
+  "ether.fi Cash Borrows": number;
+}
+
+interface EthfiBuybackData {
+  date: string;
+  weekly: number;
+  cumulative: number;
 }
 
 const sankeyData = {
@@ -88,11 +111,37 @@ const SankeyLink = (props: any) => {
   );
 };
 
+// Helper to parse CSV
+const parseCSV = (csv: string): Record<string, string>[] => {
+  const lines = csv.trim().split("\n");
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(",");
+  return lines.slice(1).map((line) => {
+    const values = line.split(",");
+    const obj: Record<string, string> = {};
+    headers.forEach((h, i) => {
+      obj[h.trim()] = values[i]?.trim() || "";
+    });
+    return obj;
+  });
+};
+
 const LTSpace = () => {
   const [activeTab, setActiveTab] = useState<"met-ray" | "ethfi">("met-ray");
   const [feesData, setFeesData] = useState<CombinedChartData[]>([]);
   const [revenueData, setRevenueData] = useState<CombinedChartData[]>([]);
   const [fdmcFeesData, setFdmcFeesData] = useState<CombinedChartData[]>([]);
+
+  // ETHFI data states
+  const [ethfiTvlData, setEthfiTvlData] = useState<EthfiTvlData[]>([]);
+  const [ethfiRevenueData, setEthfiRevenueData] = useState<EthfiRevenueData[]>(
+    [],
+  );
+  const [ethfiBuybackData, setEthfiBuybackData] = useState<EthfiBuybackData[]>(
+    [],
+  );
+  const [ethfiLoading, setEthfiLoading] = useState(false);
+  const [ethfiError, setEthfiError] = useState<string | null>(null);
   const [fdmcRevenueData, setFdmcRevenueData] = useState<CombinedChartData[]>(
     [],
   );
@@ -276,6 +325,106 @@ const LTSpace = () => {
     fetchData();
     // Run once on mount. Timeframe filtering is done in render/useMemo.
   }, []);
+
+  // Fetch ETHFI data when tab switches to ethfi
+  useEffect(() => {
+    if (activeTab !== "ethfi") return;
+    if (ethfiTvlData.length > 0) return; // Already loaded
+
+    const fetchEthfiData = async () => {
+      setEthfiLoading(true);
+      setEthfiError(null);
+      try {
+        const API_BASE = "https://api.borkiss.trade/v1/query";
+
+        // Fetch all three datasets in parallel
+        const [tvlRes, revenueRes, buybackRes] = await Promise.all([
+          fetch(`${API_BASE}/3961816/results/csv`),
+          fetch(`${API_BASE}/5490119/results/csv`),
+          fetch(`${API_BASE}/5135676/results/csv`),
+        ]);
+
+        const [tvlCsv, revenueCsv, buybackCsv] = await Promise.all([
+          tvlRes.text(),
+          revenueRes.text(),
+          buybackRes.text(),
+        ]);
+
+        // Parse TVL data (Chart 1)
+        const tvlRaw = parseCSV(tvlCsv);
+        const tvlParsed: EthfiTvlData[] = tvlRaw
+          .map((row) => ({
+            date: new Date(row.day).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "2-digit",
+            }),
+            rawDate: new Date(row.day).getTime(),
+            tvlEth: parseFloat(row.token_supply_eth) || 0,
+            tvlUsd: parseFloat(row.token_supply_usd) || 0,
+          }))
+          .sort((a, b) => a.rawDate - b.rawDate)
+          .map(({ rawDate, ...rest }) => rest);
+        setEthfiTvlData(tvlParsed);
+
+        // Parse Revenue data (Chart 2) - need to pivot by date and revenue_source
+        const revenueRaw = parseCSV(revenueCsv);
+        const revenueByDate: Record<string, EthfiRevenueData> = {};
+        revenueRaw.forEach((row) => {
+          const dateKey = new Date(row.day).toISOString().split("T")[0];
+          if (!revenueByDate[dateKey]) {
+            revenueByDate[dateKey] = {
+              date: new Date(row.day).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "2-digit",
+              }),
+              "Liquid Vaults": 0,
+              Staking: 0,
+              Withdrawals: 0,
+              "ether.fi Cash": 0,
+              "ether.fi Cash Borrows": 0,
+            };
+          }
+          const source = row.revenue_source as keyof Omit<
+            EthfiRevenueData,
+            "date"
+          >;
+          if (source && source in revenueByDate[dateKey]) {
+            revenueByDate[dateKey][source] = parseFloat(row.amount_usd) || 0;
+          }
+        });
+        const revenueParsed = Object.entries(revenueByDate)
+          .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+          .map(([, data]) => data);
+        setEthfiRevenueData(revenueParsed);
+
+        // Parse Buyback data (Chart 3)
+        const buybackRaw = parseCSV(buybackCsv);
+        const buybackParsed: EthfiBuybackData[] = buybackRaw
+          .map((row) => ({
+            date: new Date(row.hour).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "2-digit",
+            }),
+            rawDate: new Date(row.hour).getTime(),
+            weekly: parseFloat(row.ethfi_bought) || 0,
+            cumulative: parseFloat(row.cum_ethfi_bought) || 0,
+          }))
+          .sort((a, b) => a.rawDate - b.rawDate)
+          .map(({ rawDate, ...rest }) => rest);
+        setEthfiBuybackData(buybackParsed);
+      } catch (err) {
+        console.error("Error fetching ETHFI data:", err);
+        setEthfiError("Failed to load ETHFI data");
+      } finally {
+        setEthfiLoading(false);
+      }
+    };
+
+    fetchEthfiData();
+  }, [activeTab, ethfiTvlData.length]);
 
   // Filter Data based on selected Timeframe
   const sliceData = (data: CombinedChartData[]) => {
@@ -1267,19 +1416,384 @@ const LTSpace = () => {
       {/* ETHFI Tab Content */}
       {activeTab === "ethfi" && (
         <div className="space-y-8 relative z-10">
-          <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
-            <div className="flex items-center justify-center h-[400px]">
-              <div className="text-center">
-                <Activity className="w-16 h-16 text-neutral-700 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-neutral-600 mb-2">
-                  ETHFI DATA
-                </h3>
-                <p className="text-neutral-500 font-mono text-sm">
-                  COMING SOON...
-                </p>
+          {ethfiLoading ? (
+            <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm">
+              <div className="flex items-center justify-center h-[400px]">
+                <div className="text-center">
+                  <Loader2 className="w-16 h-16 text-neutral-500 mx-auto mb-4 animate-spin" />
+                  <h3 className="text-xl font-bold text-neutral-500 mb-2">
+                    LOADING ETHFI DATA
+                  </h3>
+                  <p className="text-neutral-600 font-mono text-sm">
+                    Fetching from API...
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : ethfiError ? (
+            <div className="bg-[#0A0A0A] border border-red-500/20 p-6 rounded-lg backdrop-blur-sm">
+              <div className="flex items-center justify-center h-[400px]">
+                <div className="text-center">
+                  <Activity className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-red-400 mb-2">ERROR</h3>
+                  <p className="text-neutral-500 font-mono text-sm">
+                    {ethfiError}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Chart 1: TVL (Native) & TVL (USD) - Dual Axis Area Chart */}
+              <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                    eETH TVL (ETH & USD)
+                  </h3>
+                  <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                    DAILY TIMEFRAME
+                  </span>
+                </div>
+
+                <div className="h-[400px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={ethfiTvlData}>
+                      <defs>
+                        <linearGradient
+                          id="colorTvlEth"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#a855f7"
+                            stopOpacity={0.4}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#a855f7"
+                            stopOpacity={0}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#525252",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        dy={10}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        yAxisId="left"
+                        orientation="left"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#a855f7",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        tickFormatter={(value) =>
+                          `${Intl.NumberFormat("en-US", {
+                            notation: "compact",
+                            maximumFractionDigits: 1,
+                          }).format(value)}`
+                        }
+                        label={{
+                          value: "TVL (ETH)",
+                          angle: -90,
+                          position: "insideLeft",
+                          fill: "#a855f7",
+                          fontSize: 11,
+                          fontFamily: "monospace",
+                        }}
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#525252",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        tickFormatter={(value) =>
+                          `$${Intl.NumberFormat("en-US", {
+                            notation: "compact",
+                            maximumFractionDigits: 1,
+                          }).format(value)}`
+                        }
+                        label={{
+                          value: "TVL (USD)",
+                          angle: 90,
+                          position: "insideRight",
+                          fill: "#525252",
+                          fontSize: 11,
+                          fontFamily: "monospace",
+                        }}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#000",
+                          borderColor: "#333",
+                          color: "#fff",
+                        }}
+                        itemStyle={{ color: "#fff" }}
+                        formatter={(value: number, name: string) => {
+                          if (name === "TVL (ETH)") {
+                            return `${Intl.NumberFormat("en-US", {
+                              maximumFractionDigits: 0,
+                            }).format(value)} ETH`;
+                          }
+                          return `$${Intl.NumberFormat("en-US", {
+                            maximumFractionDigits: 0,
+                          }).format(value)}`;
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        height={36}
+                        formatter={(value) => (
+                          <span className="text-neutral-400 font-mono text-sm ml-2">
+                            {value}
+                          </span>
+                        )}
+                      />
+                      <Area
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="tvlEth"
+                        name="TVL (ETH)"
+                        stroke="#a855f7"
+                        strokeWidth={2}
+                        fill="url(#colorTvlEth)"
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="tvlUsd"
+                        name="TVL (USD)"
+                        stroke="#ffffff"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Chart 2: Revenue by Product - Stacked Bar Chart */}
+              <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                    ETHER.FI REVENUE BY PRODUCT
+                  </h3>
+                  <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                    WEEKLY
+                  </span>
+                </div>
+
+                <div className="h-[400px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={ethfiRevenueData}>
+                      <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#525252",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        dy={10}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#525252",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        tickFormatter={(value) =>
+                          `$${Intl.NumberFormat("en-US", {
+                            notation: "compact",
+                            maximumFractionDigits: 1,
+                          }).format(value)}`
+                        }
+                      />
+                      <Tooltip
+                        cursor={{ fill: "white", opacity: 0.05 }}
+                        contentStyle={{
+                          backgroundColor: "#000",
+                          borderColor: "#333",
+                          color: "#fff",
+                        }}
+                        itemStyle={{ color: "#fff" }}
+                        formatter={(value: number) =>
+                          `$${Intl.NumberFormat("en-US", {
+                            maximumFractionDigits: 0,
+                          }).format(value)}`
+                        }
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        height={36}
+                        iconType="square"
+                        formatter={(value) => (
+                          <span className="text-neutral-400 font-mono text-sm ml-2">
+                            {value}
+                          </span>
+                        )}
+                      />
+                      <Bar
+                        dataKey="Staking"
+                        stackId="revenue"
+                        fill="#000000"
+                        radius={[0, 0, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="Withdrawals"
+                        stackId="revenue"
+                        fill="#6366f1"
+                        radius={[0, 0, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="Liquid Vaults"
+                        stackId="revenue"
+                        fill="#22c55e"
+                        radius={[0, 0, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="ether.fi Cash Borrows"
+                        stackId="revenue"
+                        fill="#ef4444"
+                        radius={[0, 0, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="ether.fi Cash"
+                        stackId="revenue"
+                        fill="#a855f7"
+                        radius={[2, 2, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Chart 3: Buybacks - Bar + Line Chart */}
+              <div className="bg-[#0A0A0A] border border-white/5 p-6 rounded-lg backdrop-blur-sm relative group hover:border-white/10 transition-colors">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                    ETHFI BUYBACKS
+                  </h3>
+                  <span className="text-xs font-mono text-neutral-500 bg-neutral-900 px-2 py-1 rounded">
+                    WEEKLY
+                  </span>
+                </div>
+
+                <div className="h-[400px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={ethfiBuybackData}>
+                      <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#525252",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        dy={10}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        yAxisId="left"
+                        orientation="left"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#6366f1",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        tickFormatter={(value) =>
+                          Intl.NumberFormat("en-US", {
+                            notation: "compact",
+                            maximumFractionDigits: 0,
+                          }).format(value)
+                        }
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fill: "#525252",
+                          fontSize: 10,
+                          fontFamily: "monospace",
+                        }}
+                        tickFormatter={(value) =>
+                          Intl.NumberFormat("en-US", {
+                            notation: "compact",
+                            maximumFractionDigits: 1,
+                          }).format(value)
+                        }
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#000",
+                          borderColor: "#333",
+                          color: "#fff",
+                        }}
+                        itemStyle={{ color: "#fff" }}
+                        formatter={(value: number, name: string) =>
+                          `${Intl.NumberFormat("en-US", {
+                            maximumFractionDigits: 0,
+                          }).format(value)} ETHFI`
+                        }
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        height={36}
+                        formatter={(value) => (
+                          <span className="text-neutral-400 font-mono text-sm ml-2">
+                            {value}
+                          </span>
+                        )}
+                      />
+                      <Bar
+                        yAxisId="left"
+                        dataKey="weekly"
+                        name="Weekly"
+                        fill="#6366f1"
+                        radius={[2, 2, 0, 0]}
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="cumulative"
+                        name="Cum. ETHFI Bought"
+                        stroke="#000000"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
