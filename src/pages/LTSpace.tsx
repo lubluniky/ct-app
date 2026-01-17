@@ -420,22 +420,20 @@ const LTSpace = () => {
             "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3Njg2NDk2MzksImV4cCI6MTc2ODczNjAzOX0.EgWcfY9aYnFfzm9DXlaJL247a2-oo0aTYZh5TAkSCPg",
         };
 
-        const [
-          tvlRes,
-          revenueRes,
-          buybackRes,
-          stakedRes,
-          activeLoansRes,
-          lrtTvlRes,
-          lstTvlRes,
-          cashSpendRes,
-          cashBorrowRes,
-          liquidVaultsRes,
-        ] = await Promise.all([
-          fetch(`${API_BASE}/3961816/results/csv`),
-          fetch(`${API_BASE}/5490119/results/csv`),
-          fetch(`${API_BASE}/5135676/results/csv`),
-          fetch(`${API_BASE}/4283053/results/csv`),
+        // Use Promise.allSettled to prevent one failing API from crashing the whole dashboard
+        const results = await Promise.allSettled([
+          fetch(`${API_BASE}/3961816/results/csv`).then((r) =>
+            r.ok ? r.text() : Promise.reject(`HTTP ${r.status}`),
+          ),
+          fetch(`${API_BASE}/5490119/results/csv`).then((r) =>
+            r.ok ? r.text() : Promise.reject(`HTTP ${r.status}`),
+          ),
+          fetch(`${API_BASE}/5135676/results/csv`).then((r) =>
+            r.ok ? r.text() : Promise.reject(`HTTP ${r.status}`),
+          ),
+          fetch(`${API_BASE}/4283053/results/csv`).then((r) =>
+            r.ok ? r.text() : Promise.reject(`HTTP ${r.status}`),
+          ),
           fetch("https://api.tokenterminal.com/trpc/metrics.postTimeseries", {
             method: "POST",
             headers: {
@@ -453,109 +451,134 @@ const LTSpace = () => {
               include_products_in_project_breakdown: false,
               bridged: false,
             }),
-          }),
+          }).then((r) =>
+            r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`),
+          ),
           fetch(
             `https://data-svc.artemisxyz.com/v2/data/LRT_TVL?symbols=bedrock,egp,ethfi,kep,puffer,rez,layer,swell&startDate=${formatArtemisDate(startDateObj)}&endDate=${formatArtemisDate(endDate)}`,
             { headers: artemisHeaders },
-          ),
+          ).then((r) => (r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))),
           fetch(
             `https://data-svc.artemisxyz.com/v2/data/LST_TVL?symbols=bnb,eq-coin,fxs,jto,kntq,ldo,mnt,mnde,rpl,sd,strd,swell&startDate=${formatArtemisDate(startDateObj)}&endDate=${formatArtemisDate(endDate)}`,
             { headers: artemisHeaders },
+          ).then((r) => (r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))),
+          fetch(`${API_BASE}/4455397/results/csv`).then((r) =>
+            r.ok ? r.text() : Promise.reject(`HTTP ${r.status}`),
           ),
-          fetch(`${API_BASE}/4455397/results/csv`),
-          fetch(`${API_BASE}/4533826/results/csv`),
-          fetch(`${API_BASE}/4656856/results/csv`),
+          fetch(`${API_BASE}/4533826/results/csv`).then((r) =>
+            r.ok ? r.text() : Promise.reject(`HTTP ${r.status}`),
+          ),
+          fetch(`${API_BASE}/4656856/results/csv`).then((r) =>
+            r.ok ? r.text() : Promise.reject(`HTTP ${r.status}`),
+          ),
         ]);
 
-        const [
-          tvlCsv,
-          revenueCsv,
-          buybackCsv,
-          stakedCsv,
-          activeLoansJson,
-          lrtTvlJson,
-          lstTvlJson,
-          cashSpendCsv,
-          cashBorrowCsv,
-          liquidVaultsCsv,
-        ] = await Promise.all([
-          tvlRes.text(),
-          revenueRes.text(),
-          buybackRes.text(),
-          stakedRes.text(),
-          activeLoansRes.json(),
-          lrtTvlRes.json(),
-          lstTvlRes.json(),
-          cashSpendRes.text(),
-          cashBorrowRes.text(),
-          liquidVaultsRes.text(),
-        ]);
+        // Extract values, using null for failed requests
+        const getValue = <T,>(result: PromiseSettledResult<T>): T | null =>
+          result.status === "fulfilled" ? result.value : null;
+
+        const tvlCsv = getValue(results[0]) as string | null;
+        const revenueCsv = getValue(results[1]) as string | null;
+        const buybackCsv = getValue(results[2]) as string | null;
+        const stakedCsv = getValue(results[3]) as string | null;
+        const activeLoansJson = getValue(results[4]) as any | null;
+        const lrtTvlJson = getValue(results[5]) as any | null;
+        const lstTvlJson = getValue(results[6]) as any | null;
+        const cashSpendCsv = getValue(results[7]) as string | null;
+        const cashBorrowCsv = getValue(results[8]) as string | null;
+        const liquidVaultsCsv = getValue(results[9]) as string | null;
+
+        // Log failed requests for debugging
+        results.forEach((r, i) => {
+          if (r.status === "rejected") {
+            const names = [
+              "tvl",
+              "revenue",
+              "buyback",
+              "staked",
+              "activeLoans",
+              "lrtTvl",
+              "lstTvl",
+              "cashSpend",
+              "cashBorrow",
+              "liquidVaults",
+            ];
+            console.warn(`[ETHFI] ${names[i]} failed:`, r.reason);
+          }
+        });
 
         // Parse TVL data (Chart 1)
-        const tvlRaw = parseCSV(tvlCsv);
-        const tvlParsed: EthfiTvlData[] = tvlRaw
-          .map((row) => ({
-            date: new Date(row.day).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "2-digit",
-            }),
-            rawDate: new Date(row.day).getTime(),
-            tvlEth: parseFloat(row.token_supply_eth) || 0,
-            tvlUsd: parseFloat(row.token_supply_usd) || 0,
-          }))
-          .sort((a, b) => a.rawDate - b.rawDate)
-          .map(({ rawDate, ...rest }) => rest);
-        setEthfiTvlData(tvlParsed);
-
-        // Parse Revenue data (Chart 2) - need to pivot by date and revenue_source
-        const revenueRaw = parseCSV(revenueCsv);
-        const revenueByDate: Record<string, EthfiRevenueData> = {};
-        revenueRaw.forEach((row) => {
-          const dateKey = new Date(row.day).toISOString().split("T")[0];
-          if (!revenueByDate[dateKey]) {
-            revenueByDate[dateKey] = {
+        if (tvlCsv) {
+          const tvlRaw = parseCSV(tvlCsv);
+          const tvlParsed: EthfiTvlData[] = tvlRaw
+            .map((row) => ({
               date: new Date(row.day).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
                 year: "2-digit",
               }),
-              "Liquid Vaults": 0,
-              Staking: 0,
-              Withdrawals: 0,
-              "ether.fi Cash": 0,
-              "ether.fi Cash Borrows": 0,
-            };
-          }
-          const source = row.revenue_source as keyof Omit<
-            EthfiRevenueData,
-            "date"
-          >;
-          if (source && source in revenueByDate[dateKey]) {
-            revenueByDate[dateKey][source] = parseFloat(row.amount_usd) || 0;
-          }
-        });
-        const revenueParsed = Object.entries(revenueByDate)
-          .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
-          .map(([, data]) => data);
-        setEthfiRevenueData(revenueParsed);
+              rawDate: new Date(row.day).getTime(),
+              tvlEth: parseFloat(row.token_supply_eth) || 0,
+              tvlUsd: parseFloat(row.token_supply_usd) || 0,
+            }))
+            .sort((a, b) => a.rawDate - b.rawDate)
+            .map(({ rawDate, ...rest }) => rest);
+          setEthfiTvlData(tvlParsed);
+        }
+
+        // Parse Revenue data (Chart 2) - need to pivot by date and revenue_source
+        let revenueParsed: EthfiRevenueData[] = [];
+        if (revenueCsv) {
+          const revenueRaw = parseCSV(revenueCsv);
+          const revenueByDate: Record<string, EthfiRevenueData> = {};
+          revenueRaw.forEach((row) => {
+            const dateKey = new Date(row.day).toISOString().split("T")[0];
+            if (!revenueByDate[dateKey]) {
+              revenueByDate[dateKey] = {
+                date: new Date(row.day).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "2-digit",
+                }),
+                "Liquid Vaults": 0,
+                Staking: 0,
+                Withdrawals: 0,
+                "ether.fi Cash": 0,
+                "ether.fi Cash Borrows": 0,
+              };
+            }
+            const source = row.revenue_source as keyof Omit<
+              EthfiRevenueData,
+              "date"
+            >;
+            if (source && source in revenueByDate[dateKey]) {
+              revenueByDate[dateKey][source] = parseFloat(row.amount_usd) || 0;
+            }
+          });
+          revenueParsed = Object.entries(revenueByDate)
+            .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+            .map(([, data]) => data);
+          setEthfiRevenueData(revenueParsed);
+        }
 
         // Parse Buyback data (Chart 3)
-        const buybackRaw = parseCSV(buybackCsv);
-        const buybackParsed: EthfiBuybackData[] = buybackRaw
-          .map((row) => ({
-            date: new Date(row.hour).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "2-digit",
-            }),
-            rawDate: new Date(row.hour).getTime(),
-            weekly: parseFloat(row.ethfi_bought) || 0,
-            cumulative: parseFloat(row.cum_ethfi_bought) || 0,
-          }))
-          .sort((a, b) => a.rawDate - b.rawDate)
-          .map(({ rawDate, ...rest }) => rest);
-        setEthfiBuybackData(buybackParsed);
+        if (buybackCsv) {
+          const buybackRaw = parseCSV(buybackCsv);
+          const buybackParsed: EthfiBuybackData[] = buybackRaw
+            .map((row) => ({
+              date: new Date(row.hour).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "2-digit",
+              }),
+              rawDate: new Date(row.hour).getTime(),
+              weekly: parseFloat(row.ethfi_bought) || 0,
+              cumulative: parseFloat(row.cum_ethfi_bought) || 0,
+            }))
+            .sort((a, b) => a.rawDate - b.rawDate)
+            .map(({ rawDate, ...rest }) => rest);
+          setEthfiBuybackData(buybackParsed);
+        }
 
         // Parse Active Loans data (Chart 6) - from TokenTerminal
         if (activeLoansJson?.result?.data?.data) {
@@ -579,60 +602,89 @@ const LTSpace = () => {
         }
 
         // Parse ETHFI Staked data (Chart 8)
-        const stakedRaw = parseCSV(stakedCsv);
-        const stakedParsed: EthfiStakedData[] = stakedRaw
-          .map((row) => ({
-            date: new Date(row.day).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "2-digit",
-            }),
-            rawDate: new Date(row.day).getTime(),
-            stakedSupply: parseFloat(row.staked_supply) || 0,
-            percStaked: parseFloat(row.perc_staked) * 100 || 0, // Convert to percentage
-          }))
-          .sort((a, b) => a.rawDate - b.rawDate)
-          .map(({ rawDate, ...rest }) => rest);
-        setEthfiStakedData(stakedParsed);
+        if (stakedCsv) {
+          const stakedRaw = parseCSV(stakedCsv);
+          const stakedParsed: EthfiStakedData[] = stakedRaw
+            .map((row) => ({
+              date: new Date(row.day).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "2-digit",
+              }),
+              rawDate: new Date(row.day).getTime(),
+              stakedSupply: parseFloat(row.staked_supply) || 0,
+              percStaked: parseFloat(row.perc_staked) * 100 || 0, // Convert to percentage
+            }))
+            .sort((a, b) => a.rawDate - b.rawDate)
+            .map(({ rawDate, ...rest }) => rest);
+          setEthfiStakedData(stakedParsed);
+        }
 
         // Calculate Revenue Growth Rate (Chart 7) - 13 week rolling sum change
         // Group revenue by week and calculate 13-week sum, then % change
-        const weeklyTotals: { weekKey: string; total: number }[] = [];
-        const weeklyMap: Record<string, number> = {};
+        if (revenueCsv) {
+          const revenueParsedForGrowth = Object.entries(
+            parseCSV(revenueCsv).reduce((acc: Record<string, any>, row) => {
+              const dateKey = new Date(row.day).toISOString().split("T")[0];
+              if (!acc[dateKey]) {
+                acc[dateKey] = {
+                  date: new Date(row.day).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "2-digit",
+                  }),
+                  "Liquid Vaults": 0,
+                  Staking: 0,
+                  Withdrawals: 0,
+                  "ether.fi Cash": 0,
+                  "ether.fi Cash Borrows": 0,
+                };
+              }
+              const source = row.revenue_source as string;
+              if (source && source in acc[dateKey]) {
+                acc[dateKey][source] = parseFloat(row.amount_usd) || 0;
+              }
+              return acc;
+            }, {}),
+          )
+            .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
+            .map(([, data]) => data as EthfiRevenueData);
 
-        revenueParsed.forEach((row) => {
-          // Each row is already a week
-          const total =
-            row["Liquid Vaults"] +
-            row.Staking +
-            row.Withdrawals +
-            row["ether.fi Cash"] +
-            row["ether.fi Cash Borrows"];
-          weeklyMap[row.date] = total;
-          weeklyTotals.push({ weekKey: row.date, total });
-        });
+          const weeklyTotals: { weekKey: string; total: number }[] = [];
 
-        // Calculate 13-week rolling sums and % change
-        const revenueGrowthParsed: EthfiRevenueGrowthData[] = [];
-        for (let i = 25; i < weeklyTotals.length; i++) {
-          // Need at least 26 weeks (13 current + 13 previous)
-          let currentSum = 0;
-          let prevSum = 0;
-
-          for (let j = 0; j < 13; j++) {
-            currentSum += weeklyTotals[i - j].total;
-            prevSum += weeklyTotals[i - 13 - j].total;
-          }
-
-          const growthPercent =
-            prevSum > 0 ? ((currentSum - prevSum) / prevSum) * 100 : 0;
-
-          revenueGrowthParsed.push({
-            date: weeklyTotals[i].weekKey,
-            growthPercent,
+          revenueParsedForGrowth.forEach((row) => {
+            // Each row is already a week
+            const total =
+              row["Liquid Vaults"] +
+              row.Staking +
+              row.Withdrawals +
+              row["ether.fi Cash"] +
+              row["ether.fi Cash Borrows"];
+            weeklyTotals.push({ weekKey: row.date, total });
           });
+
+          // Calculate 13-week rolling sums and % change
+          const revenueGrowthParsed: EthfiRevenueGrowthData[] = [];
+          for (let i = 25; i < weeklyTotals.length; i++) {
+            // Need at least 26 weeks (13 current + 13 previous)
+            let currentSum = 0;
+            let prevSum = 0;
+
+            for (let j = 0; j < 13; j++) {
+              currentSum += weeklyTotals[i - j].total;
+              prevSum += weeklyTotals[i - 13 - j].total;
+            }
+
+            const growthPercent =
+              prevSum > 0 ? ((currentSum - prevSum) / prevSum) * 100 : 0;
+
+            revenueGrowthParsed.push({
+              date: weeklyTotals[i].weekKey,
+              growthPercent,
+            });
+          }
+          setEthfiRevenueGrowthData(revenueGrowthParsed);
         }
-        setEthfiRevenueGrowthData(revenueGrowthParsed);
 
         // Parse LRT TVL data for Chart 4 (Restaking Market Share)
         // Build a map of ETHFI TVL by date from our TVL data
@@ -740,135 +792,143 @@ const LTSpace = () => {
         }
 
         // Parse Cash Spend Volume data (last 90 days)
-        const cashSpendRaw = parseCSV(cashSpendCsv);
-        const cashSpendParsed: EthfiCashVolumeData[] = cashSpendRaw
-          .map((row) => ({
-            date: new Date(row.day).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "2-digit",
-            }),
-            rawDate: new Date(row.day).getTime(),
-            volume: parseFloat(row.spend_usd) || 0,
-          }))
-          .sort((a, b) => a.rawDate - b.rawDate)
-          .slice(-90)
-          .map(
-            ({
-              rawDate,
-              ...rest
-            }: {
-              rawDate: number;
-              date: string;
-              volume: number;
-            }) => rest,
-          );
-        setEthfiCashSpendVolume(cashSpendParsed);
+        if (cashSpendCsv) {
+          const cashSpendRaw = parseCSV(cashSpendCsv);
+          const cashSpendParsed: EthfiCashVolumeData[] = cashSpendRaw
+            .map((row) => ({
+              date: new Date(row.day).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "2-digit",
+              }),
+              rawDate: new Date(row.day).getTime(),
+              volume: parseFloat(row.spend_usd) || 0,
+            }))
+            .sort((a, b) => a.rawDate - b.rawDate)
+            .slice(-90)
+            .map(
+              ({
+                rawDate,
+                ...rest
+              }: {
+                rawDate: number;
+                date: string;
+                volume: number;
+              }) => rest,
+            );
+          setEthfiCashSpendVolume(cashSpendParsed);
+        }
 
         // Parse Cash Borrow Volume data (last 90 days)
-        const cashBorrowRaw = parseCSV(cashBorrowCsv);
-        const cashBorrowParsed: EthfiCashVolumeData[] = cashBorrowRaw
-          .map((row) => ({
-            date: new Date(row.day).toLocaleDateString("en-US", {
+        if (cashBorrowCsv) {
+          const cashBorrowRaw = parseCSV(cashBorrowCsv);
+          const cashBorrowParsed: EthfiCashVolumeData[] = cashBorrowRaw
+            .map((row) => ({
+              date: new Date(row.day).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "2-digit",
+              }),
+              rawDate: new Date(row.day).getTime(),
+              volume: parseFloat(row.spend_usd) || 0,
+            }))
+            .sort((a, b) => a.rawDate - b.rawDate)
+            .slice(-90)
+            .map(
+              ({
+                rawDate,
+                ...rest
+              }: {
+                rawDate: number;
+                date: string;
+                volume: number;
+              }) => rest,
+            );
+          setEthfiCashBorrowVolume(cashBorrowParsed);
+        }
+
+        // Parse Liquid Vaults TVL data - Stacked Area by vault type
+        if (liquidVaultsCsv) {
+          const liquidVaultsRaw = parseCSV(liquidVaultsCsv);
+          const vaultsByDate: Record<string, Record<string, number>> = {};
+          const vaultNames = new Set<string>();
+
+          liquidVaultsRaw.forEach((row) => {
+            const dateStr = new Date(row.day).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
               year: "2-digit",
-            }),
-            rawDate: new Date(row.day).getTime(),
-            volume: parseFloat(row.spend_usd) || 0,
-          }))
-          .sort((a, b) => a.rawDate - b.rawDate)
-          .slice(-90)
-          .map(
-            ({
-              rawDate,
-              ...rest
-            }: {
-              rawDate: number;
-              date: string;
-              volume: number;
-            }) => rest,
-          );
-        setEthfiCashBorrowVolume(cashBorrowParsed);
+            });
+            const vaultName = row.enriched_symbol || row.symbol;
+            const tvl = parseFloat(row.tvl_usd) || 0;
 
-        // Parse Liquid Vaults TVL data - Stacked Area by vault type
-        const liquidVaultsRaw = parseCSV(liquidVaultsCsv);
-        const vaultsByDate: Record<string, Record<string, number>> = {};
-        const vaultNames = new Set<string>();
+            vaultNames.add(vaultName);
 
-        liquidVaultsRaw.forEach((row) => {
-          const dateStr = new Date(row.day).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "2-digit",
+            if (!vaultsByDate[dateStr]) {
+              vaultsByDate[dateStr] = { rawDate: new Date(row.day).getTime() };
+            }
+            vaultsByDate[dateStr][vaultName] = tvl;
           });
-          const vaultName = row.enriched_symbol || row.symbol;
-          const tvl = parseFloat(row.tvl_usd) || 0;
 
-          vaultNames.add(vaultName);
-
-          if (!vaultsByDate[dateStr]) {
-            vaultsByDate[dateStr] = { rawDate: new Date(row.day).getTime() };
-          }
-          vaultsByDate[dateStr][vaultName] = tvl;
-        });
-
-        const liquidVaultsParsed: EthfiLiquidVaultsTvlData[] = Object.entries(
-          vaultsByDate,
-        )
-          .map(([date, vaults]) => ({
-            date,
-            rawDate: vaults.rawDate as number,
-            ...Object.fromEntries(
-              Array.from(vaultNames).map((name) => [name, vaults[name] || 0]),
-            ),
-          }))
-          .sort((a, b) => (a.rawDate as number) - (b.rawDate as number))
-          .slice(-90)
-          .map(({ rawDate, ...rest }) => rest as EthfiLiquidVaultsTvlData);
-        setEthfiLiquidVaultsTvl(liquidVaultsParsed);
+          const liquidVaultsParsed: EthfiLiquidVaultsTvlData[] = Object.entries(
+            vaultsByDate,
+          )
+            .map(([date, vaults]) => ({
+              date,
+              rawDate: vaults.rawDate as number,
+              ...Object.fromEntries(
+                Array.from(vaultNames).map((name) => [name, vaults[name] || 0]),
+              ),
+            }))
+            .sort((a, b) => (a.rawDate as number) - (b.rawDate as number))
+            .slice(-90)
+            .map(({ rawDate, ...rest }) => rest as EthfiLiquidVaultsTvlData);
+          setEthfiLiquidVaultsTvl(liquidVaultsParsed);
+        }
 
         // Parse Revenue Distribution (last week from revenue data)
-        // Find the latest week and calculate totals by source
-        const revenueColors: Record<string, string> = {
-          "Liquid Vaults": "#22c55e",
-          Staking: "#6366f1",
-          Withdrawals: "#f59e0b",
-          "ether.fi Cash": "#a855f7",
-          "ether.fi Cash Borrows": "#ef4444",
-        };
+        if (revenueParsed.length > 0) {
+          // Find the latest week and calculate totals by source
+          const revenueColors: Record<string, string> = {
+            "Liquid Vaults": "#22c55e",
+            Staking: "#6366f1",
+            Withdrawals: "#f59e0b",
+            "ether.fi Cash": "#a855f7",
+            "ether.fi Cash Borrows": "#ef4444",
+          };
 
-        // Get the latest week's data
-        const sortedRevenue = [...revenueParsed].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-        );
-        const latestWeek = sortedRevenue[0];
+          // Get the latest week's data
+          const sortedRevenue = [...revenueParsed].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+          );
+          const latestWeek = sortedRevenue[0];
 
-        if (latestWeek) {
-          const sources = [
-            { name: "Liquid Vaults", value: latestWeek["Liquid Vaults"] },
-            { name: "Staking", value: latestWeek.Staking },
-            { name: "Withdrawals", value: latestWeek.Withdrawals },
-            { name: "ether.fi Cash", value: latestWeek["ether.fi Cash"] },
-            {
-              name: "ether.fi Cash Borrows",
-              value: latestWeek["ether.fi Cash Borrows"],
-            },
-          ];
+          if (latestWeek) {
+            const sources = [
+              { name: "Liquid Vaults", value: latestWeek["Liquid Vaults"] },
+              { name: "Staking", value: latestWeek.Staking },
+              { name: "Withdrawals", value: latestWeek.Withdrawals },
+              { name: "ether.fi Cash", value: latestWeek["ether.fi Cash"] },
+              {
+                name: "ether.fi Cash Borrows",
+                value: latestWeek["ether.fi Cash Borrows"],
+              },
+            ];
 
-          const total = sources.reduce((sum, s) => sum + s.value, 0);
+            const total = sources.reduce((sum, s) => sum + s.value, 0);
 
-          const distributionParsed: EthfiRevenueDistributionData[] = sources
-            .filter((s) => s.value > 0)
-            .map((s) => ({
-              name: s.name,
-              value: s.value,
-              percentage: total > 0 ? (s.value / total) * 100 : 0,
-              fill: revenueColors[s.name] || "#525252",
-            }))
-            .sort((a, b) => b.value - a.value);
+            const distributionParsed: EthfiRevenueDistributionData[] = sources
+              .filter((s) => s.value > 0)
+              .map((s) => ({
+                name: s.name,
+                value: s.value,
+                percentage: total > 0 ? (s.value / total) * 100 : 0,
+                fill: revenueColors[s.name] || "#525252",
+              }))
+              .sort((a, b) => b.value - a.value);
 
-          setEthfiRevenueDistribution(distributionParsed);
+            setEthfiRevenueDistribution(distributionParsed);
+          }
         }
       } catch (err) {
         console.error("Error fetching ETHFI data:", err);
