@@ -120,7 +120,7 @@ const LTSpace = () => {
           origin: "https://app.artemisanalytics.com",
           referer: "https://app.artemisanalytics.com/",
           "x-art-webtoken":
-            "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NjgzMTUxMjksImV4cCI6MTc2ODQwMTUyOX0.WFes6s4VU1ZgwEuNSzb5LxF8-jwPjOsw9zFX4ZuN25s",
+            "eyJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3Njg2NDUxMjEsImV4cCI6MTc2ODczMTUyMX0.EzCtmPkPkpVLCe90vqsA54pRQPhbSw7byJJEc7-NjRo",
         };
 
         const fetchEndpoint = async (metric: string, symbol: string) => {
