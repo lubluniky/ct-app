@@ -23,6 +23,7 @@ import {
   Loader2,
   Lock,
   LogIn,
+  RefreshCw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import ltSpaceLogo from "../assets/calogo.png";
@@ -178,7 +179,14 @@ const parseCSV = (csv: string): Record<string, string>[] => {
 };
 
 const LTSpace = () => {
-  const { user, profile, loading: authLoading, signInWithGoogle } = useAuth();
+  const {
+    user,
+    profile,
+    loading: authLoading,
+    signInWithGoogle,
+    signOut,
+    refetchProfile,
+  } = useAuth();
   const [activeTab, setActiveTab] = useState<"met-ray" | "ethfi">("met-ray");
   const [feesData, setFeesData] = useState<CombinedChartData[]>([]);
   const [revenueData, setRevenueData] = useState<CombinedChartData[]>([]);
@@ -233,7 +241,21 @@ const LTSpace = () => {
 
   // Access Control - Mandatory Login Wall for LT Space
   // Check tier2 column: 'livet' = access granted, 'none' or anything else = access denied
-  const hasLTSpaceAccess = profile?.tier2 === "livet";
+  // Handle both 'livet' and "'livet'" (with quotes in DB)
+  const tier2Value = profile?.tier2
+    ?.toString()
+    .replace(/['"]/g, "")
+    .trim()
+    .toLowerCase();
+  const hasLTSpaceAccess = tier2Value === "livet";
+
+  // Refetch profile when component mounts to get fresh data
+  useEffect(() => {
+    if (user) {
+      refetchProfile();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -1174,6 +1196,29 @@ const LTSpace = () => {
                 This dashboard is exclusively for LiveTrading members.
               </p>
             </div>
+          </div>
+
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <Button
+              onClick={() => refetchProfile()}
+              size="lg"
+              className="gap-2 bg-neutral-800 text-white hover:bg-neutral-700 font-mono w-full"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh Access
+            </Button>
+            <Button
+              onClick={async () => {
+                await signOut();
+                signInWithGoogle();
+              }}
+              size="lg"
+              variant="outline"
+              className="gap-2 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white font-mono w-full"
+            >
+              <LogIn className="w-4 h-4" />
+              Try Another Account
+            </Button>
           </div>
 
           <Link

@@ -19,6 +19,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: (redirectPath?: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refetchProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signInWithGoogle: async () => {},
   signOut: async () => {},
+  refetchProfile: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -175,9 +177,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const refetchProfile = async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ session, user, profile, loading, signInWithGoogle, signOut }}
+      value={{
+        session,
+        user,
+        profile,
+        loading,
+        signInWithGoogle,
+        signOut,
+        refetchProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>
