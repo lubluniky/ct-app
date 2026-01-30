@@ -192,7 +192,6 @@ const LTSpace = () => {
 
   // Mobile detection
   const [isMobile, setIsMobile] = useState(false);
-  const [dismissedMobileWarning, setDismissedMobileWarning] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -1124,8 +1123,8 @@ const LTSpace = () => {
     }));
   }, [timeframe]);
 
-  // Mobile Warning Screen
-  if (isMobile && !dismissedMobileWarning) {
+  // Mobile Warning Screen - No access on mobile devices
+  if (isMobile) {
     return (
       <div className="h-screen w-full bg-[#050505] flex flex-col items-center justify-center text-white relative overflow-hidden px-6">
         {/* Animated background gradients */}
@@ -1197,15 +1196,15 @@ const LTSpace = () => {
             style={{ animationDelay: "1000ms" }}
           />
 
-          {/* Continue anyway button */}
-          <Button
-            onClick={() => setDismissedMobileWarning(true)}
-            variant="ghost"
-            className="text-neutral-500 hover:text-white hover:bg-neutral-900 font-mono text-xs animate-in fade-in duration-500 transition-all"
+          {/* Return to home link */}
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-neutral-500 hover:text-white transition-colors text-xs font-mono group animate-in fade-in duration-500"
             style={{ animationDelay: "1200ms" }}
           >
-            Continue Anyway →
-          </Button>
+            <ArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
+            RETURN TO BASE
+          </Link>
         </div>
       </div>
     );
