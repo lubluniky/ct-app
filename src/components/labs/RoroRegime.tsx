@@ -41,6 +41,14 @@ const RISK_API_URL = "https://api.borkiss.trade/api/risk-regime";
 const BINANCE_API_URL =
   "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=365"; // Fetch more to ensure overlap
 
+const getUtcDateKey = (value: string | number | Date) => {
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  return new Date(value).toISOString().slice(0, 10);
+};
+
 export const RoroRegime = () => {
   const { profile, loading: authLoading, signInWithGoogle } = useAuth();
   const {
@@ -70,7 +78,7 @@ export const RoroRegime = () => {
         // Binance kline: [time, open, high, low, close, ...]
         const history: Record<string, number> = {};
         data.forEach((k: (number | string)[]) => {
-          const dateStr = format(new Date(k[0]), "yyyy-MM-dd");
+          const dateStr = getUtcDateKey(Number(k[0]));
           history[dateStr] = parseFloat(k[4] as string);
         });
         setBtcHistory(history);
@@ -81,10 +89,16 @@ export const RoroRegime = () => {
     fetchBinance();
   }, []);
 
-  const chartData = useMemo(() => {
-    if (!riskData || !riskData.data) return [];
+  const closedRiskData = useMemo(() => {
+    if (!riskData?.data) return [];
 
-    return riskData.data.map((h, i, arr) => {
+    const todayUtc = getUtcDateKey(new Date());
+
+    return riskData.data.filter((item) => item.date < todayUtc);
+  }, [riskData]);
+
+  const chartData = useMemo(() => {
+    return closedRiskData.map((h, i, arr) => {
       // Prefer Binance price if available
       const price = btcHistory[h.date];
 
@@ -104,16 +118,16 @@ export const RoroRegime = () => {
         rotation,
       };
     });
-  }, [riskData, btcHistory]);
+  }, [closedRiskData, btcHistory]);
 
   const currentScore = useMemo(() => {
-    if (!riskData || !riskData.data || riskData.data.length === 0) return 0;
-    return riskData.data[riskData.data.length - 1].score;
-  }, [riskData]);
+    if (closedRiskData.length === 0) return 0;
+    return closedRiskData[closedRiskData.length - 1].score;
+  }, [closedRiskData]);
 
   const currentBreakdown = useMemo(() => {
-    if (!riskData || !riskData.data || riskData.data.length === 0) return [];
-    const last = riskData.data[riskData.data.length - 1];
+    if (closedRiskData.length === 0) return [];
+    const last = closedRiskData[closedRiskData.length - 1];
     const comps = last.components;
 
     const mapping: Record<string, string> = {
@@ -131,7 +145,7 @@ export const RoroRegime = () => {
       signal: val > 0 ? "Risk On" : val < 0 ? "Risk Off" : "Neutral",
       score: val, // Assuming raw value is the score contribution or similar
     }));
-  }, [riskData]);
+  }, [closedRiskData]);
 
   const getRegime = (score: number) => {
     if (score > 20)
