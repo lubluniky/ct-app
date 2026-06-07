@@ -25,7 +25,7 @@ Paste this prompt into Codex:
 Clone and run this crypto analytics app inside Codex.
 
 Repository:
-git@github.com:lubluniky/borkiss.site.git
+git@github.com:lubluniky/ct-app.git
 
 Goals:
 1. Clone the repository.
